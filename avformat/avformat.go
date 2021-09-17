@@ -6,7 +6,3 @@ package avformat
 #include "libavformat/avformat.h"
 */
 import "C"
-
-type AVFormatContext struct {
-	CAVFormatContext *C.AVFormatContext
-}
