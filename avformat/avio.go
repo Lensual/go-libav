@@ -41,3 +41,13 @@ func AvioAllocContext(buffer unsafe.Pointer, buffer_size int, write_flag int,
 		opaque, (*[0]byte)(read_packet), (*[0]byte)(write_packet), (*[0]byte)(seek)))
 
 }
+
+/*
+Free the supplied IO context and everything associated with it.
+
+@param s Double pointer to the IO context. This function will write NULL
+into s.
+*/
+func AvioContextFree(s **CAVIOContext) {
+	C.avio_context_free((**C.struct_AVIOContext)(unsafe.Pointer(s)))
+}

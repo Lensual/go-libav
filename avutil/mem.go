@@ -11,3 +11,7 @@ import "unsafe"
 func AvMalloc(bufSize uint64) unsafe.Pointer {
 	return C.av_malloc(C.ulong(bufSize))
 }
+
+func AvFreep(ptr unsafe.Pointer) {
+	C.av_freep(ptr)
+}

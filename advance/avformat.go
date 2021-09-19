@@ -1,35 +1,34 @@
 package advance
 
+/*
+#cgo LDFLAGS: -lavformat
+
+#include "libavformat/avformat.h"
+*/
+import "C"
+
 import (
+	"unsafe"
+
 	"github.com/Lensual/go-libav/avformat"
-	"github.com/Lensual/go-libav/avutil"
 )
-
-type CustomAVIO struct {
-	CAVIOContext *avformat.CAVIOContext
-}
-
-func NewCustomAVIO(bufSize int, writeFlag bool) *CustomAVIO {
-	buf := avutil.AvMalloc(uint64(bufSize))
-	var wf int
-	if writeFlag {
-		wf = 1
-	}
-
-	//TODO
-
-	return &CustomAVIO{
-		CAVIOContext: avformat.AvioAllocContext(buf, bufSize, wf, nil, nil, nil, nil), //TODO
-	}
-
-}
 
 type AvformatContext struct {
 	CAvformatContext *avformat.CAVFormatContext
 }
 
 func NewAvformatContext() *AvformatContext {
-	return &AvformatContext{
-		CAvformatContext: avformat.AvformatAllocContext(),
+	ctx := avformat.AvformatAllocContext()
+	if ctx == nil {
+		return nil
 	}
+	return &AvformatContext{
+		CAvformatContext: ctx,
+	}
+}
+
+//设置IO上下文
+func (fmtCtx AvformatContext) SetIOContext(avioCtx *AVIOContext) {
+	(*C.AVFormatContext)(unsafe.Pointer(fmtCtx.CAvformatContext)).pb =
+		(*C.struct_AVIOContext)(unsafe.Pointer(avioCtx.CAVIOContext))
 }
