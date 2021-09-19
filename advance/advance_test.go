@@ -13,11 +13,11 @@ import (
 )
 
 func TestVersion(t *testing.T) {
-	t.Log(avutil.Version())
-	t.Log(avcodec.Version())
-	t.Log(avformat.Version())
-	t.Log(avdevice.Version())
-	t.Log(avfilter.Version())
-	t.Log(swscale.Version())
-	t.Log(swresample.Version())
+	t.Log(avutil.LIBAVUTIL_IDENT)
+	t.Log(avcodec.LIBAVCODEC_IDENT)
+	t.Log(avformat.LIBAVFORMAT_IDENT)
+	t.Log(avdevice.LIBAVDEVICE_IDENT)
+	t.Log(avfilter.LIBAVFILTER_IDENT)
+	t.Log(swscale.LIBSWSCALE_IDENT)
+	t.Log(swresample.LIBSWRESAMPLE_IDENT)
 }
