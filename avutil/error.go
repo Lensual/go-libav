@@ -4,6 +4,10 @@ package avutil
 #cgo LDFLAGS: -lavutil
 
 #include "libavutil/avutil.h"
+
+char* err2str(int errnum) {
+	return av_err2str(errnum);
+}
 */
 import "C"
 
@@ -42,3 +46,7 @@ const (
 	AVERROR_HTTP_OTHER_4XX    = C.AVERROR_HTTP_OTHER_4XX
 	AVERROR_HTTP_SERVER_ERROR = C.AVERROR_HTTP_SERVER_ERROR
 )
+
+func Err2str(code int) string {
+	return C.GoString(C.err2str(1))
+}

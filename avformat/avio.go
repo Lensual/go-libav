@@ -24,6 +24,10 @@ sizeof(AVIOContext) must not be used outside libav*.
 */
 type CAVIOContext C.AVIOContext
 
+func (avioCtx *CAVIOContext) GetCBuffer() unsafe.Pointer {
+	return unsafe.Pointer(avioCtx.buffer)
+}
+
 /*
 Allocate and initialize an AVIOContext for buffered I/O. It must be later
 freed with avio_context_free().

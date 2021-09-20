@@ -24,6 +24,10 @@ import "unsafe"
  */
 type CAVFormatContext C.AVFormatContext
 
+func (fmtCtx *CAVFormatContext) SetPB(avioCtx *CAVIOContext) {
+	fmtCtx.pb = (*C.AVIOContext)(avioCtx)
+}
+
 /*
 Allocate an AVFormatContext.
 

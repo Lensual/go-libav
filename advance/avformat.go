@@ -1,15 +1,6 @@
 package advance
 
-/*
-#cgo LDFLAGS: -lavformat
-
-#include "libavformat/avformat.h"
-*/
-import "C"
-
 import (
-	"unsafe"
-
 	"github.com/Lensual/go-libav/avformat"
 )
 
@@ -29,8 +20,7 @@ func NewAvformatContext() *AvformatContext {
 
 //设置IO上下文
 func (fmtCtx AvformatContext) SetIOContext(avioCtx *AVIOContext) {
-	(*C.AVFormatContext)(unsafe.Pointer(fmtCtx.CAvformatContext)).pb =
-		(*C.struct_AVIOContext)(unsafe.Pointer(avioCtx.CAVIOContext))
+	fmtCtx.CAvformatContext.SetPB(avioCtx.CAVIOContext)
 }
 
 func (fmtCtx AvformatContext) OpenInput(url string) int {
@@ -47,4 +37,5 @@ func (fmtCtx AvformatContext) DumpFormat(index int, url string, is_output int) {
 
 func (fmtCtx AvformatContext) CloseInput() {
 	avformat.AvformatCloseInput(&fmtCtx.CAvformatContext)
+	fmtCtx.CAvformatContext = nil
 }

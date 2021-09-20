@@ -66,8 +66,6 @@ func NewAvioContext(bufSize int, readFunc AVIOCallback, writeFunc AVIOCallback, 
 	}
 
 	//初始化AVIO
-	// C.read_packet(nil, nil, 0)
-	// unsafe.Pointer(C._Cfunc_read_packet)
 	cavio := avformat.AvioAllocContext(cbuf, bufSize, wf, unsafe.Pointer(uintptr(id)), //hack 这里把指针直接当int用
 		avformat.CFunc(C.go_read_packet), avformat.CFunc(C.go_write_packet), avformat.CFunc(C.go_seek)) //TODO
 	if cavio == nil {
@@ -89,27 +87,29 @@ func NewAvioContext(bufSize int, readFunc AVIOCallback, writeFunc AVIOCallback, 
 	return avio
 }
 
-func (avio *AVIOContext) GetCBuffer() unsafe.Pointer {
-	return unsafe.Pointer((*C.AVIOContext)((unsafe.Pointer)(avio.CAVIOContext)).buffer)
-}
-
 func (avio *AVIOContext) GetBuffer() []byte {
 	//映射C的内存
 	var buf []byte
 	h := (*reflect.SliceHeader)((unsafe.Pointer(&buf)))
 	h.Cap = avio.BufferSize
 	h.Len = avio.BufferSize
-	h.Data = uintptr(avio.GetCBuffer())
+	h.Data = uintptr(avio.CAVIOContext.GetCBuffer())
 
 	return buf
 }
 
 func (avio *AVIOContext) Free() {
-	//TODO
 	/* note: the internal buffer could have changed, and be != avio_ctx_buffer */
-	bufptr := avio.GetCBuffer()
+	bufptr := avio.CAVIOContext.GetCBuffer()
 	avutil.AvFreep(unsafe.Pointer(&bufptr))
 	avformat.AvioContextFree(avio.CAVIOContext)
+	avio.CAVIOContext = nil
+
+	//TODO 释放ID
+
+	avio.readFunc = nil
+	avio.writeFunc = nil
+	avio.seekFunc = nil
 }
 
 //export go_read_packet
