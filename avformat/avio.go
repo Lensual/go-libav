@@ -9,6 +9,19 @@ import "C"
 import "unsafe"
 
 type CFunc unsafe.Pointer
+
+/*
+Bytestream IO Context.
+New public fields can be added with minor version bumps.
+Removal, reordering and changes to existing public fields require
+a major version bump.
+sizeof(AVIOContext) must not be used outside libav*.
+
+@note None of the function pointers in AVIOContext should be called
+      directly, they should only be set by the client application
+      when implementing custom I/O. Normally these are set to the
+      function pointers specified in avio_alloc_context()
+*/
 type CAVIOContext C.AVIOContext
 
 /*
@@ -47,7 +60,11 @@ Free the supplied IO context and everything associated with it.
 
 @param s Double pointer to the IO context. This function will write NULL
 into s.
+
+!!!!!
+NOTE: FOR GO BINDING, s MUST BE C POINTER, SO s MUST SET TO SINGLE POINTER
+!!!!!
 */
-func AvioContextFree(s **CAVIOContext) {
-	C.avio_context_free((**C.struct_AVIOContext)(unsafe.Pointer(s)))
+func AvioContextFree(s *CAVIOContext) {
+	C.avio_context_free((**C.struct_AVIOContext)(unsafe.Pointer(&s)))
 }
