@@ -12,5 +12,8 @@ func NewAVFrame(size int) *AvFrame {
 	return &AvFrame{
 		CAvFrame: avutil.AvFrameAlloc(),
 	}
+}
 
+func (frame *AvFrame) Free() {
+	avutil.AvFrameFree(&frame.CAvFrame)
 }
