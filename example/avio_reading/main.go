@@ -3,9 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"reflect"
 	"syscall"
-	"unsafe"
 
 	"github.com/Lensual/go-libav/advance"
 	"github.com/Lensual/go-libav/avutil"
@@ -33,16 +31,8 @@ func main() {
 	}
 	defer fmtCtx.CloseInput()
 
-	avioCtx := advance.NewAvioContext(4096, func(cbuf unsafe.Pointer, buf_size int) int {
+	avioCtx := advance.NewAvioContext(4096, func(buf []byte, buf_size int) int {
 		//read_packet
-
-		//映射C的内存
-		var buf []byte
-		h := (*reflect.SliceHeader)((unsafe.Pointer(&buf)))
-		h.Cap = buf_size
-		h.Len = buf_size
-		h.Data = uintptr(cbuf)
-
 		count, err := fd.Read(buf)
 		if err != nil {
 			return avutil.AVERROR_EOF

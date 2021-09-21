@@ -56,7 +56,6 @@ func AvioAllocContext(buffer unsafe.Pointer, buffer_size int, write_flag int,
 
 	return (*CAVIOContext)(C.avio_alloc_context((*C.uchar)(buffer), C.int(buffer_size), C.int(write_flag),
 		opaque, (*[0]byte)(read_packet), (*[0]byte)(write_packet), (*[0]byte)(seek)))
-
 }
 
 /*
@@ -70,5 +69,6 @@ NOTE: FOR GO BINDING, s MUST BE C POINTER, SO s MUST SET TO SINGLE POINTER
 !!!!!
 */
 func AvioContextFree(s *CAVIOContext) {
-	C.avio_context_free((**C.struct_AVIOContext)(unsafe.Pointer(&s)))
+	C.avio_context_free((**C.AVIOContext)(unsafe.Pointer(&s)))
+	s = nil
 }

@@ -14,14 +14,13 @@ extern int64_t go_seek(void *opaque, int64_t offset, int whence);
 import "C"
 
 import (
-	"reflect"
 	"unsafe"
 
 	"github.com/Lensual/go-libav/avformat"
 	"github.com/Lensual/go-libav/avutil"
 )
 
-type AVIOCallback func(cbuf unsafe.Pointer, buf_size int) int
+type AVIOCallback func(buf []byte, len int) int
 type AVIOSeekCallback func(offset int64, whence int) int64
 
 //用于c的callback绑定avio对象
@@ -65,9 +64,22 @@ func NewAvioContext(bufSize int, readFunc AVIOCallback, writeFunc AVIOCallback, 
 		wf = 1
 	}
 
+	var readCallback avformat.CFunc
+	if readFunc != nil {
+		readCallback = avformat.CFunc(C.go_read_packet)
+	}
+	var writeCallback avformat.CFunc
+	if writeFunc != nil {
+		writeCallback = avformat.CFunc(C.go_write_packet)
+	}
+	var seekCallback avformat.CFunc
+	if seekFunc != nil {
+		seekCallback = avformat.CFunc(C.go_seek)
+	}
+
 	//初始化AVIO
 	cavio := avformat.AvioAllocContext(cbuf, bufSize, wf, unsafe.Pointer(uintptr(id)), //hack 这里把指针直接当int用
-		avformat.CFunc(C.go_read_packet), avformat.CFunc(C.go_write_packet), avformat.CFunc(C.go_seek)) //TODO
+		readCallback, writeCallback, seekCallback) //TODO
 	if cavio == nil {
 		avutil.AvFreep(cbuf)
 		return nil
@@ -88,14 +100,7 @@ func NewAvioContext(bufSize int, readFunc AVIOCallback, writeFunc AVIOCallback, 
 }
 
 func (avio *AVIOContext) GetBuffer() []byte {
-	//映射C的内存
-	var buf []byte
-	h := (*reflect.SliceHeader)((unsafe.Pointer(&buf)))
-	h.Cap = avio.BufferSize
-	h.Len = avio.BufferSize
-	h.Data = uintptr(avio.CAVIOContext.GetCBuffer())
-
-	return buf
+	return UnsafePtr2ByteSlice(avio.CAVIOContext.GetCBuffer(), avio.BufferSize)
 }
 
 func (avio *AVIOContext) Free() {
@@ -103,7 +108,6 @@ func (avio *AVIOContext) Free() {
 	bufptr := avio.CAVIOContext.GetCBuffer()
 	avutil.AvFreep(unsafe.Pointer(&bufptr))
 	avformat.AvioContextFree(avio.CAVIOContext)
-	avio.CAVIOContext = nil
 
 	//TODO 释放ID
 
@@ -117,7 +121,8 @@ func go_read_packet(opaque unsafe.Pointer, cbuf *C.uint8_t, buf_size C.int) C.in
 	id := uintptr(opaque) //hack 把指针当int用
 	avio := avioBindingC[id]
 	if avio != nil {
-		return C.int(avio.readFunc(unsafe.Pointer(cbuf), int(buf_size)))
+		buf := UnsafePtr2ByteSlice(unsafe.Pointer(cbuf), int(buf_size))
+		return C.int(avio.readFunc(buf, int(buf_size)))
 	}
 	return 0
 }
@@ -127,7 +132,8 @@ func go_write_packet(opaque unsafe.Pointer, cbuf *C.uint8_t, buf_size C.int) C.i
 	id := uintptr(opaque) //hack 把指针当int用
 	avio := avioBindingC[id]
 	if avio != nil {
-		return C.int(avio.writeFunc(unsafe.Pointer(cbuf), int(buf_size)))
+		buf := UnsafePtr2ByteSlice(unsafe.Pointer(cbuf), int(buf_size))
+		return C.int(avio.writeFunc(buf, int(buf_size)))
 	}
 	return 0
 }
