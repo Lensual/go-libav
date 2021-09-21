@@ -1,0 +1,12 @@
+{
+    "go.lintTool": "golangci-lint"
+} 
+
+//For Windows
+// {
+//     "go.toolsEnvVars": {
+//         "CGO_LDFLAGS": "-LD:/ffmpeg-4.2.2-win64-dev/lib/ -lavcodec -lavformat -lavutil -lswscale -lswresample -lavdevice -lavfilter",
+//         "CGO_CFLAGS": "-ID:/ffmpeg-4.2.2-win64-dev/include",
+//         "LD_LIBRARY_PATH": "D:/ffmpeg-4.2.2-win64-dev/lib"
+//     }
+// }
