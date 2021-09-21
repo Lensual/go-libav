@@ -42,10 +42,36 @@ type AVIOContext struct {
 }
 
 func NewAvioContext(bufSize int, readFunc AVIOCallback, writeFunc AVIOCallback, seekFunc AVIOSeekCallback) *AVIOContext {
+	avioCtx := &AVIOContext{
+		id:         -1,
+		BufferSize: bufSize,
+		readFunc:   readFunc,
+		writeFunc:  writeFunc,
+		seekFunc:   seekFunc,
+	}
+
+	//分配可用id
+	avioBindingC_lock.Lock()
+	{
+		for i, v := range avioBindingC {
+			if v == nil {
+				avioCtx.id = i
+			}
+		}
+		if avioCtx.id < 0 {
+			avioCtx.Free()
+			return nil
+		}
+
+		//AVIO绑定
+		avioBindingC[avioCtx.id] = avioCtx
+	}
+	avioBindingC_lock.Unlock()
 
 	//初始化C缓冲区
 	cbuf := avutil.AvMalloc(uint64(bufSize))
 	if cbuf == nil {
+		avioCtx.Free()
 		return nil
 	}
 
@@ -69,40 +95,14 @@ func NewAvioContext(bufSize int, readFunc AVIOCallback, writeFunc AVIOCallback, 
 	}
 
 	//初始化AVIO
-	cavioCtx := avformat.AvioAllocContext(cbuf, bufSize, wf, unsafe.Pointer(uintptr(id)), //hack 这里把指针直接当int用
+	cavioCtx := avformat.AvioAllocContext(cbuf, bufSize, wf, unsafe.Pointer(uintptr(avioCtx.id)), //hack 这里把指针直接当int用
 		readCallback, writeCallback, seekCallback) //TODO
 	if cavioCtx == nil {
 		avutil.AvFreep(cbuf)
+		avioCtx.Free()
 		return nil
 	}
-
-	avioCtx := &AVIOContext{
-		id:           -1,
-		CAVIOContext: cavioCtx,
-		BufferSize:   bufSize,
-		readFunc:     readFunc,
-		writeFunc:    writeFunc,
-		seekFunc:     seekFunc,
-	}
-
-	//分配可用id
-	avioBindingC_lock.Lock()
-	{
-		for i, v := range avioBindingC {
-			if v == nil {
-				avioCtx.id = i
-			}
-		}
-		if avioCtx.id < 0 {
-			//clean
-			avioCtx.Free()
-			return nil
-		}
-
-		//AVIO绑定
-		avioBindingC[avioCtx.id] = avioCtx
-	}
-	avioBindingC_lock.Unlock()
+	avioCtx.CAVIOContext = cavioCtx
 
 	return avioCtx
 }
@@ -112,10 +112,12 @@ func (avioCtx *AVIOContext) GetBuffer() []byte {
 }
 
 func (avioCtx *AVIOContext) Free() {
-	/* note: the internal buffer could have changed, and be != avio_ctx_buffer */
-	bufptr := avioCtx.CAVIOContext.GetCBuffer()
-	avutil.AvFreep(unsafe.Pointer(&bufptr))
-	avformat.AvioContextFree(avioCtx.CAVIOContext)
+	if avioCtx.CAVIOContext != nil {
+		/* note: the internal buffer could have changed, and be != avio_ctx_buffer */
+		bufptr := avioCtx.CAVIOContext.GetCBuffer()
+		avutil.AvFreep(unsafe.Pointer(&bufptr))
+		avformat.AvioContextFree(avioCtx.CAVIOContext)
+	}
 
 	//释放AVIO绑定
 	if avioCtx.id >= 0 {
@@ -130,6 +132,8 @@ func (avioCtx *AVIOContext) Free() {
 	avioCtx.readFunc = nil
 	avioCtx.writeFunc = nil
 	avioCtx.seekFunc = nil
+
+	avioCtx = nil
 }
 
 //export go_read_packet
