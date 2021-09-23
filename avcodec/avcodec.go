@@ -239,3 +239,52 @@ type CAVCodecParserContext C.AVCodecParserContext
 func AvParserInit(codec_id int) *CAVCodecParserContext {
 	return (*CAVCodecParserContext)(C.av_parser_init(C.int(codec_id)))
 }
+
+/**
+* Parse a packet.
+*
+* @param s             parser context.
+* @param avctx         codec context.
+* @param poutbuf       set to pointer to parsed buffer or NULL if not yet finished.
+* @param poutbuf_size  set to size of parsed buffer or zero if not yet finished.
+* @param buf           input buffer.
+* @param buf_size      buffer size in bytes without the padding. I.e. the full buffer
+                       size is assumed to be buf_size + AV_INPUT_BUFFER_PADDING_SIZE.
+                       To signal EOF, this should be 0 (so that the last frame
+                       can be output).
+* @param pts           input presentation timestamp.
+* @param dts           input decoding timestamp.
+* @param pos           input byte position in stream.
+* @return the number of bytes of the input bitstream used.
+*
+* Example:
+* @code
+*   while(in_len){
+*       len = av_parser_parse2(myparser, AVCodecContext, &data, &size,
+*                                        in_data, in_len,
+*                                        pts, dts, pos);
+*       in_data += len;
+*       in_len  -= len;
+*
+*       if(size)
+*          decode_frame(data, size);
+*   }
+* @endcode
+*/
+
+func AvParserParse(s *CAVCodecParserContext, avctx *CAVCodecContext,
+	poutbuf unsafe.Pointer, poutbuf_size int,
+	buf unsafe.Pointer, buf_size int,
+	pts int64, dts int64, pos int64) int {
+
+	cpoutbuf_size := C.int(poutbuf_size)
+
+	return int(C.av_parser_parse2((*C.AVCodecParserContext)(s), (*C.AVCodecContext)(avctx),
+		(**C.uint8_t)(poutbuf), &cpoutbuf_size,
+		(*C.uint8_t)(buf), C.int(buf_size),
+		C.int64_t(pts), C.int64_t(dts), C.int64_t(pos)))
+}
+
+func AvParserClose(s *CAVCodecParserContext) {
+	C.av_parser_close((*C.AVCodecParserContext)(s))
+}

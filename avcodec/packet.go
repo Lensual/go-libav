@@ -10,6 +10,14 @@ import "unsafe"
 
 type CAVPacket C.AVPacket
 
+func (pkt *CAVPacket) GetData() unsafe.Pointer {
+	return unsafe.Pointer(pkt.data)
+}
+
+func (pkt *CAVPacket) GetSize() int {
+	return int(pkt.size)
+}
+
 /*
 Allocate an AVPacket and set its fields to default values.  The resulting
 struct must be freed using av_packet_free().
