@@ -57,5 +57,31 @@ func (avctx *AVCodecContext) Decode(pkt *AvPacket) ([]AvFrame, error) {
 }
 
 //编码
-func (avctx *AVCodecContext) Encode() {
+func (avctx *AVCodecContext) Encode(frame *AvFrame) ([]AvPacket, error) {
+	code := avcodec.AvcodecSendFrame(avctx.CAVCodecContext, frame.CAvFrame)
+	if code < 0 {
+		return nil, errors.New(avutil.Err2str(code))
+	}
+
+	pkts := make([]AvPacket, 0)
+
+	var err error
+
+	for {
+		var pkt *AvPacket
+		pkt, err = NewAVPacket(0)
+		if err == nil {
+			break
+		}
+
+		code := avcodec.AvcodecReceivePacket(avctx.CAVCodecContext, pkt.CAvPacket)
+		if code < 0 {
+			frame.Free()
+			break
+		}
+
+		pkts = append(pkts, *pkt)
+	}
+
+	return pkts, err
 }
