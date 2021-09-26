@@ -22,9 +22,9 @@ func NewAVCodecParserContext(codecId uint32) *AVCodecParserContext {
 
 func (parser *AVCodecParserContext) Parse(avctx *AVCodecContext, pkt *AvPacket,
 	data unsafe.Pointer, length int64,
-	pts int64, dts int64, pos int64) {
+	pts int64, dts int64, pos int64) int {
 
-	avcodec.AvParserParse(parser.CAVCodecParserContext, avctx.CAVCodecContext,
+	return avcodec.AvParserParse(parser.CAVCodecParserContext, avctx.CAVCodecContext,
 		pkt.CAvPacket.GetData(), pkt.CAvPacket.GetSize(),
 		data, int(length), pts, dts, pos)
 }
