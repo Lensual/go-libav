@@ -1,9 +1,9 @@
-package swscale
+package avdevice
 
 /*
-#cgo pkg-config: libswscale
+#cgo pkg-config: libavdevice
 
-#include "libswscale/swscale.h"
+#include "libavdevice/avdevice.h"
 */
 import "C"
 
@@ -25,27 +25,21 @@ import "C"
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-//  #ifndef SWSCALE_VERSION_H
-//  #define SWSCALE_VERSION_H
+//  #ifndef AVDEVICE_VERSION_MAJOR_H
+//  #define AVDEVICE_VERSION_MAJOR_H
 
 /**
  * @file
- * swscale version macros
+ * @ingroup lavd
+ * Libavdevice version macros
  */
 
-//  #include "libavutil/version.h"
+const LIBAVDEVICE_VERSION_MAJOR = C.LIBAVDEVICE_VERSION_MAJOR
 
-//  #include "version_major.h"
+/**
+ * FF_API_* defines may be placed below to indicate public API that will be
+ * dropped at a future version bump. The defines themselves are not part of
+ * the public API and may change, break or disappear at any time.
+ */
 
-const LIBSWSCALE_VERSION_MINOR = C.LIBSWSCALE_VERSION_MINOR
-const LIBSWSCALE_VERSION_MICRO = C.LIBSWSCALE_VERSION_MICRO
-
-const LIBSWSCALE_VERSION_INT = C.LIBSWSCALE_VERSION_INT
-
-// const LIBSWSCALE_VERSION = C.LIBSWSCALE_VERSION
-
-const LIBSWSCALE_BUILD = C.LIBSWSCALE_BUILD
-
-const LIBSWSCALE_IDENT = C.LIBSWSCALE_IDENT
-
-//  #endif /* SWSCALE_VERSION_H */
+//  #endif /* AVDEVICE_VERSION_MAJOR_H */

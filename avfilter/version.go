@@ -1,7 +1,7 @@
 package avfilter
 
 /*
-#cgo LDFLAGS: -lavfilter
+#cgo pkg-config: libavfilter
 
 #include "libavfilter/avfilter.h"
 */

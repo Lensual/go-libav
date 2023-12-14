@@ -1,7 +1,7 @@
 package avcodec
 
 /*
-#cgo LDFLAGS: -lavcodec
+#cgo pkg-config: libavcodec
 
 #include "libavcodec/avcodec.h"
 */

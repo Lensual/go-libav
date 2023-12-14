@@ -25,27 +25,20 @@ import "C"
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-//  #ifndef SWSCALE_VERSION_H
-//  #define SWSCALE_VERSION_H
+//  #ifndef SWSCALE_VERSION_MAJOR_H
+//  #define SWSCALE_VERSION_MAJOR_H
 
 /**
  * @file
  * swscale version macros
  */
 
-//  #include "libavutil/version.h"
+const LIBSWSCALE_VERSION_MAJOR = C.LIBSWSCALE_VERSION_MAJOR
 
-//  #include "version_major.h"
+/**
+ * FF_API_* defines may be placed below to indicate public API that will be
+ * dropped at a future version bump. The defines themselves are not part of
+ * the public API and may change, break or disappear at any time.
+ */
 
-const LIBSWSCALE_VERSION_MINOR = C.LIBSWSCALE_VERSION_MINOR
-const LIBSWSCALE_VERSION_MICRO = C.LIBSWSCALE_VERSION_MICRO
-
-const LIBSWSCALE_VERSION_INT = C.LIBSWSCALE_VERSION_INT
-
-// const LIBSWSCALE_VERSION = C.LIBSWSCALE_VERSION
-
-const LIBSWSCALE_BUILD = C.LIBSWSCALE_BUILD
-
-const LIBSWSCALE_IDENT = C.LIBSWSCALE_IDENT
-
-//  #endif /* SWSCALE_VERSION_H */
+//  #endif /* SWSCALE_VERSION_MAJOR_H */

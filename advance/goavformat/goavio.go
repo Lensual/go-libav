@@ -1,7 +1,7 @@
-package advance
+package goavformat
 
 /*
-#cgo LDFLAGS: -lavformat
+#cgo pkg-config: libavformat
 
 #include "libavformat/avformat.h"
 
@@ -21,33 +21,36 @@ import (
 	"github.com/Lensual/go-libav/avutil"
 )
 
-type AVIOCallback func(buf []byte, len int) int
+type AVIOReadCallback func(buf []byte, len int) int
+type AVIOWriteCallback func(buf []byte, len int) int
 type AVIOSeekCallback func(offset int64, whence int) int64
 
-//用于c的callback绑定avio对象
-var avioBindingC []*AVIOContext
+// 用于c的callback绑定avio对象
+var avioBindingC []*GoAVIOContext
 var avioBindingC_lock sync.RWMutex
 
 func init() {
-	avioBindingC = make([]*AVIOContext, unsafe.Sizeof(uint8(1)))
+	avioBindingC = make([]*GoAVIOContext, unsafe.Sizeof(uint8(1)))
 }
 
-type AVIOContext struct {
-	id           int
-	CAVIOContext *avformat.CAVIOContext
-	BufferSize   int
-	readFunc     AVIOCallback
-	writeFunc    AVIOCallback
-	seekFunc     AVIOSeekCallback
+// 使用导出的go方法实现AVIO
+// 由于go对象指针不可传递给C，迫不得已生成唯一id存入C.AVIOContext.opaque来实现Go对象成员方法的访问
+// 除此之外还可以尝试使用fd协议配合os.pipe实现
+type GoAVIOContext struct {
+	*AVIOContext
+	id        int
+	readFunc  AVIOReadCallback
+	writeFunc AVIOWriteCallback
+	seekFunc  AVIOSeekCallback
 }
 
-func NewAvioContext(bufSize int, readFunc AVIOCallback, writeFunc AVIOCallback, seekFunc AVIOSeekCallback) *AVIOContext {
-	avioCtx := &AVIOContext{
-		id:         -1,
-		BufferSize: bufSize,
-		readFunc:   readFunc,
-		writeFunc:  writeFunc,
-		seekFunc:   seekFunc,
+func NewGoAvioContext(bufSize int, readFunc AVIOReadCallback, writeFunc AVIOWriteCallback, seekFunc AVIOSeekCallback) *GoAVIOContext {
+	avioCtx := &GoAVIOContext{
+		AVIOContext: &AVIOContext{},
+		id:          -1,
+		readFunc:    readFunc,
+		writeFunc:   writeFunc,
+		seekFunc:    seekFunc,
 	}
 
 	//分配可用id
@@ -102,22 +105,17 @@ func NewAvioContext(bufSize int, readFunc AVIOCallback, writeFunc AVIOCallback, 
 		avioCtx.Free()
 		return nil
 	}
-	avioCtx.CAVIOContext = cavioCtx
+	avioCtx.AVIOContext.CAVIOContext = cavioCtx
 
 	return avioCtx
 }
 
-func (avioCtx *AVIOContext) GetBuffer() []byte {
-	return UnsafePtr2ByteSlice(avioCtx.CAVIOContext.GetCBuffer(), avioCtx.BufferSize)
+func (avioCtx *GoAVIOContext) GetBuffer() []byte {
+	return avioCtx.AVIOContext.GetBuffer()
 }
 
-func (avioCtx *AVIOContext) Free() {
-	if avioCtx.CAVIOContext != nil {
-		/* note: the internal buffer could have changed, and be != avio_ctx_buffer */
-		bufptr := avioCtx.CAVIOContext.GetCBuffer()
-		avutil.AvFreep(unsafe.Pointer(&bufptr))
-		avformat.AvioContextFree(avioCtx.CAVIOContext)
-	}
+func (avioCtx *GoAVIOContext) Free() {
+	avioCtx.AVIOContext.Free()
 
 	//释放AVIO绑定
 	if avioCtx.id >= 0 {
@@ -129,6 +127,7 @@ func (avioCtx *AVIOContext) Free() {
 		avioCtx.id = -1
 	}
 
+	avioCtx.AVIOContext = nil
 	avioCtx.readFunc = nil
 	avioCtx.writeFunc = nil
 	avioCtx.seekFunc = nil
@@ -141,7 +140,7 @@ func go_read_packet(opaque unsafe.Pointer, cbuf *C.uint8_t, buf_size C.int) C.in
 	id := uintptr(opaque) //hack 把指针当int用
 	avioCtx := avioBindingC[id]
 	if avioCtx != nil {
-		buf := UnsafePtr2ByteSlice(unsafe.Pointer(cbuf), int(buf_size))
+		buf := unsafe.Slice((*byte)(unsafe.Pointer(cbuf)), int(buf_size))
 		return C.int(avioCtx.readFunc(buf, int(buf_size)))
 	}
 	return 0
@@ -152,7 +151,7 @@ func go_write_packet(opaque unsafe.Pointer, cbuf *C.uint8_t, buf_size C.int) C.i
 	id := uintptr(opaque) //hack 把指针当int用
 	avioCtx := avioBindingC[id]
 	if avioCtx != nil {
-		buf := UnsafePtr2ByteSlice(unsafe.Pointer(cbuf), int(buf_size))
+		buf := unsafe.Slice((*byte)(unsafe.Pointer(cbuf)), int(buf_size))
 		return C.int(avioCtx.writeFunc(buf, int(buf_size)))
 	}
 	return 0

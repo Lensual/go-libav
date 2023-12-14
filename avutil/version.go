@@ -1,9 +1,9 @@
 package avutil
 
 /*
-#cgo LDFLAGS: -lavutil
+#cgo pkg-config: libavutil
 
-#include "libavutil/avutil.h"
+#include "libavutil/version.h"
 */
 import "C"
 

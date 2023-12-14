@@ -5,7 +5,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/Lensual/go-libav/advance"
+	"github.com/Lensual/go-libav/advance/goavformat"
 	"github.com/Lensual/go-libav/avutil"
 )
 
@@ -25,13 +25,13 @@ func main() {
 	}
 	defer fd.Close()
 
-	fmtCtx := advance.NewAvformatContext()
+	fmtCtx := goavformat.AllocAvformatContext()
 	if fmtCtx == nil {
 		panic(syscall.ENOMEM)
 	}
 	defer fmtCtx.CloseInput()
 
-	avioCtx := advance.NewAvioContext(4096, func(buf []byte, buf_size int) int {
+	avioCtx := goavformat.NewGoAvioContext(4096, func(buf []byte, buf_size int) int {
 		//read_packet
 		count, err := fd.Read(buf)
 		if err != nil {
@@ -44,14 +44,14 @@ func main() {
 		panic(syscall.ENOMEM)
 	}
 
-	fmtCtx.SetIOContext(avioCtx)
-	ret := fmtCtx.OpenInput("")
+	fmtCtx.SetIOContext(avioCtx.AVIOContext)
+	ret := fmtCtx.OpenInput("", nil, nil)
 	if ret < 0 {
 		panic("Could not open input\n")
 	}
 	defer avioCtx.Free()
 
-	ret = fmtCtx.FindStreamInfo()
+	ret = fmtCtx.FindStreamInfo(nil)
 	if ret < 0 {
 		panic("Could not find stream information\n")
 	}
