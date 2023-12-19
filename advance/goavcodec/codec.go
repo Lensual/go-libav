@@ -1,5 +1,7 @@
 package goavcodec
 
+import "C"
+
 import (
 	"unsafe"
 
@@ -9,6 +11,29 @@ import (
 type AVCodec struct {
 	CAVCodec *avcodec.CAVCodec
 }
+
+//region member
+
+func (codec *AVCodec) GetSupportedSamplerates() []int {
+	cArr := codec.CAVCodec.GetSupportedSamplerates()
+	if cArr == nil {
+		return nil
+	}
+	p := unsafe.Pointer(cArr)
+	pSize := int(unsafe.Sizeof(C.int(0)))
+	arr := []int{}
+	for {
+		p = unsafe.Add(p, pSize)
+		val := int(*(*C.int)(p))
+		if val == 0 {
+			break
+		}
+		arr = append(arr, val)
+	}
+	return arr
+}
+
+//endregion member
 
 func (codec *AVCodec) CreateContext() *AVCodecContext {
 	return NewAVCodecContext(codec)

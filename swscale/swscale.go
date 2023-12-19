@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/Lensual/go-libav/avutil"
+	"github.com/Lensual/go-libav/ctypes"
 )
 
 /*
@@ -288,8 +289,15 @@ func SwsGetContext(srcW int, srcH int, srcFormat avutil.CAVPixelFormat,
  *                  the destination image
  * @return          the height of the output slice
  */
-func SwsScale(c *CSwsContext, srcSlice []*C.uint8_t, srcStride *C.int, srcSliceY int, srcSliceH int, dst **C.uint8_t, dstStride *C.int) int {
-	return int(C.sws_scale((*C.struct_SwsContext)(c), &srcSlice[0], srcStride, C.int(srcSliceY), C.int(srcSliceH), dst, dstStride))
+func SwsScale(c *CSwsContext, srcSlice []unsafe.Pointer, srcStride []ctypes.Int, srcSliceY int, srcSliceH int, dst []unsafe.Pointer, dstStride []ctypes.Int) int {
+	return int(C.sws_scale(
+		(*C.struct_SwsContext)(c),
+		(**C.uint8_t)(unsafe.Pointer(unsafe.SliceData(srcSlice))),
+		(*C.int)(unsafe.SliceData(srcStride)),
+		C.int(srcSliceY),
+		C.int(srcSliceH),
+		(**C.uint8_t)(unsafe.Pointer(unsafe.SliceData(dst))),
+		(*C.int)(unsafe.SliceData(dstStride))))
 }
 
 /**

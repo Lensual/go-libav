@@ -229,7 +229,7 @@ func (c *CAVCodec) GetPixFmts() *avutil.CAVPixelFormat {
 
 // /< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
 func (c *CAVCodec) GetSupportedSamplerates() *C.int {
-	return (*C.int)(unsafe.Pointer(c.supported_samplerates))
+	return c.supported_samplerates
 }
 
 // /< array of supported sample formats, or NULL if unknown, array is terminated by -1

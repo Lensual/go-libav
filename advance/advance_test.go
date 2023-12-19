@@ -3,7 +3,6 @@ package advance_test
 import (
 	"testing"
 
-	"github.com/Lensual/go-libav/advance/goavcodec"
 	"github.com/Lensual/go-libav/advance/goavformat"
 	"github.com/Lensual/go-libav/avcodec"
 	"github.com/Lensual/go-libav/avdevice"
@@ -34,16 +33,6 @@ func TestLicense(t *testing.T) {
 	t.Logf("AvformatLicense:\t%v", avformat.AvformatLicense())
 	t.Logf("SwscaleLicense:\t%v", swscale.SwscaleLicense())
 	t.Logf("SwresampleLicense:\t%v", swresample.SwresampleLicense())
-}
-
-func TestAvailableCodecs(t *testing.T) {
-	availableCodecs := goavcodec.GetAvailableCodecs()
-	availableCodecsNames := []string{}
-	for _, v := range availableCodecs {
-		availableCodecsNames = append(availableCodecsNames, v.CAVCodec.GetName())
-	}
-
-	t.Logf("AvailableCodecs:\t%v", availableCodecsNames)
 }
 
 func TestAvailableProtocols(t *testing.T) {

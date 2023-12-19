@@ -92,8 +92,11 @@ func AllocAvformatContext() *AvformatContext {
 	}
 }
 
-func OpenInput(url string, fmt *avformat.CAVInputFormat, options **avutil.CAVDictionary) (int, *AvformatContext) {
+func OpenInput(url string, fmt *avformat.CAVInputFormat, options **avutil.CAVDictionary) (*AvformatContext, int) {
 	fmtCtx := AvformatContext{}
 	ret := avformat.AvformatOpenInput(&fmtCtx.CAvformatContext, url, fmt, options)
-	return ret, &fmtCtx
+	if ret != 0 {
+		return nil, ret
+	}
+	return &fmtCtx, ret
 }

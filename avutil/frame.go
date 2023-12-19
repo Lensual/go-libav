@@ -8,6 +8,8 @@ package avutil
 import "C"
 import (
 	"unsafe"
+
+	"github.com/Lensual/go-libav/ctypes"
 )
 
 /*
@@ -408,8 +410,8 @@ const AV_NUM_DATA_POINTERS = C.AV_NUM_DATA_POINTERS
  * combination with negative values in the linesize[] array.
  */
 func (f *CAVFrame) GetData() [AV_NUM_DATA_POINTERS]unsafe.Pointer {
-	arrp := (*unsafe.Pointer)(unsafe.Pointer(unsafe.SliceData(f.data[:])))
-	return ([AV_NUM_DATA_POINTERS]unsafe.Pointer)(unsafe.Slice(arrp, AV_NUM_DATA_POINTERS))
+	cArr := (*unsafe.Pointer)(unsafe.Pointer(unsafe.SliceData(f.data[:])))
+	return ([AV_NUM_DATA_POINTERS]unsafe.Pointer)(unsafe.Slice(cArr, AV_NUM_DATA_POINTERS))
 }
 
 /**
@@ -434,8 +436,9 @@ func (f *CAVFrame) GetData() [AV_NUM_DATA_POINTERS]unsafe.Pointer {
  * @attention In case of video, line size values can be negative to achieve
  * a vertically inverted iteration over image lines.
  */
-func (f *CAVFrame) GetLinesize() [AV_NUM_DATA_POINTERS]C.int {
-	return f.linesize
+func (f *CAVFrame) GetLinesize() [AV_NUM_DATA_POINTERS]ctypes.Int {
+	cArr := unsafe.SliceData(f.linesize[:])
+	return ([AV_NUM_DATA_POINTERS]ctypes.Int)(unsafe.Slice((*ctypes.Int)(unsafe.Pointer(cArr)), AV_NUM_DATA_POINTERS))
 }
 
 /**

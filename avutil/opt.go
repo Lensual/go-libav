@@ -674,62 +674,59 @@ given object first. */
 //   */
 //  const AVClass *av_opt_child_class_iterate(const AVClass *parent, void **iter);
 
-// /**
-//   - @defgroup opt_set_funcs Option setting functions
-//   - @{
-//   - Those functions set the field of obj with the given name to value.
-//     *
-//   - @param[in] obj A struct whose first element is a pointer to an AVClass.
-//   - @param[in] name the name of the field to set
-//   - @param[in] val The value to set. In case of av_opt_set() if the field is not
-//   - of a string type, then the given string is parsed.
-//   - SI postfixes and some named scalars are supported.
-//   - If the field is of a numeric type, it has to be a numeric or named
-//   - scalar. Behavior with more than one scalar and +- infix operators
-//   - is undefined.
-//   - If the field is of a flags type, it has to be a sequence of numeric
-//   - scalars or named flags separated by '+' or '-'. Prefixing a flag
-//   - with '+' causes it to be set without affecting the other flags;
-//   - similarly, '-' unsets a flag.
-//   - If the field is of a dictionary type, it has to be a ':' separated list of
-//   - key=value parameters. Values containing ':' special characters must be
-//   - escaped.
-//   - @param search_flags flags passed to av_opt_find2. I.e. if AV_OPT_SEARCH_CHILDREN
-//   - is passed here, then the option may be set on a child of obj.
-//     *
-//   - @return 0 if the value has been set, or an AVERROR code in case of
-//   - error:
-//   - AVERROR_OPTION_NOT_FOUND if no matching option exists
-//   - AVERROR(ERANGE) if the value is out of range
-//   - AVERROR(EINVAL) if the value is not valid
-//     */
-//
-// int av_opt_set         (void *obj, const char *name, const char *val, int search_flags);
+/*
+*
+  - @defgroup opt_set_funcs Option setting functions
+  - @{
+  - Those functions set the field of obj with the given name to value.
+    *
+  - @param[in] obj A struct whose first element is a pointer to an AVClass.
+  - @param[in] name the name of the field to set
+  - @param[in] val The value to set. In case of av_opt_set() if the field is not
+  - of a string type, then the given string is parsed.
+  - SI postfixes and some named scalars are supported.
+  - If the field is of a numeric type, it has to be a numeric or named
+  - scalar. Behavior with more than one scalar and +- infix operators
+  - is undefined.
+  - If the field is of a flags type, it has to be a sequence of numeric
+  - scalars or named flags separated by '+' or '-'. Prefixing a flag
+  - with '+' causes it to be set without affecting the other flags;
+  - similarly, '-' unsets a flag.
+  - If the field is of a dictionary type, it has to be a ':' separated list of
+  - key=value parameters. Values containing ':' special characters must be
+  - escaped.
+  - @param search_flags flags passed to av_opt_find2. I.e. if AV_OPT_SEARCH_CHILDREN
+  - is passed here, then the option may be set on a child of obj.
+    *
+  - @return 0 if the value has been set, or an AVERROR code in case of
+  - error:
+  - AVERROR_OPTION_NOT_FOUND if no matching option exists
+  - AVERROR(ERANGE) if the value is out of range
+  - AVERROR(EINVAL) if the value is not valid
+*/
+func AvOptSet(obj unsafe.Pointer, name string, val string, searchFlags int) int {
+	return int(C.av_opt_set(obj, C.CString(name), C.CString(val), C.int(searchFlags)))
+}
 func AvOptSetInt(obj unsafe.Pointer, name string, val int64, searchFlags int) int {
 	return int(C.av_opt_set_int(obj, C.CString(name), C.int64_t(val), C.int(searchFlags)))
 }
-
 func AvOptSetDouble(obj unsafe.Pointer, name string, val float64, searchFlags int) int {
 	return int(C.av_opt_set_double(obj, C.CString(name), C.double(val), C.int(searchFlags)))
 }
-
 func AvOptSetQ(obj unsafe.Pointer, name string, val CAVRational, searchFlags int) int {
 	return int(C.av_opt_set_q(obj, C.CString(name), C.AVRational(val), C.int(searchFlags)))
 }
-
 func AvOptSetBin(obj unsafe.Pointer, name string, val unsafe.Pointer, size int, searchFlags int) int {
 	return int(C.av_opt_set_bin(obj, C.CString(name), (*C.uint8_t)(val), C.int(size), C.int(searchFlags)))
 }
-
 func AvOptSetImageSize(obj unsafe.Pointer, name string, w int, h int, searchFlags int) int {
 	return int(C.av_opt_set_image_size(obj, C.CString(name), C.int(w), C.int(h), C.int(searchFlags)))
 }
-func AvOptSetPixelFmt(obj unsafe.Pointer, name string, val CAVPixelFormat, searchFlags int) int {
-	return int(C.av_opt_set_pixel_fmt(obj, C.CString(name), C.enum_AVPixelFormat(val), C.int(searchFlags)))
+func AvOptSetPixelFmt(obj unsafe.Pointer, name string, fmt CAVPixelFormat, searchFlags int) int {
+	return int(C.av_opt_set_pixel_fmt(obj, C.CString(name), C.enum_AVPixelFormat(fmt), C.int(searchFlags)))
 }
-
-func AvOptSetSampleFmt(obj unsafe.Pointer, name string, val CAVSampleFormat, searchFlags int) int {
-	return int(C.av_opt_set_sample_fmt(obj, C.CString(name), C.enum_AVSampleFormat(val), C.int(searchFlags)))
+func AvOptSetSampleFmt(obj unsafe.Pointer, name string, fmt CAVSampleFormat, searchFlags int) int {
+	return int(C.av_opt_set_sample_fmt(obj, C.CString(name), C.enum_AVSampleFormat(fmt), C.int(searchFlags)))
 }
 func AvOptSetVideoRate(obj unsafe.Pointer, name string, val CAVRational, searchFlags int) int {
 	return int(C.av_opt_set_video_rate(obj, C.CString(name), C.AVRational(val), C.int(searchFlags)))
@@ -739,6 +736,7 @@ func AvOptSetVideoRate(obj unsafe.Pointer, name string, val CAVRational, searchF
 // attribute_deprecated
 // int av_opt_set_channel_layout(void *obj, const char *name, int64_t ch_layout, int search_flags);
 // #endif
+
 func AvOptSetChlayout(obj unsafe.Pointer, name string, layout *CAVChannelLayout, searchFlags int) int {
 	return int(C.av_opt_set_chlayout(obj, C.CString(name), (*C.AVChannelLayout)(layout), C.int(searchFlags)))
 }
@@ -769,43 +767,64 @@ func AvOptSetIntList(obj unsafe.Pointer, name string, val unsafe.Pointer, term u
 	return int(C.marco_av_opt_set_int_list(obj, C.CString(name), (*C.uint8_t)(val), C.uint64_t(term), C.int(flags)))
 }
 
-//  /**
-//   * @}
-//   */
+/**
+ * @}
+ */
 
-//  /**
-//   * @defgroup opt_get_funcs Option getting functions
-//   * @{
-//   * Those functions get a value of the option with the given name from an object.
-//   *
-//   * @param[in] obj a struct whose first element is a pointer to an AVClass.
-//   * @param[in] name name of the option to get.
-//   * @param[in] search_flags flags passed to av_opt_find2. I.e. if AV_OPT_SEARCH_CHILDREN
-//   * is passed here, then the option may be found in a child of obj.
-//   * @param[out] out_val value of the option will be written here
-//   * @return >=0 on success, a negative error code otherwise
-//   */
-//  /**
-//   * @note the returned string will be av_malloc()ed and must be av_free()ed by the caller
-//   *
-//   * @note if AV_OPT_ALLOW_NULL is set in search_flags in av_opt_get, and the
-//   * option is of type AV_OPT_TYPE_STRING, AV_OPT_TYPE_BINARY or AV_OPT_TYPE_DICT
-//   * and is set to NULL, *out_val will be set to NULL instead of an allocated
-//   * empty string.
-//   */
-//  int av_opt_get         (void *obj, const char *name, int search_flags, uint8_t   **out_val);
-//  int av_opt_get_int     (void *obj, const char *name, int search_flags, int64_t    *out_val);
-//  int av_opt_get_double  (void *obj, const char *name, int search_flags, double     *out_val);
-//  int av_opt_get_q       (void *obj, const char *name, int search_flags, AVRational *out_val);
-//  int av_opt_get_image_size(void *obj, const char *name, int search_flags, int *w_out, int *h_out);
-//  int av_opt_get_pixel_fmt (void *obj, const char *name, int search_flags, enum AVPixelFormat *out_fmt);
-//  int av_opt_get_sample_fmt(void *obj, const char *name, int search_flags, enum AVSampleFormat *out_fmt);
-//  int av_opt_get_video_rate(void *obj, const char *name, int search_flags, AVRational *out_val);
+/**
+ * @defgroup opt_get_funcs Option getting functions
+ * @{
+ * Those functions get a value of the option with the given name from an object.
+ *
+ * @param[in] obj a struct whose first element is a pointer to an AVClass.
+ * @param[in] name name of the option to get.
+ * @param[in] search_flags flags passed to av_opt_find2. I.e. if AV_OPT_SEARCH_CHILDREN
+ * is passed here, then the option may be found in a child of obj.
+ * @param[out] out_val value of the option will be written here
+ * @return >=0 on success, a negative error code otherwise
+ */
+/**
+ * @note the returned string will be av_malloc()ed and must be av_free()ed by the caller
+ *
+ * @note if AV_OPT_ALLOW_NULL is set in search_flags in av_opt_get, and the
+ * option is of type AV_OPT_TYPE_STRING, AV_OPT_TYPE_BINARY or AV_OPT_TYPE_DICT
+ * and is set to NULL, *out_val will be set to NULL instead of an allocated
+ * empty string.
+ */
+func AvOptGet(obj unsafe.Pointer, name string, searchFlags int, outVal *unsafe.Pointer) int {
+	return int(C.av_opt_get(obj, C.CString(name), C.int(searchFlags), (**C.uchar)(unsafe.Pointer(outVal))))
+}
+func AvOptGetInt(obj unsafe.Pointer, name string, searchFlags int, outVal *int64) int {
+	return int(C.av_opt_get_int(obj, C.CString(name), C.int(searchFlags), (*C.int64_t)(unsafe.Pointer(outVal))))
+}
+func AvOptGetDouble(obj unsafe.Pointer, name string, searchFlags int, outVal *float64) int {
+	return int(C.av_opt_get_double(obj, C.CString(name), C.int(searchFlags), (*C.double)(unsafe.Pointer(outVal))))
+}
+func AvOptGetQ(obj unsafe.Pointer, name string, searchFlags int, outVal *CAVRational) int {
+	return int(C.av_opt_get_q(obj, C.CString(name), C.int(searchFlags), (*C.AVRational)(unsafe.Pointer(outVal))))
+}
+func AvOptGetImageSize(obj unsafe.Pointer, name string, searchFlags int, wOut *int, hOut *int) int {
+	return int(C.av_opt_get_image_size(obj, C.CString(name), C.int(searchFlags), (*C.int)(unsafe.Pointer(wOut)), (*C.int)(unsafe.Pointer(hOut))))
+}
+func AvOptGetPixelFmt(obj unsafe.Pointer, name string, searchFlags int, outFmt *CAVPixelFormat) int {
+	return int(C.av_opt_get_pixel_fmt(obj, C.CString(name), C.int(searchFlags), (*C.enum_AVPixelFormat)(unsafe.Pointer(outFmt))))
+}
+func AvOptGetSampleFmt(obj unsafe.Pointer, name string, searchFlags int, outFmt *CAVSampleFormat) int {
+	return int(C.av_opt_get_sample_fmt(obj, C.CString(name), C.int(searchFlags), (*C.enum_AVSampleFormat)(unsafe.Pointer(outFmt))))
+}
+func AvOptGetVideoRate(obj unsafe.Pointer, name string, searchFlags int, outVal *CAVRational) int {
+	return int(C.av_opt_get_video_rate(obj, C.CString(name), C.int(searchFlags), (*C.AVRational)(unsafe.Pointer(outVal))))
+}
+
 //  #if FF_API_OLD_CHANNEL_LAYOUT
 //  attribute_deprecated
 //  int av_opt_get_channel_layout(void *obj, const char *name, int search_flags, int64_t *ch_layout);
 //  #endif
-//  int av_opt_get_chlayout(void *obj, const char *name, int search_flags, AVChannelLayout *layout);
+
+func AvOptGetChlayout(obj unsafe.Pointer, name string, searchFlags int, layout *CAVChannelLayout) int {
+	return int(C.av_opt_get_chlayout(obj, C.CString(name), C.int(searchFlags), (*C.AVChannelLayout)(unsafe.Pointer(layout))))
+}
+
 //  /**
 //   * @param[out] out_val The returned dictionary is a copy of the actual value and must
 //   * be freed with av_dict_free() by the caller

@@ -36,7 +36,7 @@ func openInputFile(filename string) int {
 	var dec *goavcodec.AVCodec
 	var ret int
 
-	if ret, fmtCtx = goavformat.OpenInput(filename, nil, nil); ret < 0 {
+	if fmtCtx, ret = goavformat.OpenInput(filename, nil, nil); ret < 0 {
 		avutil.AvLog(nil, avutil.AV_LOG_ERROR, "Cannot open input file\n")
 		return ret
 	}

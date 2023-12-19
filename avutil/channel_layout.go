@@ -6,7 +6,10 @@ package avutil
 #include "libavutil/channel_layout.h"
 */
 import "C"
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"unsafe"
+)
 
 /**
  * @file
@@ -685,64 +688,79 @@ func AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK() CAVChannelLayout {
 //  */
 // enum AVChannel av_channel_from_string(const char *name);
 
-// /**
-//  * Initialize a native channel layout from a bitmask indicating which channels
-//  * are present.
-//  *
-//  * @param channel_layout the layout structure to be initialized
-//  * @param mask bitmask describing the channel layout
-//  *
-//  * @return 0 on success
-//  *         AVERROR(EINVAL) for invalid mask values
-//  */
-// int av_channel_layout_from_mask(AVChannelLayout *channel_layout, uint64_t mask);
+/**
+ * Initialize a native channel layout from a bitmask indicating which channels
+ * are present.
+ *
+ * @param channel_layout the layout structure to be initialized
+ * @param mask bitmask describing the channel layout
+ *
+ * @return 0 on success
+ *         AVERROR(EINVAL) for invalid mask values
+ */
+func AvChannelLayoutFromMask(channelLayout *CAVChannelLayout, mask uint64) int {
+	return int(C.av_channel_layout_from_mask((*C.AVChannelLayout)(channelLayout), C.uint64_t(mask)))
+}
 
-// /**
-//  * Initialize a channel layout from a given string description.
-//  * The input string can be represented by:
-//  *  - the formal channel layout name (returned by av_channel_layout_describe())
-//  *  - single or multiple channel names (returned by av_channel_name(), eg. "FL",
-//  *    or concatenated with "+", each optionally containing a custom name after
-//  *    a "@", eg. "FL@Left+FR@Right+LFE")
-//  *  - a decimal or hexadecimal value of a native channel layout (eg. "4" or "0x4")
-//  *  - the number of channels with default layout (eg. "4c")
-//  *  - the number of unordered channels (eg. "4C" or "4 channels")
-//  *  - the ambisonic order followed by optional non-diegetic channels (eg.
-//  *    "ambisonic 2+stereo")
-//  *
-//  * @param channel_layout input channel layout
-//  * @param str string describing the channel layout
-//  * @return 0 channel layout was detected, AVERROR_INVALIDATATA otherwise
-//  */
-// int av_channel_layout_from_string(AVChannelLayout *channel_layout,
-//                                   const char *str);
+/**
+ * Initialize a channel layout from a given string description.
+ * The input string can be represented by:
+ *  - the formal channel layout name (returned by av_channel_layout_describe())
+ *  - single or multiple channel names (returned by av_channel_name(), eg. "FL",
+ *    or concatenated with "+", each optionally containing a custom name after
+ *    a "@", eg. "FL@Left+FR@Right+LFE")
+ *  - a decimal or hexadecimal value of a native channel layout (eg. "4" or "0x4")
+ *  - the number of channels with default layout (eg. "4c")
+ *  - the number of unordered channels (eg. "4C" or "4 channels")
+ *  - the ambisonic order followed by optional non-diegetic channels (eg.
+ *    "ambisonic 2+stereo")
+ *
+ * @param channel_layout input channel layout
+ * @param str string describing the channel layout
+ * @return 0 channel layout was detected, AVERROR_INVALIDATATA otherwise
+ */
+func AvChannelLayoutFromString(channelLayout *CAVChannelLayout, str string) int {
+	var cStr *C.char = nil
+	if len(str) > 0 {
+		cStr = C.CString(str)
+		defer C.free(unsafe.Pointer(cStr))
+	}
 
-// /**
-//  * Get the default channel layout for a given number of channels.
-//  *
-//  * @param ch_layout the layout structure to be initialized
-//  * @param nb_channels number of channels
-//  */
-// void av_channel_layout_default(AVChannelLayout *ch_layout, int nb_channels);
+	return int(C.av_channel_layout_from_string((*C.AVChannelLayout)(channelLayout), cStr))
+}
 
-// /**
-//  * Iterate over all standard channel layouts.
-//  *
-//  * @param opaque a pointer where libavutil will store the iteration state. Must
-//  *               point to NULL to start the iteration.
-//  *
-//  * @return the standard channel layout or NULL when the iteration is
-//  *         finished
-//  */
-// const AVChannelLayout *av_channel_layout_standard(void **opaque);
+/**
+ * Get the default channel layout for a given number of channels.
+ *
+ * @param ch_layout the layout structure to be initialized
+ * @param nb_channels number of channels
+ */
+func AvChannelLayoutDefault(chLayout *CAVChannelLayout, nbChannels int) {
+	C.av_channel_layout_default((*C.AVChannelLayout)(chLayout), C.int(nbChannels))
+}
 
-// /**
-//  * Free any allocated data in the channel layout and reset the channel
-//  * count to 0.
-//  *
-//  * @param channel_layout the layout structure to be uninitialized
-//  */
-// void av_channel_layout_uninit(AVChannelLayout *channel_layout);
+/**
+ * Iterate over all standard channel layouts.
+ *
+ * @param opaque a pointer where libavutil will store the iteration state. Must
+ *               point to NULL to start the iteration.
+ *
+ * @return the standard channel layout or NULL when the iteration is
+ *         finished
+ */
+func AvChannelLayoutStandard(opaque *unsafe.Pointer) *CAVChannelLayout {
+	return (*CAVChannelLayout)(C.av_channel_layout_standard(opaque))
+}
+
+/**
+ * Free any allocated data in the channel layout and reset the channel
+ * count to 0.
+ *
+ * @param channel_layout the layout structure to be uninitialized
+ */
+func AvChannelLayoutUninit(channelLayout *CAVChannelLayout) {
+	C.av_channel_layout_uninit((*C.AVChannelLayout)(channelLayout))
+}
 
 /**
  * Make a copy of a channel layout. This differs from just assigning src to dst

@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	_, fmtCtx := goavformat.OpenInput("/home/lensual/test_decode.mp4", nil, nil)
+	fmtCtx, _ := goavformat.OpenInput("/home/lensual/test_decode.mp4", nil, nil)
 	defer fmtCtx.CloseInput()
 
 	fmtCtx.DumpFormat(0, "", 0)

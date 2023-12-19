@@ -8,6 +8,7 @@ import (
 	"unsafe"
 
 	"github.com/Lensual/go-libav/advance/goavcodec"
+	"github.com/Lensual/go-libav/advance/goswresample"
 	"github.com/Lensual/go-libav/avcodec"
 	"github.com/Lensual/go-libav/avformat"
 	"github.com/Lensual/go-libav/avutil"
@@ -24,7 +25,7 @@ const SCALE_FLAGS = swscale.SWS_BICUBIC
 // a wrapper around a single output AVStream
 type OutputStream struct {
 	st  *avformat.CAVStream
-	enc *avcodec.CAVCodecContext
+	enc *goavcodec.AVCodecContext
 
 	/* pts of the next frame that will be generated */
 	nextPts      int64
@@ -38,7 +39,7 @@ type OutputStream struct {
 	t, tincr, tincr2 float32
 
 	swsCtx *swscale.CSwsContext
-	swrCtx *swresample.CSwrContext
+	swrCtx *goswresample.SwrContext
 }
 
 func log_packet(fmt_ctx *avformat.CAVFormatContext, pkt *avcodec.CAVPacket) {
@@ -51,13 +52,13 @@ func log_packet(fmt_ctx *avformat.CAVFormatContext, pkt *avcodec.CAVPacket) {
 		pkt.GetStreamIndex())
 }
 
-func write_frame(fmt_ctx *avformat.CAVFormatContext, c *avcodec.CAVCodecContext,
+func write_frame(fmt_ctx *avformat.CAVFormatContext, c *goavcodec.AVCodecContext,
 	st *avformat.CAVStream, frame *avutil.CAVFrame, pkt *avcodec.CAVPacket) int {
 
 	var ret int
 
 	// send the frame to the encoder
-	ret = avcodec.AvcodecSendFrame(c, frame)
+	ret = avcodec.AvcodecSendFrame(c.CAVCodecContext, frame)
 	if ret < 0 {
 		fmt.Fprintf(os.Stderr, "Error sending a frame to the encoder: %s\n",
 			avutil.AvErr2str(ret))
@@ -65,7 +66,7 @@ func write_frame(fmt_ctx *avformat.CAVFormatContext, c *avcodec.CAVCodecContext,
 	}
 
 	for ret >= 0 {
-		ret = avcodec.AvcodecReceivePacket(c, pkt)
+		ret = avcodec.AvcodecReceivePacket(c.CAVCodecContext, pkt)
 		if ret == avutil.AVERROR(int(syscall.EAGAIN)) || ret == avutil.AVERROR_EOF {
 
 			break
@@ -75,7 +76,7 @@ func write_frame(fmt_ctx *avformat.CAVFormatContext, c *avcodec.CAVCodecContext,
 		}
 
 		/* rescale output packet timestamp values from codec to stream timebase */
-		avcodec.AvPacketRescaleTs(pkt, c.GetTimeBase(), st.GetTimeBase())
+		avcodec.AvPacketRescaleTs(pkt, c.CAVCodecContext.GetTimeBase(), st.GetTimeBase())
 		pkt.SetStreamIndex(st.GetIndex())
 
 		/* Write the compressed frame to the media file. */
@@ -97,12 +98,12 @@ func write_frame(fmt_ctx *avformat.CAVFormatContext, c *avcodec.CAVCodecContext,
 }
 
 /* Add an output stream. */
-func add_stream(ost *OutputStream, oc *avformat.CAVFormatContext, codec **avcodec.CAVCodec, codecId avcodec.CAVCodecID) {
-	var c *avcodec.CAVCodecContext = nil
+func add_stream(ost *OutputStream, oc *avformat.CAVFormatContext, codec **goavcodec.AVCodec, codecId avcodec.CAVCodecID) {
+	var c *goavcodec.AVCodecContext
 	// var i int = 0
 
 	/* find the encoder */
-	*codec = avcodec.AvcodecFindEncoder(codecId)
+	*codec = goavcodec.FindEncoder(codecId)
 	if *codec == nil {
 		fmt.Fprintf(os.Stderr, "Could not find encoder for '%s'\n",
 			avcodec.AvcodecGetName(codecId))
@@ -121,50 +122,44 @@ func add_stream(ost *OutputStream, oc *avformat.CAVFormatContext, codec **avcode
 		os.Exit(1)
 	}
 	ost.st.SetId(int(oc.GetNbStreams()) - 1)
-	c = avcodec.AvcodecAllocContext3(*codec)
+	c = (*codec).CreateContext()
 	if c == nil {
 		fmt.Fprintf(os.Stderr, "Could not alloc an encoding context\n")
 		os.Exit(1)
 	}
 	ost.enc = c
 
-	switch (*codec).GetType() {
+	switch (*codec).CAVCodec.GetType() {
 	case avutil.AVMEDIA_TYPE_AUDIO:
 		var sampleFmt avutil.CAVSampleFormat
-		if (*codec).GetSampleFmts() != nil {
-			sampleFmt = *(*codec).GetSampleFmts() //(*codec)->sample_fmts[0]
+		if (*codec).CAVCodec.GetSampleFmts() != nil {
+			sampleFmt = *(*codec).CAVCodec.GetSampleFmts() //(*codec)->sample_fmts[0]
 		} else {
 			sampleFmt = avutil.AV_SAMPLE_FMT_FLTP
 		}
-		c.SetSampleFmt(sampleFmt)
-		c.SetBitRate(64000)
-		c.SetSampleRate(44100)
-		if (*codec).GetSupportedSamplerates() != nil {
-			sampleRateCArr := (*codec).GetSupportedSamplerates()
-			sampleRateCPtr := unsafe.Pointer(sampleRateCArr)
-			sampleRateCSize := int(unsafe.Sizeof(*sampleRateCArr))
-			c.SetSampleRate(int(*sampleRateCArr)) //c->sample_rate = (*codec)->supported_samplerates[0];
-			for i := 0; ; i++ {                   //for (i = 0; (*codec)->supported_samplerates[i]; i++) {
-				sampleRate := *(*int)(unsafe.Add(sampleRateCPtr, i*sampleRateCSize))
-				if sampleRate == 0 {
-					break
-				}
+		c.CAVCodecContext.SetSampleFmt(sampleFmt)
+		c.CAVCodecContext.SetBitRate(64000)
+		c.CAVCodecContext.SetSampleRate(44100)
+		suportedSamplerates := (*codec).GetSupportedSamplerates()
+		if suportedSamplerates != nil {
+			c.CAVCodecContext.SetSampleRate(suportedSamplerates[0])
+			for _, sampleRate := range suportedSamplerates {
 				if sampleRate == 44100 {
-					c.SetSampleRate(44100)
+					c.CAVCodecContext.SetSampleRate(44100)
 				}
 			}
 		}
 		src := avutil.AV_CHANNEL_LAYOUT_STEREO()
-		avutil.AvChannelLayoutCopy(c.GetChLayoutPtr(), &src)
+		avutil.AvChannelLayoutCopy(c.CAVCodecContext.GetChLayoutPtr(), &src)
 		timebase := avutil.CAVRational{}
 		timebase.SetNum(1)
-		timebase.SetDen(c.GetSampleRate())
+		timebase.SetDen(c.CAVCodecContext.GetSampleRate())
 		ost.st.SetTimeBase(timebase)
 		break
 	case avutil.AVMEDIA_TYPE_VIDEO:
-		c.SetCodecId(codecId)
+		c.CAVCodecContext.SetCodecId(codecId)
 
-		c.SetBitRate(400000)
+		c.CAVCodecContext.SetBitRate(400000)
 
 		/* Resolution must be a multiple of two. */
 		c.SetWidth(352)
@@ -179,19 +174,19 @@ func add_stream(ost *OutputStream, oc *avformat.CAVFormatContext, codec **avcode
 		 * timebase should be 1/framerate and timestamp increments should be
 		 * identical to 1. */
 		ost.st.SetTimeBase(timebase)
-		c.SetTimeBase(ost.st.GetTimeBase())
+		c.CAVCodecContext.SetTimeBase(ost.st.GetTimeBase())
 
-		c.SetGopSize(12) /* emit one intra frame every twelve frames at most */
+		c.CAVCodecContext.SetGopSize(12) /* emit one intra frame every twelve frames at most */
 		c.SetPixFmt(STREAM_PIX_FMT)
-		if c.GetCodecId() == avcodec.AV_CODEC_ID_MPEG2VIDEO {
+		if c.CAVCodecContext.GetCodecId() == avcodec.AV_CODEC_ID_MPEG2VIDEO {
 			/* just for testing, we also add B-frames */
-			c.SetMaxBFrames(2)
+			c.CAVCodecContext.SetMaxBFrames(2)
 		}
-		if c.GetCodecId() == avcodec.AV_CODEC_ID_MPEG1VIDEO {
+		if c.CAVCodecContext.GetCodecId() == avcodec.AV_CODEC_ID_MPEG1VIDEO {
 			/* Needed to avoid using macroblocks in which some coeffs overflow.
 			 * This does not happen with normal video, it just happens here as
 			 * the motion of the chroma plane does not match the luma plane. */
-			c.SetMbDecision(2)
+			c.CAVCodecContext.SetMbDecision(2)
 		}
 		break
 	default:
@@ -201,7 +196,7 @@ func add_stream(ost *OutputStream, oc *avformat.CAVFormatContext, codec **avcode
 
 	/* Some formats want stream headers to be separate. */
 	if (oc.GetOFormat().GetFlags() & avformat.AVFMT_GLOBALHEADER) != 0 {
-		c.SetFlags(c.GetFlags() | avcodec.AV_CODEC_FLAG_GLOBAL_HEADER)
+		c.CAVCodecContext.SetFlags(c.CAVCodecContext.GetFlags() | avcodec.AV_CODEC_FLAG_GLOBAL_HEADER)
 	}
 }
 
@@ -230,8 +225,8 @@ func alloc_audio_frame(sampleFmt avutil.CAVSampleFormat, channelLayout *avutil.C
 	return frame
 }
 
-func open_audio(oc *avformat.CAVFormatContext, codec *avcodec.CAVCodec, ost *OutputStream, optArg *avutil.CAVDictionary) {
-	var c *avcodec.CAVCodecContext
+func open_audio(oc *avformat.CAVFormatContext, codec *goavcodec.AVCodec, ost *OutputStream, optArg *avutil.CAVDictionary) {
+	var c *goavcodec.AVCodecContext
 	var nb_samples int
 	var ret int
 	var opt *avutil.CAVDictionary = nil
@@ -240,7 +235,7 @@ func open_audio(oc *avformat.CAVFormatContext, codec *avcodec.CAVCodec, ost *Out
 
 	/* open it */
 	avutil.AvDictCopy(&opt, optArg, 0)
-	ret = avcodec.AvcodecOpen2(c, codec, &opt)
+	ret = c.Open(&opt)
 	avutil.AvDictFree(&opt)
 	if ret < 0 {
 		fmt.Fprintf(os.Stderr, "Could not open audio codec: %s\n", avutil.AvErr2str(ret))
@@ -249,46 +244,46 @@ func open_audio(oc *avformat.CAVFormatContext, codec *avcodec.CAVCodec, ost *Out
 
 	/* init signal generator */
 	ost.t = 0
-	ost.tincr = 2 * math.Pi * 110.0 / float32(c.GetSampleRate())
+	ost.tincr = 2 * math.Pi * 110.0 / float32(c.CAVCodecContext.GetSampleRate())
 	/* increment frequency by 110 Hz per second */
-	ost.tincr2 = 2 * math.Pi * 110.0 / float32(c.GetSampleRate()) / float32(c.GetSampleRate())
+	ost.tincr2 = 2 * math.Pi * 110.0 / float32(c.CAVCodecContext.GetSampleRate()) / float32(c.CAVCodecContext.GetSampleRate())
 
-	if (c.GetCodec().GetCapabilities() & avcodec.AV_CODEC_CAP_VARIABLE_FRAME_SIZE) != 0 {
+	if (c.CAVCodecContext.GetCodec().GetCapabilities() & avcodec.AV_CODEC_CAP_VARIABLE_FRAME_SIZE) != 0 {
 		nb_samples = 10000
 	} else {
-		nb_samples = c.GetFrameSize()
+		nb_samples = c.CAVCodecContext.GetFrameSize()
 	}
 
-	cChLayout := c.GetChLayout()
-	ost.frame = alloc_audio_frame(c.GetSampleFmt(), &cChLayout,
-		c.GetSampleRate(), nb_samples)
+	cChLayout := c.CAVCodecContext.GetChLayout()
+	ost.frame = alloc_audio_frame(c.CAVCodecContext.GetSampleFmt(), &cChLayout,
+		c.CAVCodecContext.GetSampleRate(), nb_samples)
 	ost.tmpFrame = alloc_audio_frame(avutil.AV_SAMPLE_FMT_S16, &cChLayout,
-		c.GetSampleRate(), nb_samples)
+		c.CAVCodecContext.GetSampleRate(), nb_samples)
 
 	/* copy the stream parameters to the muxer */
-	ret = avcodec.AvcodecParametersFromContext(ost.st.GetCodecPar(), c)
+	ret = c.ParametersTo(ost.st.GetCodecPar())
 	if ret < 0 {
 		fmt.Fprintf(os.Stderr, "Could not copy the stream parameters\n")
 		os.Exit(1)
 	}
 
 	/* create resampler context */
-	ost.swrCtx = swresample.SwrAlloc()
+	ost.swrCtx = goswresample.NewSwrContext()
 	if ost.swrCtx == nil {
 		fmt.Fprintf(os.Stderr, "Could not allocate resampler context\n")
 		os.Exit(1)
 	}
 
 	/* set options */
-	avutil.AvOptSetChlayout(unsafe.Pointer(ost.swrCtx), "in_chlayout", &cChLayout, 0)
-	avutil.AvOptSetInt(unsafe.Pointer(ost.swrCtx), "in_sample_rate", int64(c.GetSampleRate()), 0)
-	avutil.AvOptSetSampleFmt(unsafe.Pointer(ost.swrCtx), "in_sample_fmt", avutil.AV_SAMPLE_FMT_S16, 0)
-	avutil.AvOptSetChlayout(unsafe.Pointer(ost.swrCtx), "out_chlayout", &cChLayout, 0)
-	avutil.AvOptSetInt(unsafe.Pointer(ost.swrCtx), "out_sample_rate", int64(c.GetSampleRate()), 0)
-	avutil.AvOptSetSampleFmt(unsafe.Pointer(ost.swrCtx), "out_sample_fmt", c.GetSampleFmt(), 0)
+	ost.swrCtx.SetInChLayout(&cChLayout)
+	ost.swrCtx.SetInSampleRate(int64(c.CAVCodecContext.GetSampleRate()))
+	ost.swrCtx.SetInSampleFmt(avutil.AV_SAMPLE_FMT_S16)
+	ost.swrCtx.SetOutChLayout(&cChLayout)
+	ost.swrCtx.SetOutSampleRate(int64(c.CAVCodecContext.GetSampleRate()))
+	ost.swrCtx.SetOutSampleFmt(c.CAVCodecContext.GetSampleFmt())
 
 	/* initialize the resampling context */
-	ret = swresample.SwrInit(ost.swrCtx)
+	ret = ost.swrCtx.Init()
 	if ret < 0 {
 		fmt.Fprintf(os.Stderr, "Failed to initialize the resampling context\n")
 		os.Exit(1)
@@ -306,16 +301,16 @@ func get_audio_frame(ost *OutputStream) *avutil.CAVFrame {
 	rational := avutil.CAVRational{}
 	rational.SetNum(1)
 	rational.SetDen(1)
-	if avutil.AvCompareTs(ost.nextPts, ost.enc.GetTimeBase(),
+	if avutil.AvCompareTs(ost.nextPts, ost.enc.CAVCodecContext.GetTimeBase(),
 		STREAM_DURATION, rational) > 0 {
 		return nil
 	}
 
 	for j = 0; j < frame.GetNbSamples(); j++ {
 		v = (int)(math.Sin(float64(ost.t)) * 10000)
-		for i = 0; i < ost.enc.GetChLayout().GetNbChannels(); i++ {
+		for i = 0; i < ost.enc.CAVCodecContext.GetChLayout().GetNbChannels(); i++ {
 			*q = (int16)(v)
-			*q++
+			q = (*int16)(unsafe.Add(unsafe.Pointer(q), 2))
 		}
 		ost.t += ost.tincr
 		ost.tincr += ost.tincr2
@@ -332,7 +327,7 @@ func get_audio_frame(ost *OutputStream) *avutil.CAVFrame {
  * return 1 when encoding is finished, 0 otherwise
  */
 func write_audio_frame(oc *avformat.CAVFormatContext, ost *OutputStream) int {
-	var c *avcodec.CAVCodecContext
+	var c *goavcodec.AVCodecContext
 	var frame *avutil.CAVFrame
 	var ret int
 	var dst_nb_samples int
@@ -344,8 +339,8 @@ func write_audio_frame(oc *avformat.CAVFormatContext, ost *OutputStream) int {
 	if frame != nil {
 		/* convert samples from native format to destination codec format, using the resampler */
 		/* compute destination number of samples */
-		dst_nb_samples = int(avutil.AvRescaleRnd(swresample.SwrGetDelay(ost.swrCtx, int64(c.GetSampleRate()))+int64(frame.GetNbSamples()),
-			int64(c.GetSampleRate()), int64(c.GetSampleRate()), avutil.AV_ROUND_UP))
+		dst_nb_samples = int(avutil.AvRescaleRnd(ost.swrCtx.GetDelay(int64(c.CAVCodecContext.GetSampleRate()))+int64(frame.GetNbSamples()),
+			int64(c.CAVCodecContext.GetSampleRate()), int64(c.CAVCodecContext.GetSampleRate()), avutil.AV_ROUND_UP))
 		avutil.AvAssert0(dst_nb_samples == frame.GetNbSamples())
 
 		/* when we pass a frame to the encoder, it may keep a reference to it
@@ -360,9 +355,15 @@ func write_audio_frame(oc *avformat.CAVFormatContext, ost *OutputStream) int {
 		/* convert to destination format */
 		ostFrameData := ost.frame.GetData()
 		frameData := frame.GetData()
-		ret = swresample.SwrConvert(ost.swrCtx,
-			(**uint8)(unsafe.Pointer((unsafe.SliceData(ostFrameData[:])))), dst_nb_samples,
-			(**uint8)(unsafe.Pointer((unsafe.SliceData(frameData[:])))), frame.GetNbSamples())
+		// ret = ost.swrCtx.ConvertUnsafe(
+		// 	unsafe.SliceData(ostFrameData[:]), dst_nb_samples,
+		// 	unsafe.SliceData(frameData[:]), frame.GetNbSamples())
+		// ret = swresample.SwrConvert(ost.swrCtx.CSwrContext,
+		// 	(*unsafe.Pointer)(unsafe.Pointer((unsafe.SliceData(ostFrameData[:])))), dst_nb_samples,
+		// 	(*unsafe.Pointer)(unsafe.Pointer((unsafe.SliceData(frameData[:])))), frame.GetNbSamples())
+		ret = swresample.SwrConvert(ost.swrCtx.CSwrContext,
+			unsafe.SliceData(ostFrameData[:]), dst_nb_samples,
+			unsafe.SliceData(frameData[:]), frame.GetNbSamples())
 		if ret < 0 {
 			fmt.Fprintf(os.Stderr, "Error while converting\n")
 			os.Exit(1)
@@ -371,9 +372,9 @@ func write_audio_frame(oc *avformat.CAVFormatContext, ost *OutputStream) int {
 
 		rational := avutil.CAVRational{}
 		rational.SetNum(1)
-		rational.SetDen(c.GetSampleRate())
+		rational.SetDen(c.CAVCodecContext.GetSampleRate())
 
-		frame.SetPts(avutil.AvRescaleQ(int64(ost.samplesCount), rational, c.GetTimeBase()))
+		frame.SetPts(avutil.AvRescaleQ(int64(ost.samplesCount), rational, c.CAVCodecContext.GetTimeBase()))
 		ost.samplesCount += dst_nb_samples
 	}
 
@@ -406,15 +407,15 @@ func alloc_picture(pixFmt avutil.CAVPixelFormat, width int, height int) *avutil.
 	return picture
 }
 
-func open_video(oc *avformat.CAVFormatContext, codec *avcodec.CAVCodec, ost *OutputStream, optArg *avutil.CAVDictionary) {
+func open_video(oc *avformat.CAVFormatContext, codec *goavcodec.AVCodec, ost *OutputStream, optArg *avutil.CAVDictionary) {
 	var ret int = 0
-	var c *avcodec.CAVCodecContext = ost.enc
+	var c *goavcodec.AVCodecContext = ost.enc
 	var opt *avutil.CAVDictionary = nil
 
 	avutil.AvDictCopy(&opt, optArg, 0)
 
 	/* open the codec */
-	ret = avcodec.AvcodecOpen2(c, codec, &opt)
+	ret = c.Open(&opt)
 	avutil.AvDictFree(&opt)
 	if ret < 0 {
 		fmt.Fprintf(os.Stderr, "Could not open video codec: %s\n", avutil.AvErr2str(ret))
@@ -441,7 +442,7 @@ func open_video(oc *avformat.CAVFormatContext, codec *avcodec.CAVCodec, ost *Out
 	}
 
 	/* copy the stream parameters to the muxer */
-	ret = avcodec.AvcodecParametersFromContext(ost.st.GetCodecPar(), c)
+	c.ParametersTo(ost.st.GetCodecPar())
 	if ret < 0 {
 		fmt.Fprintf(os.Stderr, "Could not copy the stream parameters\n")
 		os.Exit(1)
@@ -481,13 +482,13 @@ func fill_yuv_image(pict *avutil.CAVFrame, frame_index int,
 }
 
 func get_video_frame(ost *OutputStream) *avutil.CAVFrame {
-	var c *avcodec.CAVCodecContext = ost.enc
+	var c *goavcodec.AVCodecContext = ost.enc
 
 	/* check if we want to generate more frames */
 	rational := avutil.CAVRational{}
 	rational.SetNum(1)
 	rational.SetDen(1)
-	if avutil.AvCompareTs(ost.nextPts, c.GetTimeBase(),
+	if avutil.AvCompareTs(ost.nextPts, c.CAVCodecContext.GetTimeBase(),
 		STREAM_DURATION, rational) > 0 {
 		return nil
 	}
@@ -514,9 +515,13 @@ func get_video_frame(ost *OutputStream) *avutil.CAVFrame {
 			}
 		}
 		fill_yuv_image(ost.tmpFrame, int(ost.nextPts), c.GetWidth(), c.GetHeight())
-		//  sws_scale(ost.sws_ctx, (const uint8_t * const *) ost.tmp_frame.data,
-		// 		   ost.tmp_frame.linesize, 0, c->height, ost->frame->data,
-		// 		   ost.frame->linesize);
+		tmpFrameData := ost.tmpFrame.GetData()
+		tmpFrameLinesize := ost.tmpFrame.GetLinesize()
+		frameData := ost.frame.GetData()
+		frameLinesize := ost.frame.GetLinesize()
+		swscale.SwsScale(ost.swsCtx, tmpFrameData[:],
+			tmpFrameLinesize[:], 0, c.GetHeight(), frameData[:],
+			frameLinesize[:])
 	} else {
 		fill_yuv_image(ost.frame, int(ost.nextPts), c.GetWidth(), c.GetHeight())
 	}
@@ -536,8 +541,7 @@ func write_video_frame(oc *avformat.CAVFormatContext, ost *OutputStream) int {
 }
 
 func close_stream(oc *avformat.CAVFormatContext, ost *OutputStream) {
-	ostEnc := ost.enc
-	avcodec.AvcodecFreeContext(&ostEnc)
+	ost.enc.Free()
 	ostFrame := ost.frame
 	avutil.AvFrameFree(&ostFrame)
 	ostTmpFrame := ost.tmpFrame
@@ -545,8 +549,7 @@ func close_stream(oc *avformat.CAVFormatContext, ost *OutputStream) {
 	ostTmpPkt := ost.tmpPkt.CAVPacket
 	avcodec.AvPacketFree(&ostTmpPkt)
 	swscale.SwsFreeContext(ost.swsCtx)
-	ostSwrCtx := ost.swrCtx
-	swresample.SwrFree(&ostSwrCtx)
+	ost.swrCtx.Free()
 }
 
 /**************************************************************/
@@ -557,7 +560,7 @@ func main() {
 	var avfmt *avformat.CAVOutputFormat
 	var filename string
 	var oc *avformat.CAVFormatContext
-	var audio_codec, video_codec *avcodec.CAVCodec
+	var audio_codec, video_codec *goavcodec.AVCodec
 	var ret int
 	have_video, have_audio := false, false
 	encode_video, encode_audio := false, false
@@ -639,8 +642,8 @@ func main() {
 
 	for encode_video || encode_audio {
 		/* select the stream to encode */
-		if encode_video && (!encode_audio || avutil.AvCompareTs(video_st.nextPts, video_st.enc.GetTimeBase(),
-			audio_st.nextPts, audio_st.enc.GetTimeBase()) <= 0) {
+		if encode_video && (!encode_audio || avutil.AvCompareTs(video_st.nextPts, video_st.enc.CAVCodecContext.GetTimeBase(),
+			audio_st.nextPts, audio_st.enc.CAVCodecContext.GetTimeBase()) <= 0) {
 			encode_video = !(write_video_frame(oc, &video_st) != 0)
 		} else {
 			encode_audio = !(write_audio_frame(oc, &audio_st) != 0)

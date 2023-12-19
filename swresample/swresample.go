@@ -367,9 +367,14 @@ func SwrClose(s *CSwrContext) {
  *
  * @return number of samples output per channel, negative value on error
  */
-func SwrConvert(s *CSwrContext, out **uint8, out_count int,
-	in **uint8, in_count int) int {
-	return int(C.swr_convert((*C.SwrContext)(s), (**C.uint8_t)(unsafe.Pointer(out)), C.int(out_count), (**C.uint8_t)(unsafe.Pointer(in)), C.int(in_count)))
+func SwrConvert(s *CSwrContext, out *unsafe.Pointer, outCount int,
+	in *unsafe.Pointer, inCount int) int {
+	return int(C.swr_convert(
+		(*C.SwrContext)(s),
+		(**C.uint8_t)(unsafe.Pointer(out)),
+		C.int(outCount),
+		(**C.uint8_t)(unsafe.Pointer(in)),
+		C.int(inCount)))
 }
 
 /**

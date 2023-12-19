@@ -70,6 +70,8 @@ const AV_TS_MAX_STRING_SIZE = C.AV_TS_MAX_STRING_SIZE
  * Convenience macro, the return value should be used only directly in
  * function arguments but never stand-alone.
  */
+//FIXME: av_ts2str allocated memory on the stack. is not return const char*.
+//warning: function returns address of local variable
 func AvTs2Str(ts int64) string {
 	return C.GoString(C.marco_av_ts2str(C.int64_t(ts)))
 }
@@ -94,6 +96,7 @@ func AvTs2Str(ts int64) string {
  * Convenience macro, the return value should be used only directly in
  * function arguments but never stand-alone.
  */
+//FIXME: warning: function returns address of local variable
 func AvTs2Timestr(ts int64, tb *CAVRational) string {
 	return C.GoString(C.marco_av_ts2timestr(C.int64_t(ts), (*C.AVRational)(tb)))
 }

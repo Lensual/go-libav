@@ -241,7 +241,7 @@ func AvRescaleQ(a int64, bq CAVRational, cq CAVRational) int64 {
  * the `int64_t` range when represented in the other's timebase.
  */
 func AvCompareTs(ts_a int64, tb_a CAVRational, ts_b int64, tb_b CAVRational) int {
-	return int(C.av_compare_ts(C.int64_t(ts_a), (C.AVRational)(tb_b), C.int64_t(ts_b), (C.AVRational)(tb_b)))
+	return int(C.av_compare_ts(C.int64_t(ts_a), (C.AVRational)(tb_a), C.int64_t(ts_b), (C.AVRational)(tb_b)))
 }
 
 //  /**

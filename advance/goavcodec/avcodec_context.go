@@ -49,8 +49,12 @@ func (avctx *AVCodecContext) SetSampleAspectRatio(sampleAspectRatio avutil.CAVRa
 //#endregion members
 
 func NewAVCodecContext(codec *AVCodec) *AVCodecContext {
+	c := avcodec.AvcodecAllocContext3(codec.CAVCodec)
+	if c == nil {
+		return nil
+	}
 	return &AVCodecContext{
-		CAVCodecContext: avcodec.AvcodecAllocContext3(codec.CAVCodec),
+		CAVCodecContext: c,
 	}
 }
 
