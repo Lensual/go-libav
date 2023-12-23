@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/Lensual/go-libav/avutil"
+	"github.com/Lensual/go-libav/ctypes"
 )
 
 /**
@@ -228,8 +229,8 @@ func (c *CAVCodec) GetPixFmts() *avutil.CAVPixelFormat {
 }
 
 // /< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
-func (c *CAVCodec) GetSupportedSamplerates() *C.int {
-	return c.supported_samplerates
+func (c *CAVCodec) GetSupportedSamplerates() *ctypes.Int {
+	return (*ctypes.Int)(c.supported_samplerates)
 }
 
 // /< array of supported sample formats, or NULL if unknown, array is terminated by -1

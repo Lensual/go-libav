@@ -1,11 +1,10 @@
 package goavcodec
 
-import "C"
-
 import (
 	"unsafe"
 
 	"github.com/Lensual/go-libav/avcodec"
+	"github.com/Lensual/go-libav/ctypes"
 )
 
 type AVCodec struct {
@@ -20,11 +19,11 @@ func (codec *AVCodec) GetSupportedSamplerates() []int {
 		return nil
 	}
 	p := unsafe.Pointer(cArr)
-	pSize := int(unsafe.Sizeof(C.int(0)))
+	valSize := int(unsafe.Sizeof(ctypes.Int(0)))
 	arr := []int{}
 	for {
-		p = unsafe.Add(p, pSize)
-		val := int(*(*C.int)(p))
+		p = unsafe.Add(p, valSize)
+		val := int(*(*ctypes.Int)(p))
 		if val == 0 {
 			break
 		}

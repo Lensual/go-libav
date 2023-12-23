@@ -1,3 +1,4 @@
+// Share C types between multiple packages
 package ctypes
 
 import "C"
