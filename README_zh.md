@@ -9,30 +9,30 @@
 
 [English](./README.md) | [中文](./README_zh.md)
 
-Golang binding for [FFmpeg and libav](https://ffmpeg.org/).
+[FFmpeg和libav](https://ffmpeg.org/)的Go绑定。
 
-## Getting Started
+## 开始使用
 
-Package `go-libav/av*` are cgo bindings, package `golibav/advance` is a secondary package to simplify use in go.
+`av***`目录下是单纯的CGO绑定，而`advance`目录是为方便使用进行二次封装的包
 
-Need Golang version `1.20` and FFmpeg library version `6.1`.
+go版本至少`1.20`，FFmpeg至少`6.1`
 
-## Examples
+## 例子
 
-Check [advance/example](./advance/example) directory.
+检查 [advance/example](./advance/example) 目录。
 
-Try examples With Docker
+可以使用Docker运行例子
 
 ```bash
-# Run container with Debian 13 (trixie).
+# 运行 Debian 13 (trixie) 容器
 sudo docker run --rm -it debian:trixie
-# Install development environment.
+# 安装开发环境
 apt install golang git
-# Clone project.
+# Clone 项目
 git clone https://github.com/Lensual/go-libav
-# Install FFmpeg development libraries.
+# 安装FFmpeg开发库
 apt install libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev
-# Build example like 'mux' and then run iut.
+# 构建并运行例子'mux'
 cd go-libav/example/mux
 go build .
 ./mux ./test.mp4
