@@ -2556,10 +2556,16 @@ func av_probe_input_format3(pd *CAVProbeData, isOpened int, scoreRet *int) *CAVI
  *         AVERROR code otherwise
  */
 func AvProbeInputBuffer2(pd *CAVIOContext, fmt **CAVInputFormat, url string, logctx unsafe.Pointer, offset uint, maxProbeSize uint) int {
+	var cUrl *C.char = nil
+	if len(url) > 0 {
+		cUrl = C.CString(url)
+		defer C.free(unsafe.Pointer(cUrl))
+	}
+
 	return int(C.av_probe_input_buffer2(
 		(*C.AVIOContext)(pd),
 		(**C.AVInputFormat)(unsafe.Pointer(fmt)),
-		C.CString(url),
+		cUrl,
 		logctx,
 		C.uint(offset),
 		C.uint(maxProbeSize),
@@ -2570,10 +2576,16 @@ func AvProbeInputBuffer2(pd *CAVIOContext, fmt **CAVInputFormat, url string, log
  * Like av_probe_input_buffer2() but returns 0 on success
  */
 func AvProbeInputBuffer(pd *CAVIOContext, fmt **CAVInputFormat, url string, logctx unsafe.Pointer, offset uint, maxProbeSize uint) int {
+	var cUrl *C.char = nil
+	if len(url) > 0 {
+		cUrl = C.CString(url)
+		defer C.free(unsafe.Pointer(cUrl))
+	}
+
 	return int(C.av_probe_input_buffer(
 		(*C.AVIOContext)(pd),
 		(**C.AVInputFormat)(unsafe.Pointer(fmt)),
-		C.CString(url),
+		cUrl,
 		logctx,
 		C.uint(offset),
 		C.uint(maxProbeSize),
@@ -3044,14 +3056,50 @@ func AvWriteTrailer(s *CAVFormatContext) int {
  *                   MIME type of the registered formats
  */
 func AvGuessFormat(shortName string, filename string, mimeType string) *CAVOutputFormat {
-	return (*CAVOutputFormat)(C.av_guess_format(C.CString(shortName), C.CString(filename), C.CString(mimeType)))
+	var cShortName *C.char = nil
+	if len(shortName) > 0 {
+		cShortName = C.CString(shortName)
+		defer C.free(unsafe.Pointer(cShortName))
+	}
+
+	var cFilename *C.char = nil
+	if len(filename) > 0 {
+		cFilename = C.CString(filename)
+		defer C.free(unsafe.Pointer(cFilename))
+	}
+
+	var cMimeType *C.char = nil
+	if len(mimeType) > 0 {
+		cMimeType = C.CString(mimeType)
+		defer C.free(unsafe.Pointer(cMimeType))
+	}
+
+	return (*CAVOutputFormat)(C.av_guess_format(cShortName, cFilename, cMimeType))
 }
 
 /**
  * Guess the codec ID based upon muxer and filename.
  */
 func AvGuessCodec(fmt *CAVOutputFormat, shortName string, filename string, mimeType string, _type avutil.CAVMediaType) avcodec.CAVCodecID {
-	return avcodec.CAVCodecID(C.av_guess_codec((*C.AVOutputFormat)(fmt), C.CString(shortName), C.CString(filename), C.CString(mimeType), C.enum_AVMediaType(_type)))
+	var cShortName *C.char = nil
+	if len(shortName) > 0 {
+		cShortName = C.CString(shortName)
+		defer C.free(unsafe.Pointer(cShortName))
+	}
+
+	var cFilename *C.char = nil
+	if len(filename) > 0 {
+		cFilename = C.CString(filename)
+		defer C.free(unsafe.Pointer(cFilename))
+	}
+
+	var cMimeType *C.char = nil
+	if len(mimeType) > 0 {
+		cMimeType = C.CString(mimeType)
+		defer C.free(unsafe.Pointer(cMimeType))
+	}
+
+	return avcodec.CAVCodecID(C.av_guess_codec((*C.AVOutputFormat)(fmt), cShortName, cFilename, cMimeType, C.enum_AVMediaType(_type)))
 }
 
 /**

@@ -1113,7 +1113,6 @@ func (inout *CAVFilterInOut) SetName(name string) {
 	var cName *C.char = nil
 	if len(name) > 0 {
 		cName = C.CString(name)
-		//defer C.free(unsafe.Pointer(cName))
 	}
 	inout.name = cName
 }
@@ -1207,7 +1206,12 @@ func AvfilterInoutFree(inout **CAVFilterInOut) {
  * @return non negative on success, a negative AVERROR code on error
  */
 func AvfilterGraphParsePtr(graph *CAVFilterGraph, filters string, inputs **CAVFilterInOut, outputs **CAVFilterInOut, log_ctx unsafe.Pointer) int {
-	return int(C.avfilter_graph_parse_ptr((*C.AVFilterGraph)(graph), C.CString(filters), (**C.AVFilterInOut)(unsafe.Pointer(inputs)), (**C.AVFilterInOut)(unsafe.Pointer(outputs)), log_ctx))
+	var cFilters *C.char = nil
+	if len(filters) > 0 {
+		cFilters = C.CString(filters)
+		defer C.free(unsafe.Pointer(cFilters))
+	}
+	return int(C.avfilter_graph_parse_ptr((*C.AVFilterGraph)(graph), cFilters, (**C.AVFilterInOut)(unsafe.Pointer(inputs)), (**C.AVFilterInOut)(unsafe.Pointer(outputs)), log_ctx))
 }
 
 //  /**

@@ -88,13 +88,21 @@ func (e *CAVDictionaryEntry) GetKey() string {
 	return C.GoString(e.key)
 }
 func (e *CAVDictionaryEntry) SetKey(key string) {
-	e.key = C.CString(key)
+	var cKey *C.char = nil
+	if len(key) > 0 {
+		cKey = C.CString(key)
+	}
+	e.key = cKey
 }
 func (e *CAVDictionaryEntry) GetValue() string {
 	return C.GoString(e.value)
 }
 func (e *CAVDictionaryEntry) SetValue(value string) {
-	e.value = C.CString(value)
+	var cValue *C.char = nil
+	if len(value) > 0 {
+		cValue = C.CString(value)
+	}
+	e.value = cValue
 }
 
 //#endregion CAVDictionaryEntry
@@ -116,7 +124,12 @@ type CAVDictionary C.AVDictionary
  * @return      Found entry or NULL in case no matching entry was found in the dictionary
  */
 func AvDictGet(m *CAVDictionary, key string, prev *CAVDictionaryEntry, flags int) *CAVDictionaryEntry {
-	return (*CAVDictionaryEntry)(C.av_dict_get((*C.AVDictionary)(m), C.CString(key), (*C.AVDictionaryEntry)(prev), C.int(flags)))
+	var cKey *C.char = nil
+	if len(key) > 0 {
+		cKey = C.CString(key)
+		defer C.free(unsafe.Pointer(cKey))
+	}
+	return (*CAVDictionaryEntry)(C.av_dict_get((*C.AVDictionary)(m), cKey, (*C.AVDictionaryEntry)(prev), C.int(flags)))
 }
 
 /**
@@ -175,7 +188,19 @@ func AvDictCount(m *CAVDictionary) int {
  * @return          >= 0 on success otherwise an error code <0
  */
 func AvDictSet(pm **CAVDictionary, key string, value string, flags int) int {
-	return int(C.av_dict_set((**C.AVDictionary)(unsafe.Pointer(pm)), C.CString(key), C.CString(value), C.int(flags)))
+	var cKey *C.char = nil
+	if len(key) > 0 {
+		cKey = C.CString(key)
+		defer C.free(unsafe.Pointer(cKey))
+	}
+
+	var cValue *C.char = nil
+	if len(value) > 0 {
+		cValue = C.CString(value)
+		defer C.free(unsafe.Pointer(cValue))
+	}
+
+	return int(C.av_dict_set((**C.AVDictionary)(unsafe.Pointer(pm)), cKey, cValue, C.int(flags)))
 }
 
 /**
@@ -185,7 +210,13 @@ func AvDictSet(pm **CAVDictionary, key string, value string, flags int) int {
  * Note: If ::AV_DICT_DONT_STRDUP_KEY is set, key will be freed on error.
  */
 func AvDictSetInt(pm **CAVDictionary, key string, value int64, flags int) int {
-	return int(C.av_dict_set_int((**C.AVDictionary)(unsafe.Pointer(pm)), C.CString(key), C.int64_t(value), C.int(flags)))
+	var cKey *C.char = nil
+	if len(key) > 0 {
+		cKey = C.CString(key)
+		defer C.free(unsafe.Pointer(cKey))
+	}
+
+	return int(C.av_dict_set_int((**C.AVDictionary)(unsafe.Pointer(pm)), cKey, C.int64_t(value), C.int(flags)))
 }
 
 /**
@@ -206,7 +237,25 @@ func AvDictSetInt(pm **CAVDictionary, key string, value int64, flags int) int {
  * @return             0 on success, negative AVERROR code on failure
  */
 func AvDictParseString(pm **CAVDictionary, str string, keyValSep string, pairsSep string, flags int) int {
-	return int(C.av_dict_parse_string((**C.AVDictionary)(unsafe.Pointer(pm)), C.CString(str), C.CString(keyValSep), C.CString(pairsSep), C.int(flags)))
+	var cStr *C.char = nil
+	if len(str) > 0 {
+		cStr = C.CString(str)
+		defer C.free(unsafe.Pointer(cStr))
+	}
+
+	var cKeyValSep *C.char = nil
+	if len(keyValSep) > 0 {
+		cKeyValSep = C.CString(keyValSep)
+		defer C.free(unsafe.Pointer(cKeyValSep))
+	}
+
+	var cPairsSep *C.char = nil
+	if len(pairsSep) > 0 {
+		cPairsSep = C.CString(pairsSep)
+		defer C.free(unsafe.Pointer(cPairsSep))
+	}
+
+	return int(C.av_dict_parse_string((**C.AVDictionary)(unsafe.Pointer(pm)), cStr, cKeyValSep, cPairsSep, C.int(flags)))
 }
 
 /**

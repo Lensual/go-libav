@@ -255,7 +255,13 @@ const (
  *        subsequent arguments are converted to output.
  */
 func AvLog(avcl unsafe.Pointer, level int, fmt string) {
-	C.marco_av_log(avcl, C.int(level), C.CString(fmt))
+	var cFmt *C.char = nil
+	if len(fmt) > 0 {
+		cFmt = C.CString(fmt)
+		defer C.free(unsafe.Pointer(cFmt))
+	}
+
+	C.marco_av_log(avcl, C.int(level), cFmt)
 }
 
 //  /**

@@ -705,31 +705,83 @@ given object first. */
   - AVERROR(EINVAL) if the value is not valid
 */
 func AvOptSet(obj unsafe.Pointer, name string, val string, searchFlags int) int {
-	return int(C.av_opt_set(obj, C.CString(name), C.CString(val), C.int(searchFlags)))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+
+	var cVal *C.char = nil
+	if len(val) > 0 {
+		cVal = C.CString(val)
+		defer C.free(unsafe.Pointer(cVal))
+	}
+
+	return int(C.av_opt_set(obj, cName, cVal, C.int(searchFlags)))
 }
 func AvOptSetInt(obj unsafe.Pointer, name string, val int64, searchFlags int) int {
-	return int(C.av_opt_set_int(obj, C.CString(name), C.int64_t(val), C.int(searchFlags)))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_set_int(obj, cName, C.int64_t(val), C.int(searchFlags)))
 }
 func AvOptSetDouble(obj unsafe.Pointer, name string, val float64, searchFlags int) int {
-	return int(C.av_opt_set_double(obj, C.CString(name), C.double(val), C.int(searchFlags)))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_set_double(obj, cName, C.double(val), C.int(searchFlags)))
 }
 func AvOptSetQ(obj unsafe.Pointer, name string, val CAVRational, searchFlags int) int {
-	return int(C.av_opt_set_q(obj, C.CString(name), C.AVRational(val), C.int(searchFlags)))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_set_q(obj, cName, C.AVRational(val), C.int(searchFlags)))
 }
 func AvOptSetBin(obj unsafe.Pointer, name string, val unsafe.Pointer, size int, searchFlags int) int {
-	return int(C.av_opt_set_bin(obj, C.CString(name), (*C.uint8_t)(val), C.int(size), C.int(searchFlags)))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_set_bin(obj, cName, (*C.uint8_t)(val), C.int(size), C.int(searchFlags)))
 }
 func AvOptSetImageSize(obj unsafe.Pointer, name string, w int, h int, searchFlags int) int {
-	return int(C.av_opt_set_image_size(obj, C.CString(name), C.int(w), C.int(h), C.int(searchFlags)))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_set_image_size(obj, cName, C.int(w), C.int(h), C.int(searchFlags)))
 }
 func AvOptSetPixelFmt(obj unsafe.Pointer, name string, fmt CAVPixelFormat, searchFlags int) int {
-	return int(C.av_opt_set_pixel_fmt(obj, C.CString(name), C.enum_AVPixelFormat(fmt), C.int(searchFlags)))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_set_pixel_fmt(obj, cName, C.enum_AVPixelFormat(fmt), C.int(searchFlags)))
 }
 func AvOptSetSampleFmt(obj unsafe.Pointer, name string, fmt CAVSampleFormat, searchFlags int) int {
-	return int(C.av_opt_set_sample_fmt(obj, C.CString(name), C.enum_AVSampleFormat(fmt), C.int(searchFlags)))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_set_sample_fmt(obj, cName, C.enum_AVSampleFormat(fmt), C.int(searchFlags)))
 }
 func AvOptSetVideoRate(obj unsafe.Pointer, name string, val CAVRational, searchFlags int) int {
-	return int(C.av_opt_set_video_rate(obj, C.CString(name), C.AVRational(val), C.int(searchFlags)))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_set_video_rate(obj, cName, C.AVRational(val), C.int(searchFlags)))
 }
 
 // #if FF_API_OLD_CHANNEL_LAYOUT
@@ -738,7 +790,12 @@ func AvOptSetVideoRate(obj unsafe.Pointer, name string, val CAVRational, searchF
 // #endif
 
 func AvOptSetChlayout(obj unsafe.Pointer, name string, layout *CAVChannelLayout, searchFlags int) int {
-	return int(C.av_opt_set_chlayout(obj, C.CString(name), (*C.AVChannelLayout)(layout), C.int(searchFlags)))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_set_chlayout(obj, cName, (*C.AVChannelLayout)(layout), C.int(searchFlags)))
 }
 
 //  /**
@@ -764,7 +821,12 @@ func AvOptSetChlayout(obj unsafe.Pointer, name string, layout *CAVChannelLayout,
 // 					 av_int_list_length(val, term) * sizeof(*(val)), flags))
 
 func AvOptSetIntList(obj unsafe.Pointer, name string, val unsafe.Pointer, term uint64, flags int) int {
-	return int(C.marco_av_opt_set_int_list(obj, C.CString(name), (*C.uint8_t)(val), C.uint64_t(term), C.int(flags)))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.marco_av_opt_set_int_list(obj, cName, (*C.uint8_t)(val), C.uint64_t(term), C.int(flags)))
 }
 
 /**
@@ -792,28 +854,68 @@ func AvOptSetIntList(obj unsafe.Pointer, name string, val unsafe.Pointer, term u
  * empty string.
  */
 func AvOptGet(obj unsafe.Pointer, name string, searchFlags int, outVal *unsafe.Pointer) int {
-	return int(C.av_opt_get(obj, C.CString(name), C.int(searchFlags), (**C.uchar)(unsafe.Pointer(outVal))))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_get(obj, cName, C.int(searchFlags), (**C.uchar)(unsafe.Pointer(outVal))))
 }
 func AvOptGetInt(obj unsafe.Pointer, name string, searchFlags int, outVal *int64) int {
-	return int(C.av_opt_get_int(obj, C.CString(name), C.int(searchFlags), (*C.int64_t)(unsafe.Pointer(outVal))))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_get_int(obj, cName, C.int(searchFlags), (*C.int64_t)(unsafe.Pointer(outVal))))
 }
 func AvOptGetDouble(obj unsafe.Pointer, name string, searchFlags int, outVal *float64) int {
-	return int(C.av_opt_get_double(obj, C.CString(name), C.int(searchFlags), (*C.double)(unsafe.Pointer(outVal))))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_get_double(obj, cName, C.int(searchFlags), (*C.double)(unsafe.Pointer(outVal))))
 }
 func AvOptGetQ(obj unsafe.Pointer, name string, searchFlags int, outVal *CAVRational) int {
-	return int(C.av_opt_get_q(obj, C.CString(name), C.int(searchFlags), (*C.AVRational)(unsafe.Pointer(outVal))))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_get_q(obj, cName, C.int(searchFlags), (*C.AVRational)(unsafe.Pointer(outVal))))
 }
 func AvOptGetImageSize(obj unsafe.Pointer, name string, searchFlags int, wOut *int, hOut *int) int {
-	return int(C.av_opt_get_image_size(obj, C.CString(name), C.int(searchFlags), (*C.int)(unsafe.Pointer(wOut)), (*C.int)(unsafe.Pointer(hOut))))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_get_image_size(obj, cName, C.int(searchFlags), (*C.int)(unsafe.Pointer(wOut)), (*C.int)(unsafe.Pointer(hOut))))
 }
 func AvOptGetPixelFmt(obj unsafe.Pointer, name string, searchFlags int, outFmt *CAVPixelFormat) int {
-	return int(C.av_opt_get_pixel_fmt(obj, C.CString(name), C.int(searchFlags), (*C.enum_AVPixelFormat)(unsafe.Pointer(outFmt))))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_get_pixel_fmt(obj, cName, C.int(searchFlags), (*C.enum_AVPixelFormat)(unsafe.Pointer(outFmt))))
 }
 func AvOptGetSampleFmt(obj unsafe.Pointer, name string, searchFlags int, outFmt *CAVSampleFormat) int {
-	return int(C.av_opt_get_sample_fmt(obj, C.CString(name), C.int(searchFlags), (*C.enum_AVSampleFormat)(unsafe.Pointer(outFmt))))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_get_sample_fmt(obj, cName, C.int(searchFlags), (*C.enum_AVSampleFormat)(unsafe.Pointer(outFmt))))
 }
 func AvOptGetVideoRate(obj unsafe.Pointer, name string, searchFlags int, outVal *CAVRational) int {
-	return int(C.av_opt_get_video_rate(obj, C.CString(name), C.int(searchFlags), (*C.AVRational)(unsafe.Pointer(outVal))))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_get_video_rate(obj, cName, C.int(searchFlags), (*C.AVRational)(unsafe.Pointer(outVal))))
 }
 
 //  #if FF_API_OLD_CHANNEL_LAYOUT
@@ -822,7 +924,12 @@ func AvOptGetVideoRate(obj unsafe.Pointer, name string, searchFlags int, outVal 
 //  #endif
 
 func AvOptGetChlayout(obj unsafe.Pointer, name string, searchFlags int, layout *CAVChannelLayout) int {
-	return int(C.av_opt_get_chlayout(obj, C.CString(name), C.int(searchFlags), (*C.AVChannelLayout)(unsafe.Pointer(layout))))
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
+	return int(C.av_opt_get_chlayout(obj, cName, C.int(searchFlags), (*C.AVChannelLayout)(unsafe.Pointer(layout))))
 }
 
 //  /**
