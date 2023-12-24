@@ -8,11 +8,11 @@ import (
 	"unsafe"
 
 	"github.com/Lensual/go-libav/advance/goavcodec"
+	"github.com/Lensual/go-libav/advance/goavutil"
 	"github.com/Lensual/go-libav/advance/goswresample"
 	"github.com/Lensual/go-libav/avcodec"
 	"github.com/Lensual/go-libav/avformat"
 	"github.com/Lensual/go-libav/avutil"
-	"github.com/Lensual/go-libav/swresample"
 	"github.com/Lensual/go-libav/swscale"
 )
 
@@ -203,7 +203,7 @@ func add_stream(ost *OutputStream, oc *avformat.CAVFormatContext, codec **goavco
 /**************************************************************/
 /* audio output */
 
-func alloc_audio_frame(sampleFmt avutil.CAVSampleFormat, channelLayout *avutil.CAVChannelLayout, sampleRate int, nbSamples int) *avutil.CAVFrame {
+func alloc_audio_frame(sampleFmt avutil.CAVSampleFormat, channelLayout *goavutil.AVChannelLayout, sampleRate int, nbSamples int) *avutil.CAVFrame {
 	var frame *avutil.CAVFrame = avutil.AvFrameAlloc()
 	if frame == nil {
 		fmt.Fprintf(os.Stderr, "Error allocating an audio frame\n")
@@ -211,7 +211,7 @@ func alloc_audio_frame(sampleFmt avutil.CAVSampleFormat, channelLayout *avutil.C
 	}
 
 	frame.SetFormat(int(sampleFmt))
-	avutil.AvChannelLayoutCopy(frame.GetChLayoutPtr(), channelLayout)
+	avutil.AvChannelLayoutCopy(frame.GetChLayoutPtr(), channelLayout.CAVChannelLayout)
 	frame.SetSampleRate(sampleRate)
 	frame.SetNbSamples(nbSamples)
 
@@ -254,10 +254,9 @@ func open_audio(oc *avformat.CAVFormatContext, codec *goavcodec.AVCodec, ost *Ou
 		nb_samples = c.CAVCodecContext.GetFrameSize()
 	}
 
-	cChLayout := c.CAVCodecContext.GetChLayout()
-	ost.frame = alloc_audio_frame(c.CAVCodecContext.GetSampleFmt(), &cChLayout,
+	ost.frame = alloc_audio_frame(c.CAVCodecContext.GetSampleFmt(), c.GetChLayout(),
 		c.CAVCodecContext.GetSampleRate(), nb_samples)
-	ost.tmpFrame = alloc_audio_frame(avutil.AV_SAMPLE_FMT_S16, &cChLayout,
+	ost.tmpFrame = alloc_audio_frame(avutil.AV_SAMPLE_FMT_S16, c.GetChLayout(),
 		c.CAVCodecContext.GetSampleRate(), nb_samples)
 
 	/* copy the stream parameters to the muxer */
@@ -275,10 +274,10 @@ func open_audio(oc *avformat.CAVFormatContext, codec *goavcodec.AVCodec, ost *Ou
 	}
 
 	/* set options */
-	ost.swrCtx.SetInChLayout(&cChLayout)
+	ost.swrCtx.SetInChLayout(c.GetChLayout())
 	ost.swrCtx.SetInSampleRate(int64(c.CAVCodecContext.GetSampleRate()))
 	ost.swrCtx.SetInSampleFmt(avutil.AV_SAMPLE_FMT_S16)
-	ost.swrCtx.SetOutChLayout(&cChLayout)
+	ost.swrCtx.SetOutChLayout(c.GetChLayout())
 	ost.swrCtx.SetOutSampleRate(int64(c.CAVCodecContext.GetSampleRate()))
 	ost.swrCtx.SetOutSampleFmt(c.CAVCodecContext.GetSampleFmt())
 
@@ -355,13 +354,7 @@ func write_audio_frame(oc *avformat.CAVFormatContext, ost *OutputStream) int {
 		/* convert to destination format */
 		ostFrameData := ost.frame.GetData()
 		frameData := frame.GetData()
-		// ret = ost.swrCtx.ConvertUnsafe(
-		// 	unsafe.SliceData(ostFrameData[:]), dst_nb_samples,
-		// 	unsafe.SliceData(frameData[:]), frame.GetNbSamples())
-		// ret = swresample.SwrConvert(ost.swrCtx.CSwrContext,
-		// 	(*unsafe.Pointer)(unsafe.Pointer((unsafe.SliceData(ostFrameData[:])))), dst_nb_samples,
-		// 	(*unsafe.Pointer)(unsafe.Pointer((unsafe.SliceData(frameData[:])))), frame.GetNbSamples())
-		ret = swresample.SwrConvert(ost.swrCtx.CSwrContext,
+		ret = ost.swrCtx.ConvertUnsafe(
 			unsafe.SliceData(ostFrameData[:]), dst_nb_samples,
 			unsafe.SliceData(frameData[:]), frame.GetNbSamples())
 		if ret < 0 {
