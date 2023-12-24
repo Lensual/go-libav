@@ -76,8 +76,10 @@ func (frame *AVFrame) GetBestEffortTimestamp() int64 {
 	return frame.CAVFrame.GetBestEffortTimestamp()
 }
 
-func (frame *AVFrame) GetChLayout() avutil.CAVChannelLayout {
-	return frame.CAVFrame.GetChLayout()
+func (frame *AVFrame) GetChLayout() *AVChannelLayout {
+	return &AVChannelLayout{
+		CAVChannelLayout: frame.CAVFrame.GetChLayoutPtr(),
+	}
 }
 
 func (frame *AVFrame) GetChLayoutPtr() *avutil.CAVChannelLayout {

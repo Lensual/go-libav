@@ -46,6 +46,12 @@ func (avctx *AVCodecContext) SetSampleAspectRatio(sampleAspectRatio avutil.CAVRa
 	avctx.CAVCodecContext.SetSampleAspectRatio(sampleAspectRatio)
 }
 
+func (avctx *AVCodecContext) GetChLayout() *goavutil.AVChannelLayout {
+	return &goavutil.AVChannelLayout{
+		CAVChannelLayout: avctx.CAVCodecContext.GetChLayoutPtr(),
+	}
+}
+
 //#endregion members
 
 func NewAVCodecContext(codec *AVCodec) *AVCodecContext {

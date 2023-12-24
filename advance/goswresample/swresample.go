@@ -3,6 +3,7 @@ package goswresample
 import (
 	"unsafe"
 
+	"github.com/Lensual/go-libav/advance/goavutil"
 	"github.com/Lensual/go-libav/avutil"
 	"github.com/Lensual/go-libav/swresample"
 )
@@ -21,11 +22,11 @@ func NewSwrContext() *SwrContext {
 	}
 }
 
-func NewSwrContextWithOpts(outChLayout *avutil.CAVChannelLayout, outSampleFmt avutil.CAVSampleFormat, outSampleRate int,
-	inChLayout *avutil.CAVChannelLayout, inSampleFmt avutil.CAVSampleFormat, inSampleRate int) (*SwrContext, int) {
+func NewSwrContextWithOpts(outChLayout *goavutil.AVChannelLayout, outSampleFmt avutil.CAVSampleFormat, outSampleRate int,
+	inChLayout *goavutil.AVChannelLayout, inSampleFmt avutil.CAVSampleFormat, inSampleRate int) (*SwrContext, int) {
 	swrCtx := SwrContext{}
-	ret := swresample.SwrAllocSetOpts2(&swrCtx.CSwrContext, outChLayout, outSampleFmt, outSampleRate,
-		inChLayout, inSampleFmt, inSampleRate, 0, nil)
+	ret := swresample.SwrAllocSetOpts2(&swrCtx.CSwrContext, outChLayout.CAVChannelLayout, outSampleFmt, outSampleRate,
+		inChLayout.CAVChannelLayout, inSampleFmt, inSampleRate, 0, nil)
 	if ret != 0 {
 		return nil, ret
 	}
@@ -43,35 +44,53 @@ func (swrCtx *SwrContext) Free() {
 	swresample.SwrFree(&swrCtx.CSwrContext)
 }
 
-func (swrCtx *SwrContext) ConvertUnsafe(in *unsafe.Pointer, inCount int, out *unsafe.Pointer, outCount int) int {
+func (swrCtx *SwrContext) ConvertUnsafe(out *unsafe.Pointer, outCount int, in *unsafe.Pointer, inCount int) int {
 	return swresample.SwrConvert(swrCtx.CSwrContext, out, outCount, in, inCount)
 }
 
-// func (swrCtx *SwrContext) Convert(in []byte, inCount int, outCount int) ([]byte, int) {
-// 	outSampleFmt, _ := swrCtx.GetOutSampleFmt()
-// 	outChLayout, _ := swrCtx.GetOutChLayout()
-// 	outPtr := unsafe.Pointer(nil)
-// 	avutil.AvSamplesAlloc(&outPtr, nil, outChLayout.GetNbChannels(), int(outCount), outSampleFmt, 0)
+func (swrCtx *SwrContext) Convert(in []byte, inCount int) ([]byte, int) {
+	outCount := inCount
+	outSampleFmt, _ := swrCtx.GetOutSampleFmt()
+	outChLayout, _ := swrCtx.GetOutChLayout()
 
-// 	inPtr := unsafe.Pointer(unsafe.SliceData(in))
-// 	ret := swresample.SwrConvert(swrCtx.CSwrContext, &outPtr, int(outCount), &inPtr, int(inCount))
-// 	return
-// }
+	outBufSize := avutil.AvSamplesGetBufferSize(nil, outChLayout.GetNbChannels(), outCount, outSampleFmt, 0)
+	cOut := avutil.AvMalloc(uint64(outBufSize))
+	defer avutil.AvFree(cOut)
+	//TODO wait ffmpeg av_samples_alloc return buffer size
+	//outBufSize := avutil.AvSamplesAlloc(&outPtr, nil, outChLayout.GetNbChannels(), int(outCount), outSampleFmt, 0)
+
+	inBufSize := len(in)
+	cIn := avutil.AvMalloc(uint64(inBufSize))
+	defer avutil.AvFree(cIn)
+	copy(unsafe.Slice((*byte)(cIn), inBufSize), in)
+
+	ret := swresample.SwrConvert(swrCtx.CSwrContext, &cOut, int(outCount), &cIn, int(inCount))
+	if ret <= 0 {
+		return nil, ret
+	}
+	outLength := avutil.AvSamplesGetBufferSize(nil, outChLayout.GetNbChannels(), ret, outSampleFmt, 1)
+	out := make([]byte, outLength)
+	copy(out, unsafe.Slice((*byte)(cOut), outLength))
+	return out, ret
+}
 
 func (swrCtx *SwrContext) GetDelay(base int64) int64 {
 	return swresample.SwrGetDelay(swrCtx.CSwrContext, base)
 }
 
-// func (swrCtx *SwrContext) ConvertFrame() {
-// 	swresample.SwrConvertFrame(&swrCtx.CSwrContext)
-// }
-
-func (swrCtx *SwrContext) GetInChLayout() (*avutil.CAVChannelLayout, int) {
-	var layout avutil.CAVChannelLayout
-	return &layout, avutil.AvOptGetChlayout(unsafe.Pointer(swrCtx.CSwrContext), "in_chlayout", 0, &layout)
+func (swrCtx *SwrContext) ConvertFrame(output *goavutil.AVFrame, input *goavutil.AVFrame) {
+	swresample.SwrConvertFrame(swrCtx.CSwrContext, output.CAVFrame, input.CAVFrame)
 }
-func (swrCtx *SwrContext) SetInChLayout(layout *avutil.CAVChannelLayout) int {
-	return avutil.AvOptSetChlayout(unsafe.Pointer(swrCtx.CSwrContext), "in_chlayout", layout, 0)
+
+func (swrCtx *SwrContext) GetInChLayout() (*goavutil.AVChannelLayout, int) {
+	var layout avutil.CAVChannelLayout
+	ret := avutil.AvOptGetChlayout(unsafe.Pointer(swrCtx.CSwrContext), "in_chlayout", 0, &layout)
+	return &goavutil.AVChannelLayout{
+		CAVChannelLayout: &layout,
+	}, ret
+}
+func (swrCtx *SwrContext) SetInChLayout(layout *goavutil.AVChannelLayout) int {
+	return avutil.AvOptSetChlayout(unsafe.Pointer(swrCtx.CSwrContext), "in_chlayout", layout.CAVChannelLayout, 0)
 }
 
 func (swrCtx *SwrContext) GetInSampleRate() (int64, int) {
@@ -90,12 +109,15 @@ func (swrCtx *SwrContext) SetInSampleFmt(fmt avutil.CAVSampleFormat) int {
 	return avutil.AvOptSetSampleFmt(unsafe.Pointer(swrCtx.CSwrContext), "in_sample_fmt", fmt, 0)
 }
 
-func (swrCtx *SwrContext) GetOutChLayout() (*avutil.CAVChannelLayout, int) {
+func (swrCtx *SwrContext) GetOutChLayout() (*goavutil.AVChannelLayout, int) {
 	var layout avutil.CAVChannelLayout
-	return &layout, avutil.AvOptGetChlayout(unsafe.Pointer(swrCtx.CSwrContext), "out_chlayout", 0, &layout)
+	ret := avutil.AvOptGetChlayout(unsafe.Pointer(swrCtx.CSwrContext), "out_chlayout", 0, &layout)
+	return &goavutil.AVChannelLayout{
+		CAVChannelLayout: &layout,
+	}, ret
 }
-func (swrCtx *SwrContext) SetOutChLayout(layout *avutil.CAVChannelLayout) int {
-	return avutil.AvOptSetChlayout(unsafe.Pointer(swrCtx.CSwrContext), "out_chlayout", layout, 0)
+func (swrCtx *SwrContext) SetOutChLayout(layout *goavutil.AVChannelLayout) int {
+	return avutil.AvOptSetChlayout(unsafe.Pointer(swrCtx.CSwrContext), "out_chlayout", layout.CAVChannelLayout, 0)
 }
 
 func (swrCtx *SwrContext) GetOutSampleRate() (int64, int) {
