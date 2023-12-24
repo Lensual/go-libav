@@ -4,6 +4,8 @@ package avutil
 #cgo pkg-config: libavutil
 
 #include "libavutil/error.h"
+#include "libavutil/mem.h"
+#include <stdlib.h>
 
 // call marco method
 int marco_AVERROR(int e) {
@@ -12,10 +14,11 @@ int marco_AVERROR(int e) {
 
 // call marco method
 char* marco_av_err2str(int errnum) {
-	return av_err2str(errnum);
+	return av_strdup(av_err2str(errnum));
 }
 */
 import "C"
+import "unsafe"
 
 /*
  * This file is part of FFmpeg.
@@ -145,7 +148,9 @@ const AV_ERROR_MAX_STRING_SIZE = C.AV_ERROR_MAX_STRING_SIZE
  * function arguments but never stand-alone.
  */
 func AvErr2str(code int) string {
-	return C.GoString(C.marco_av_err2str(C.int(code)))
+	cStr := C.marco_av_err2str(C.int(code))
+	defer C.free(unsafe.Pointer(cStr))
+	return C.GoString(cStr)
 }
 
 /**

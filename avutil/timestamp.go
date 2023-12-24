@@ -4,18 +4,21 @@ package avutil
 #cgo pkg-config: libavutil
 
 #include "libavutil/timestamp.h"
+#include "libavutil/mem.h"
+#include <stdlib.h>
 
 // call marco method
 char* marco_av_ts2str(int64_t ts) {
-	return av_ts2str(ts);
+	return av_strdup(av_ts2str(ts));
 }
 
 // call marco method
 char* marco_av_ts2timestr(int64_t ts, AVRational *tb) {
-	return av_ts2timestr(ts, tb);
+	return av_strdup(av_ts2timestr(ts, tb));
 }
 */
 import "C"
+import "unsafe"
 
 /*
  * This file is part of FFmpeg.
@@ -70,10 +73,10 @@ const AV_TS_MAX_STRING_SIZE = C.AV_TS_MAX_STRING_SIZE
  * Convenience macro, the return value should be used only directly in
  * function arguments but never stand-alone.
  */
-//FIXME: av_ts2str allocated memory on the stack. is not return const char*.
-//warning: function returns address of local variable
 func AvTs2Str(ts int64) string {
-	return C.GoString(C.marco_av_ts2str(C.int64_t(ts)))
+	cStr := C.marco_av_ts2str(C.int64_t(ts))
+	defer C.free(unsafe.Pointer(cStr))
+	return C.GoString(cStr)
 }
 
 //  /**
@@ -96,9 +99,10 @@ func AvTs2Str(ts int64) string {
  * Convenience macro, the return value should be used only directly in
  * function arguments but never stand-alone.
  */
-//FIXME: warning: function returns address of local variable
 func AvTs2Timestr(ts int64, tb *CAVRational) string {
-	return C.GoString(C.marco_av_ts2timestr(C.int64_t(ts), (*C.AVRational)(tb)))
+	cStr := C.marco_av_ts2timestr(C.int64_t(ts), (*C.AVRational)(tb))
+	defer C.free(unsafe.Pointer(cStr))
+	return C.GoString(cStr)
 }
 
 //  #endif /* AVUTIL_TIMESTAMP_H */
