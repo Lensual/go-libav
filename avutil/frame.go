@@ -269,8 +269,8 @@ func (sd *CAVFrameSideData) GetType() CAVFrameSideDataType {
 func (sd *CAVFrameSideData) GetData() unsafe.Pointer {
 	return unsafe.Pointer(sd.data)
 }
-func (sd *CAVFrameSideData) GetSize() C.size_t {
-	return sd.size
+func (sd *CAVFrameSideData) GetSize() ctypes.SizeT {
+	return ctypes.SizeT(sd.size)
 }
 func (sd *CAVFrameSideData) GetMetadata() *CAVDictionary {
 	return (*CAVDictionary)(sd.metadata)
@@ -415,6 +415,30 @@ func (f *CAVFrame) GetData() [AV_NUM_DATA_POINTERS]unsafe.Pointer {
 }
 
 /**
+ * pointer to the picture/channel planes.
+ * This might be different from the first allocated byte. For video,
+ * it could even point to the end of the image data.
+ *
+ * All pointers in data and extended_data must point into one of the
+ * AVBufferRef in buf or extended_buf.
+ *
+ * Some decoders access areas outside 0,0 - width,height, please
+ * see avcodec_align_dimensions2(). Some filters and swscale can read
+ * up to 16 bytes beyond the planes, if these filters are to be used,
+ * then 16 extra bytes must be allocated.
+ *
+ * NOTE: Pointers not needed by the format MUST be set to NULL.
+ *
+ * @attention In case of video, the data[] pointers can point to the
+ * end of image data in order to reverse line order, when used in
+ * combination with negative values in the linesize[] array.
+ */
+func (f *CAVFrame) SetData(data [AV_NUM_DATA_POINTERS]unsafe.Pointer) {
+	cArr := (**C.uchar)(unsafe.Pointer(unsafe.SliceData(data[:])))
+	f.data = ([AV_NUM_DATA_POINTERS]*C.uchar)(unsafe.Slice(cArr, AV_NUM_DATA_POINTERS))
+}
+
+/**
  * For video, a positive or negative value, which is typically indicating
  * the size in bytes of each picture line, but it can also be:
  * - the negative byte size of lines for vertical flipping
@@ -442,6 +466,33 @@ func (f *CAVFrame) GetLinesize() [AV_NUM_DATA_POINTERS]ctypes.Int {
 }
 
 /**
+ * For video, a positive or negative value, which is typically indicating
+ * the size in bytes of each picture line, but it can also be:
+ * - the negative byte size of lines for vertical flipping
+ *   (with data[n] pointing to the end of the data
+ * - a positive or negative multiple of the byte size as for accessing
+ *   even and odd fields of a frame (possibly flipped)
+ *
+ * For audio, only linesize[0] may be set. For planar audio, each channel
+ * plane must be the same size.
+ *
+ * For video the linesizes should be multiples of the CPUs alignment
+ * preference, this is 16 or 32 for modern desktop CPUs.
+ * Some code requires such alignment other code can be slower without
+ * correct alignment, for yet other it makes no difference.
+ *
+ * @note The linesize may be larger than the size of usable data -- there
+ * may be extra padding present for performance reasons.
+ *
+ * @attention In case of video, line size values can be negative to achieve
+ * a vertically inverted iteration over image lines.
+ */
+func (f *CAVFrame) SetLinesize(linesize [AV_NUM_DATA_POINTERS]ctypes.Int) {
+	cArr := (*C.int)(unsafe.Pointer(unsafe.SliceData(linesize[:])))
+	f.linesize = ([AV_NUM_DATA_POINTERS]C.int)(unsafe.Slice(cArr, AV_NUM_DATA_POINTERS))
+}
+
+/**
  * pointers to the data planes/channels.
  *
  * For video, this should simply point to data[].
@@ -457,6 +508,24 @@ func (f *CAVFrame) GetLinesize() [AV_NUM_DATA_POINTERS]ctypes.Int {
  */
 func (f *CAVFrame) GetExtendedData() *unsafe.Pointer {
 	return (*unsafe.Pointer)(unsafe.Pointer(f.extended_data))
+}
+
+/**
+ * pointers to the data planes/channels.
+ *
+ * For video, this should simply point to data[].
+ *
+ * For planar audio, each channel has a separate data pointer, and
+ * linesize[0] contains the size of each channel buffer.
+ * For packed audio, there is just one data pointer, and linesize[0]
+ * contains the total size of the buffer for all channels.
+ *
+ * Note: Both data and extended_data should always be set in a valid frame,
+ * but for planar audio with more channels that can fit in data,
+ * extended_data must be used in order to access all channels.
+ */
+func (f *CAVFrame) SetExtendedData(extendedData *unsafe.Pointer) {
+	f.extended_data = (**C.uchar)(unsafe.Pointer(extendedData))
 }
 
 /**
@@ -539,10 +608,24 @@ func (f *CAVFrame) GetPictType() CAVPictureType {
 }
 
 /**
+ * Picture type of the frame.
+ */
+func (f *CAVFrame) SetPictType(pictType CAVPictureType) {
+	f.pict_type = C.enum_AVPictureType(pictType)
+}
+
+/**
  * Sample aspect ratio for the video frame, 0/1 if unknown/unspecified.
  */
 func (f *CAVFrame) GetSampleAspectRatio() CAVRational {
 	return CAVRational(f.sample_aspect_ratio)
+}
+
+/**
+ * Sample aspect ratio for the video frame, 0/1 if unknown/unspecified.
+ */
+func (f *CAVFrame) SetSampleAspectRatio(sampleAspectRatio CAVRational) {
+	f.sample_aspect_ratio = C.AVRational(sampleAspectRatio)
 }
 
 /**
@@ -569,6 +652,15 @@ func (f *CAVFrame) GetPktDts() int64 {
 }
 
 /**
+ * DTS copied from the AVPacket that triggered returning this frame. (if frame threading isn't used)
+ * This is also the Presentation time of this AVFrame calculated from
+ * only AVPacket.dts values without pts values.
+ */
+func (f *CAVFrame) SetPktDts(pktDts int64) {
+	f.pkt_dts = C.int64_t(pktDts)
+}
+
+/**
  * Time base for the timestamps in this frame.
  * In the future, this field may be set on frames output by decoders or
  * filters, but its value will be by default ignored on input to encoders
@@ -576,6 +668,16 @@ func (f *CAVFrame) GetPktDts() int64 {
  */
 func (f *CAVFrame) GetTimeBase() CAVRational {
 	return CAVRational(f.time_base)
+}
+
+/**
+ * Time base for the timestamps in this frame.
+ * In the future, this field may be set on frames output by decoders or
+ * filters, but its value will be by default ignored on input to encoders
+ * or filters.
+ */
+func (f *CAVFrame) SetTimeBase(timeBase CAVRational) {
+	f.time_base = C.AVRational(timeBase)
 }
 
 // #if FF_API_FRAME_PICTURE_NUMBER
@@ -599,6 +701,13 @@ func (f *CAVFrame) GetQuality() int {
 }
 
 /**
+* quality (between 1 (good) and FF_LAMBDA_MAX (bad))
+ */
+func (f *CAVFrame) SetQuality(quality int) {
+	f.quality = C.int(quality)
+}
+
+/**
  * Frame owner's private data.
  *
  * This field may be set by the code that allocates/owns the frame data.
@@ -614,6 +723,24 @@ func (f *CAVFrame) GetQuality() int {
  */
 func (f *CAVFrame) GetOpaque() unsafe.Pointer {
 	return f.opaque
+}
+
+/**
+ * Frame owner's private data.
+ *
+ * This field may be set by the code that allocates/owns the frame data.
+ * It is then not touched by any library functions, except:
+ * - it is copied to other references by av_frame_copy_props() (and hence by
+ *   av_frame_ref());
+ * - it is set to NULL when the frame is cleared by av_frame_unref()
+ * - on the caller's explicit request. E.g. libavcodec encoders/decoders
+ *   will copy this field to/from @ref AVPacket "AVPackets" if the caller sets
+ *   @ref AV_CODEC_FLAG_COPY_OPAQUE.
+ *
+ * @see opaque_ref the reference-counted analogue
+ */
+func (f *CAVFrame) SetOpaque(opaque unsafe.Pointer) {
+	f.opaque = opaque
 }
 
 /**
@@ -636,6 +763,28 @@ func (f *CAVFrame) GetOpaque() unsafe.Pointer {
  */
 func (f *CAVFrame) GetRepeatPict() int {
 	return int(f.repeat_pict)
+}
+
+/**
+ * Number of fields in this frame which should be repeated, i.e. the total
+ * duration of this frame should be repeat_pict + 2 normal field durations.
+ *
+ * For interlaced frames this field may be set to 1, which signals that this
+ * frame should be presented as 3 fields: beginning with the first field (as
+ * determined by AV_FRAME_FLAG_TOP_FIELD_FIRST being set or not), followed
+ * by the second field, and then the first field again.
+ *
+ * For progressive frames this field may be set to a multiple of 2, which
+ * signals that this frame's duration should be (repeat_pict + 2) / 2
+ * normal frame durations.
+ *
+ * @note This field is computed from MPEG2 repeat_first_field flag and its
+ * associated flags, H.264 pic_struct from picture timing SEI, and
+ * their analogues in other codecs. Typically it should only be used when
+ * higher-layer timing information is not available.
+ */
+func (f *CAVFrame) SetRepeatPict(repeatPict int) {
+	f.repeat_pict = C.int(repeatPict)
 }
 
 // #if FF_API_INTERLACED_FRAME
@@ -720,6 +869,23 @@ func (f *CAVFrame) GetBuf() [AV_NUM_DATA_POINTERS]*CAVBufferRef {
 }
 
 /**
+ * AVBuffer references backing the data for this frame. All the pointers in
+ * data and extended_data must point inside one of the buffers in buf or
+ * extended_buf. This array must be filled contiguously -- if buf[i] is
+ * non-NULL then buf[j] must also be non-NULL for all j < i.
+ *
+ * There may be at most one AVBuffer per data plane, so for video this array
+ * always contains all the references. For planar audio with more than
+ * AV_NUM_DATA_POINTERS channels, there may be more buffers than can fit in
+ * this array. Then the extra AVBufferRef pointers are stored in the
+ * extended_buf array.
+ */
+func (f *CAVFrame) SetBuf(buf [AV_NUM_DATA_POINTERS]*CAVBufferRef) {
+	arrp := (**C.AVBufferRef)(unsafe.Pointer(unsafe.SliceData(buf[:])))
+	f.buf = ([AV_NUM_DATA_POINTERS]*C.AVBufferRef)(unsafe.Slice(arrp, AV_NUM_DATA_POINTERS))
+}
+
+/**
  * For planar audio which requires more than AV_NUM_DATA_POINTERS
  * AVBufferRef pointers, this array will hold all the references which
  * cannot fit into AVFrame.buf.
@@ -736,18 +902,49 @@ func (f *CAVFrame) GetExtendedBuf() **CAVBufferRef {
 }
 
 /**
+ * For planar audio which requires more than AV_NUM_DATA_POINTERS
+ * AVBufferRef pointers, this array will hold all the references which
+ * cannot fit into AVFrame.buf.
+ *
+ * Note that this is different from AVFrame.extended_data, which always
+ * contains all the pointers. This array only contains the extra pointers,
+ * which cannot fit into AVFrame.buf.
+ *
+ * This array is always allocated using av_malloc() by whoever constructs
+ * the frame. It is freed in av_frame_unref().
+ */
+func (f *CAVFrame) SetExtendedBuf(extendedBuf **CAVBufferRef) {
+	f.extended_buf = (**C.AVBufferRef)(unsafe.Pointer(extendedBuf))
+}
+
+/**
  * Number of elements in extended_buf.
  */
 func (f *CAVFrame) GetNbExtendedBuf() int {
 	return int(f.nb_extended_buf)
 }
 
-func (f *CAVFrame) GetSideData() CAVFrameSideData {
-	return CAVFrameSideData(**f.side_data)
+/**
+ * Number of elements in extended_buf.
+ */
+func (f *CAVFrame) SetNbExtendedBuf(nbExtendedBuf int) {
+	f.nb_extended_buf = C.int(nbExtendedBuf)
+}
+
+func (f *CAVFrame) GetSideData() **CAVFrameSideData {
+	return (**CAVFrameSideData)(unsafe.Pointer(f.side_data))
+}
+
+func (f *CAVFrame) SetSideData(sideData **CAVFrameSideData) {
+	f.side_data = (**C.AVFrameSideData)(unsafe.Pointer(sideData))
 }
 
 func (f *CAVFrame) GetNbSideData() int {
 	return int(f.nb_side_data)
+}
+
+func (f *CAVFrame) SetNbSideData(nbSideData int) {
+	f.nb_side_data = C.int(nbSideData)
 }
 
 /**
@@ -796,6 +993,13 @@ func (f *CAVFrame) GetFlags() int {
 }
 
 /**
+ * Frame flags, a combination of @ref lavu_frame_flags
+ */
+func (f *CAVFrame) SetFlags(flags int) {
+	f.flags = C.int(flags)
+}
+
+/**
  * MPEG vs JPEG YUV range.
  * - encoding: Set by user
  * - decoding: Set by libavcodec
@@ -803,13 +1007,22 @@ func (f *CAVFrame) GetFlags() int {
 func (f *CAVFrame) GetColorRange() CAVColorRange {
 	return CAVColorRange(f.color_range)
 }
+func (f *CAVFrame) SetColorRange(colorRange CAVColorRange) {
+	f.color_range = C.enum_AVColorRange(colorRange)
+}
 
 func (f *CAVFrame) GetColorPrimaries() CAVColorPrimaries {
 	return CAVColorPrimaries(f.color_primaries)
 }
+func (f *CAVFrame) SetColorPrimaries(colorPrimaries CAVColorPrimaries) {
+	f.color_primaries = C.enum_AVColorPrimaries(colorPrimaries)
+}
 
 func (f *CAVFrame) GetColorTrc() CAVColorTransferCharacteristic {
 	return CAVColorTransferCharacteristic(f.color_trc)
+}
+func (f *CAVFrame) SetColorTrc(colorTrc CAVColorTransferCharacteristic) {
+	f.color_trc = C.enum_AVColorTransferCharacteristic(colorTrc)
 }
 
 /**
@@ -820,9 +1033,15 @@ func (f *CAVFrame) GetColorTrc() CAVColorTransferCharacteristic {
 func (f *CAVFrame) GetColorspace() CAVColorSpace {
 	return CAVColorSpace(f.colorspace)
 }
+func (f *CAVFrame) SetColorspace(colorspace CAVColorSpace) {
+	f.colorspace = C.enum_AVColorSpace(colorspace)
+}
 
 func (f *CAVFrame) GetChromaLocation() CAVChromaLocation {
 	return CAVChromaLocation(f.chroma_location)
+}
+func (f *CAVFrame) SetChromaLocation(chromaLocation CAVChromaLocation) {
+	f.chroma_location = C.enum_AVChromaLocation(chromaLocation)
 }
 
 /**
@@ -832,6 +1051,15 @@ func (f *CAVFrame) GetChromaLocation() CAVChromaLocation {
  */
 func (f *CAVFrame) GetBestEffortTimestamp() int64 {
 	return int64(f.best_effort_timestamp)
+}
+
+/**
+ * frame timestamp estimated using various heuristics, in stream time base
+ * - encoding: unused
+ * - decoding: set by libavcodec, read by user.
+ */
+func (f *CAVFrame) SetBestEffortTimestamp(bestEffortTimestamp int64) {
+	f.best_effort_timestamp = C.int64_t(bestEffortTimestamp)
 }
 
 // #if FF_API_FRAME_PKT
@@ -869,6 +1097,15 @@ func (f *CAVFrame) GetMetadata() *CAVDictionary {
 }
 
 /**
+ * metadata.
+ * - encoding: Set by user.
+ * - decoding: Set by libavcodec.
+ */
+func (f *CAVFrame) SetMetadata(metadata *CAVDictionary) {
+	f.metadata = (*C.AVDictionary)(metadata)
+}
+
+/**
  * decode error flags of the frame, set to a combination of
  * FF_DECODE_ERROR_xxx flags if the decoder produced a frame, but there
  * were errors during the decoding.
@@ -877,6 +1114,17 @@ func (f *CAVFrame) GetMetadata() *CAVDictionary {
  */
 func (f *CAVFrame) GetDecodeErrorFlags() int {
 	return int(f.decode_error_flags)
+}
+
+/**
+ * decode error flags of the frame, set to a combination of
+ * FF_DECODE_ERROR_xxx flags if the decoder produced a frame, but there
+ * were errors during the decoding.
+ * - encoding: unused
+ * - decoding: set by libavcodec, read by user.
+ */
+func (f *CAVFrame) SetDecodeErrorFlags(decodeErrorFlags int) {
+	f.decode_error_flags = C.int(decodeErrorFlags)
 }
 
 const (
@@ -920,6 +1168,14 @@ func (f *CAVFrame) GetHwFramesCtx() *CAVBufferRef {
 }
 
 /**
+ * For hwaccel-format frames, this should be a reference to the
+ * AVHWFramesContext describing the frame.
+ */
+func (f *CAVFrame) SetHwFramesCtx(hwFramesCtx *CAVBufferRef) {
+	f.hw_frames_ctx = (*C.AVBufferRef)(hwFramesCtx)
+}
+
+/**
  * Frame owner's private data.
  *
  * This field may be set by the code that allocates/owns the frame data.
@@ -938,6 +1194,24 @@ func (f *CAVFrame) GetOpaqueRef() *CAVBufferRef {
 }
 
 /**
+ * Frame owner's private data.
+ *
+ * This field may be set by the code that allocates/owns the frame data.
+ * It is then not touched by any library functions, except:
+ * - a new reference to the underlying buffer is propagated by
+ *   av_frame_copy_props() (and hence by av_frame_ref());
+ * - it is unreferenced in av_frame_unref();
+ * - on the caller's explicit request. E.g. libavcodec encoders/decoders
+ *   will propagate a new reference to/from @ref AVPacket "AVPackets" if the
+ *   caller sets @ref AV_CODEC_FLAG_COPY_OPAQUE.
+ *
+ * @see opaque the plain pointer analogue
+ */
+func (f *CAVFrame) SetOpaqueRef(opaqueRef *CAVBufferRef) {
+	f.opaque_ref = (*C.AVBufferRef)(opaqueRef)
+}
+
+/**
  * @anchor cropping
  * @name Cropping
  * Video frames only. The number of pixels to discard from the the
@@ -945,17 +1219,29 @@ func (f *CAVFrame) GetOpaqueRef() *CAVBufferRef {
  * the frame intended for presentation.
  * @{
  */
-func (f *CAVFrame) GetCropTop() C.size_t {
-	return f.crop_top
+func (f *CAVFrame) GetCropTop() ctypes.SizeT {
+	return ctypes.SizeT(f.crop_top)
 }
-func (f *CAVFrame) GetCropBottom() C.size_t {
-	return f.crop_bottom
+func (f *CAVFrame) SetCropTop(cropTop ctypes.SizeT) {
+	f.crop_top = C.size_t(cropTop)
 }
-func (f *CAVFrame) GetCropLeft() C.size_t {
-	return f.crop_left
+func (f *CAVFrame) GetCropBottom() ctypes.SizeT {
+	return ctypes.SizeT(f.crop_bottom)
 }
-func (f *CAVFrame) GetCropRight() C.size_t {
-	return f.crop_right
+func (f *CAVFrame) SetCropBottom(cropBottom ctypes.SizeT) {
+	f.crop_bottom = C.size_t(cropBottom)
+}
+func (f *CAVFrame) GetCropLeft() ctypes.SizeT {
+	return ctypes.SizeT(f.crop_left)
+}
+func (f *CAVFrame) SetCropLeft(cropLeft ctypes.SizeT) {
+	f.crop_left = C.size_t(cropLeft)
+}
+func (f *CAVFrame) GetCropRight() ctypes.SizeT {
+	return ctypes.SizeT(f.crop_right)
+}
+func (f *CAVFrame) SetCropRight(cropRight ctypes.SizeT) {
+	f.crop_right = C.size_t(cropRight)
 }
 
 /**
@@ -978,10 +1264,32 @@ func (f *CAVFrame) GetPrivateRef() *CAVBufferRef {
 }
 
 /**
+ * AVBufferRef for internal use by a single libav* library.
+ * Must not be used to transfer data between libraries.
+ * Has to be NULL when ownership of the frame leaves the respective library.
+ *
+ * Code outside the FFmpeg libs should never check or change the contents of the buffer ref.
+ *
+ * FFmpeg calls av_buffer_unref() on it when the frame is unreferenced.
+ * av_frame_copy_props() calls create a new reference with av_buffer_ref()
+ * for the target frame's private_ref field.
+ */
+func (f *CAVFrame) SetPrivateRef(privateRef *CAVBufferRef) {
+	f.private_ref = (*C.AVBufferRef)(privateRef)
+}
+
+/**
  * Channel layout of the audio data.
  */
 func (f *CAVFrame) GetChLayout() CAVChannelLayout {
 	return CAVChannelLayout(f.ch_layout)
+}
+
+/**
+ * Channel layout of the audio data.
+ */
+func (f *CAVFrame) SetChLayout(chLayout CAVChannelLayout) {
+	f.ch_layout = C.AVChannelLayout(chLayout)
 }
 
 /**
@@ -996,6 +1304,13 @@ func (f *CAVFrame) GetChLayoutPtr() *CAVChannelLayout {
  */
 func (f *CAVFrame) GetDuration() int64 {
 	return int64(f.duration)
+}
+
+/**
+ * Duration of the frame, in the same units as pts. 0 if unknown.
+ */
+func (f *CAVFrame) SetDuration(duration int64) {
+	f.duration = C.int64_t(duration)
 }
 
 //#endregion CAVFrame
@@ -1055,7 +1370,7 @@ func AvFrameRef(dst *CAVFrame, src *CAVFrame) int {
  * @return 0 on success, a negative AVERROR on error. On error, dst is
  *         unreferenced.
  */
-func AvFrameRplace(dst *CAVFrame, src *CAVFrame) int {
+func AvFrameReplace(dst *CAVFrame, src *CAVFrame) int {
 	return int(C.av_frame_replace((*C.AVFrame)(dst), (*C.AVFrame)(src)))
 }
 
@@ -1196,8 +1511,8 @@ func AvFrameGetPlaneBuffer(frame *CAVFrame, plane int) *CAVBufferRef {
  *
  * @return newly added side data on success, NULL on error
  */
-func AvFrameNewSideData(frame *CAVFrame, _type CAVFrameSideDataType, size C.size_t) *CAVFrameSideData {
-	return (*CAVFrameSideData)(C.av_frame_new_side_data((*C.AVFrame)(frame), (C.enum_AVFrameSideDataType)(_type), size))
+func AvFrameNewSideData(frame *CAVFrame, _type CAVFrameSideDataType, size int) *CAVFrameSideData {
+	return (*CAVFrameSideData)(C.av_frame_new_side_data((*C.AVFrame)(frame), (C.enum_AVFrameSideDataType)(_type), C.size_t(size)))
 }
 
 /**

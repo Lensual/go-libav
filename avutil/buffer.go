@@ -6,7 +6,11 @@ package avutil
 #include "libavutil/buffer.h"
 */
 import "C"
-import "unsafe"
+import (
+	"unsafe"
+
+	"github.com/Lensual/go-libav/ctypes"
+)
 
 /*
  * This file is part of FFmpeg.
@@ -109,8 +113,8 @@ func (br *CAVBufferRef) GetData() unsafe.Pointer {
 /**
  * Size of data in bytes.
  */
-func (br *CAVBufferRef) GetSize() C.size_t {
-	return br.size
+func (br *CAVBufferRef) GetSize() ctypes.SizeT {
+	return ctypes.SizeT(br.size)
 }
 
 //#endregion CAVBufferRef
