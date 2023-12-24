@@ -11,11 +11,29 @@
 
 Golang binding for [FFmpeg and libav](https://ffmpeg.org/).
 
+## Things to know
+
+1. This package is implemented using CGO and requires FFmpeg's header files and libraries for compilation.
+2. Due to well-known performance issues with CGO calls, it is recommended to use C/CPP to achieve your needs.
+
 ## Getting Started
 
-Package `go-libav/av*` are cgo bindings, package `golibav/advance` is a secondary package to simplify use in go.
+Package `go-libav/av*` are cgo bindings. Before using this package, you'd better to master the basic usage of the FFmpeg library.
+
+Package `golibav/advance` is a secondary package to simplify use in go.
 
 Need Golang version `1.20` and FFmpeg library version `6.1`.
+
+Set your environment variable if your library is not in the default directory.
+
+```env
+# using pkg-config
+PKG_CONFIG_PATH="/ffmpeg/lib/pkgconfig"
+
+# or set compiler flags
+CGO_LDFLAGS="-L/ffmpeg/lib -lavcodec -lavdevice -lavfilter -lavformat -lavutil -lswresample -lswscale"
+CGO_CFLAGS="-I/ffmpeg/include"
+```
 
 ## Examples
 

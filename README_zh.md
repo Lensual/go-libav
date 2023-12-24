@@ -11,11 +11,29 @@
 
 [FFmpeg和libav](https://ffmpeg.org/)的Go绑定。
 
+## 须知
+
+1. 这个包是使用CGO实现的，需要FFmpeg的头文件和库进行编译。
+2. 由于CGO调用存在众所周知的性能问题，建议使用C/CPP实现你的需求。
+
 ## 开始使用
 
-`av***`目录下是单纯的CGO绑定，而`advance`目录是为方便使用进行二次封装的包
+`av***`目录下是单纯的CGO绑定。使用这个包之前，你最好掌握FFmpeg库的基本用法。
+
+`advance`目录是为方便使用进行二次封装的包
 
 go版本至少`1.20`，FFmpeg至少`6.1`
+
+如果你的库不在默认目录下，需要设置好环境变量。
+
+```env
+# 使用 pkg-config
+PKG_CONFIG_PATH="/ffmpeg/lib/pkgconfig"
+
+# 或者设置编译器 flags
+CGO_LDFLAGS="-L/ffmpeg/lib -lavcodec -lavdevice -lavfilter -lavformat -lavutil -lswresample -lswscale"
+CGO_CFLAGS="-I/ffmpeg/include"
+```
 
 ## 例子
 
