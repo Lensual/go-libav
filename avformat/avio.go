@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/Lensual/go-libav/avutil"
+	"github.com/Lensual/go-libav/ctypes"
 )
 
 type CFunc unsafe.Pointer
@@ -1181,7 +1182,7 @@ type CAVBPrint C.struct_AVBPrint
  * @return 0 for success (max_size bytes read or EOF reached), negative error
  * code otherwise
  */
-func AvioReadToBprint(h *CAVIOContext, pb *CAVBPrint, maxSize uint) int {
+func AvioReadToBprint(h *CAVIOContext, pb *CAVBPrint, maxSize ctypes.SizeT) int {
 	return int(C.avio_read_to_bprint((*C.AVIOContext)(h), (*C.struct_AVBPrint)(pb), C.size_t(maxSize)))
 }
 

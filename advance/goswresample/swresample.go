@@ -5,6 +5,7 @@ import (
 
 	"github.com/Lensual/go-libav/advance/goavutil"
 	"github.com/Lensual/go-libav/avutil"
+	"github.com/Lensual/go-libav/ctypes"
 	"github.com/Lensual/go-libav/swresample"
 )
 
@@ -54,13 +55,13 @@ func (swrCtx *SwrContext) Convert(in []byte, inCount int) ([]byte, int) {
 	outChLayout, _ := swrCtx.GetOutChLayout()
 
 	outBufSize := avutil.AvSamplesGetBufferSize(nil, outChLayout.GetNbChannels(), outCount, outSampleFmt, 0)
-	cOut := avutil.AvMalloc(uint64(outBufSize))
+	cOut := avutil.AvMalloc(ctypes.SizeT(outBufSize))
 	defer avutil.AvFree(cOut)
 	//TODO wait ffmpeg av_samples_alloc return buffer size
 	//outBufSize := avutil.AvSamplesAlloc(&outPtr, nil, outChLayout.GetNbChannels(), int(outCount), outSampleFmt, 0)
 
 	inBufSize := len(in)
-	cIn := avutil.AvMalloc(uint64(inBufSize))
+	cIn := avutil.AvMalloc(ctypes.SizeT(inBufSize))
 	defer avutil.AvFree(cIn)
 	copy(unsafe.Slice((*byte)(cIn), inBufSize), in)
 

@@ -19,6 +19,7 @@ import (
 
 	"github.com/Lensual/go-libav/avformat"
 	"github.com/Lensual/go-libav/avutil"
+	"github.com/Lensual/go-libav/ctypes"
 )
 
 type AVIOReadCallback func(buf []byte, len int) int
@@ -33,6 +34,7 @@ func init() {
 	avioBindingC = make([]*GoAVIOContext, unsafe.Sizeof(uint8(1)))
 }
 
+// HACK
 // 使用导出的go方法实现AVIO
 // 由于go对象指针不可传递给C，迫不得已生成唯一id存入C.AVIOContext.opaque来实现Go对象成员方法的访问
 // 除此之外还可以尝试使用fd协议配合os.pipe实现
@@ -72,7 +74,7 @@ func NewGoAvioContext(bufSize int, readFunc AVIOReadCallback, writeFunc AVIOWrit
 	avioBindingC_lock.Unlock()
 
 	//初始化C缓冲区
-	cbuf := avutil.AvMalloc(uint64(bufSize))
+	cbuf := avutil.AvMalloc(ctypes.SizeT(bufSize))
 	if cbuf == nil {
 		avioCtx.Free()
 		return nil

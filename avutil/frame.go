@@ -1511,7 +1511,7 @@ func AvFrameGetPlaneBuffer(frame *CAVFrame, plane int) *CAVBufferRef {
  *
  * @return newly added side data on success, NULL on error
  */
-func AvFrameNewSideData(frame *CAVFrame, _type CAVFrameSideDataType, size int) *CAVFrameSideData {
+func AvFrameNewSideData(frame *CAVFrame, _type CAVFrameSideDataType, size ctypes.SizeT) *CAVFrameSideData {
 	return (*CAVFrameSideData)(C.av_frame_new_side_data((*C.AVFrame)(frame), (C.enum_AVFrameSideDataType)(_type), C.size_t(size)))
 }
 

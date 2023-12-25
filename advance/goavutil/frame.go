@@ -397,8 +397,8 @@ func (frame *AVFrame) GetPlaneBuffer(plane int) *avutil.CAVBufferRef {
 	return avutil.AvFrameGetPlaneBuffer(frame.CAVFrame, plane)
 }
 
-func (frame *AVFrame) NewSideData(_type avutil.CAVFrameSideDataType, size int) *avutil.CAVFrameSideData {
-	return avutil.AvFrameNewSideData(frame.CAVFrame, _type, size)
+func (frame *AVFrame) NewSideData(_type avutil.CAVFrameSideDataType, size uint) *avutil.CAVFrameSideData {
+	return avutil.AvFrameNewSideData(frame.CAVFrame, _type, ctypes.SizeT(size))
 }
 
 func (frame *AVFrame) NewSideDataFromBuf(_type avutil.CAVFrameSideDataType, buf *avutil.CAVBufferRef) *avutil.CAVFrameSideData {

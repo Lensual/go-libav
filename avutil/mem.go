@@ -6,7 +6,11 @@ package avutil
 #include "libavutil/mem.h"
 */
 import "C"
-import "unsafe"
+import (
+	"unsafe"
+
+	"github.com/Lensual/go-libav/ctypes"
+)
 
 /*
  * copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at>
@@ -126,7 +130,7 @@ import "unsafe"
  *         be allocated
  * @see av_mallocz()
  */
-func AvMalloc(size uint64) unsafe.Pointer {
+func AvMalloc(size ctypes.SizeT) unsafe.Pointer {
 	return C.av_malloc(C.size_t(size))
 }
 
@@ -139,7 +143,7 @@ func AvMalloc(size uint64) unsafe.Pointer {
  * @return Pointer to the allocated block, or `NULL` if it cannot be allocated
  * @see av_malloc()
  */
-func AvMallocz(size uint64) unsafe.Pointer {
+func AvMallocz(size ctypes.SizeT) unsafe.Pointer {
 	return C.av_mallocz(C.size_t(size))
 }
 
@@ -154,7 +158,7 @@ func AvMallocz(size uint64) unsafe.Pointer {
  *         be allocated
  * @see av_malloc()
  */
-func AvMallocArray(nmemb uint64, size uint64) unsafe.Pointer {
+func AvMallocArray(nmemb ctypes.SizeT, size ctypes.SizeT) unsafe.Pointer {
 	return C.av_malloc_array(C.size_t(nmemb), C.size_t(size))
 }
 
@@ -171,7 +175,7 @@ func AvMallocArray(nmemb uint64, size uint64) unsafe.Pointer {
  * @see av_mallocz()
  * @see av_malloc_array()
  */
-func AvCalloc(nmemb uint64, size uint64) unsafe.Pointer {
+func AvCalloc(nmemb ctypes.SizeT, size ctypes.SizeT) unsafe.Pointer {
 	return C.av_calloc(C.size_t(nmemb), C.size_t(size))
 }
 
@@ -195,7 +199,7 @@ func AvCalloc(nmemb uint64, size uint64) unsafe.Pointer {
  * @see av_fast_realloc()
  * @see av_reallocp()
  */
-func AvRealloc(ptr unsafe.Pointer, size uint64) unsafe.Pointer {
+func AvRealloc(ptr unsafe.Pointer, size ctypes.SizeT) unsafe.Pointer {
 	return C.av_realloc(ptr, C.size_t(size))
 }
 
@@ -218,7 +222,7 @@ func AvRealloc(ptr unsafe.Pointer, size uint64) unsafe.Pointer {
  * @warning Unlike av_malloc(), the allocated memory is not guaranteed to be
  *          correctly aligned.
  */
-func AvReallocp(ptr unsafe.Pointer, size uint64) int {
+func AvReallocp(ptr unsafe.Pointer, size ctypes.SizeT) int {
 	return int(C.av_reallocp(ptr, C.size_t(size)))
 }
 
