@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/Lensual/go-libav/avutil"
+	"github.com/Lensual/go-libav/ctypes"
 )
 
 /*
@@ -46,397 +47,453 @@ import (
 
 //  #include "libavcodec/version_major.h"
 
-//  /**
-//   * @defgroup lavc_packet_side_data AVPacketSideData
-//   *
-//   * Types and functions for working with AVPacketSideData.
-//   * @{
-//   */
-//  enum AVPacketSideDataType {
-// 	 /**
-// 	  * An AV_PKT_DATA_PALETTE side data packet contains exactly AVPALETTE_SIZE
-// 	  * bytes worth of palette. This side data signals that a new palette is
-// 	  * present.
-// 	  */
-// 	 AV_PKT_DATA_PALETTE,
+/**
+ * @defgroup lavc_packet_side_data AVPacketSideData
+ *
+ * Types and functions for working with AVPacketSideData.
+ * @{
+ */
+type CAVPacketSideDataType C.enum_AVPacketSideDataType
 
-// 	 /**
-// 	  * The AV_PKT_DATA_NEW_EXTRADATA is used to notify the codec or the format
-// 	  * that the extradata buffer was changed and the receiving side should
-// 	  * act upon it appropriately. The new extradata is embedded in the side
-// 	  * data buffer and should be immediately used for processing the current
-// 	  * frame or packet.
-// 	  */
-// 	 AV_PKT_DATA_NEW_EXTRADATA,
+const (
+	/**
+	 * An AV_PKT_DATA_PALETTE side data packet contains exactly AVPALETTE_SIZE
+	 * bytes worth of palette. This side data signals that a new palette is
+	 * present.
+	 */
+	AV_PKT_DATA_PALETTE CAVPacketSideDataType = C.AV_PKT_DATA_PALETTE
 
-// 	 /**
-// 	  * An AV_PKT_DATA_PARAM_CHANGE side data packet is laid out as follows:
-// 	  * @code
-// 	  * u32le param_flags
-// 	  * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT)
-// 	  *     s32le channel_count
-// 	  * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT)
-// 	  *     u64le channel_layout
-// 	  * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE)
-// 	  *     s32le sample_rate
-// 	  * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS)
-// 	  *     s32le width
-// 	  *     s32le height
-// 	  * @endcode
-// 	  */
-// 	 AV_PKT_DATA_PARAM_CHANGE,
+	/**
+	 * The AV_PKT_DATA_NEW_EXTRADATA is used to notify the codec or the format
+	 * that the extradata buffer was changed and the receiving side should
+	 * act upon it appropriately. The new extradata is embedded in the side
+	 * data buffer and should be immediately used for processing the current
+	 * frame or packet.
+	 */
+	AV_PKT_DATA_NEW_EXTRADATA CAVPacketSideDataType = C.AV_PKT_DATA_NEW_EXTRADATA
 
-// 	 /**
-// 	  * An AV_PKT_DATA_H263_MB_INFO side data packet contains a number of
-// 	  * structures with info about macroblocks relevant to splitting the
-// 	  * packet into smaller packets on macroblock edges (e.g. as for RFC 2190).
-// 	  * That is, it does not necessarily contain info about all macroblocks,
-// 	  * as long as the distance between macroblocks in the info is smaller
-// 	  * than the target payload size.
-// 	  * Each MB info structure is 12 bytes, and is laid out as follows:
-// 	  * @code
-// 	  * u32le bit offset from the start of the packet
-// 	  * u8    current quantizer at the start of the macroblock
-// 	  * u8    GOB number
-// 	  * u16le macroblock address within the GOB
-// 	  * u8    horizontal MV predictor
-// 	  * u8    vertical MV predictor
-// 	  * u8    horizontal MV predictor for block number 3
-// 	  * u8    vertical MV predictor for block number 3
-// 	  * @endcode
-// 	  */
-// 	 AV_PKT_DATA_H263_MB_INFO,
+	/**
+	 * An AV_PKT_DATA_PARAM_CHANGE side data packet is laid out as follows:
+	 * @code
+	 * u32le param_flags
+	 * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT)
+	 *     s32le channel_count
+	 * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT)
+	 *     u64le channel_layout
+	 * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE)
+	 *     s32le sample_rate
+	 * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS)
+	 *     s32le width
+	 *     s32le height
+	 * @endcode
+	 */
+	AV_PKT_DATA_PARAM_CHANGE CAVPacketSideDataType = C.AV_PKT_DATA_PARAM_CHANGE
 
-// 	 /**
-// 	  * This side data should be associated with an audio stream and contains
-// 	  * ReplayGain information in form of the AVReplayGain struct.
-// 	  */
-// 	 AV_PKT_DATA_REPLAYGAIN,
+	/**
+	 * An AV_PKT_DATA_H263_MB_INFO side data packet contains a number of
+	 * structures with info about macroblocks relevant to splitting the
+	 * packet into smaller packets on macroblock edges (e.g. as for RFC 2190).
+	 * That is, it does not necessarily contain info about all macroblocks,
+	 * as long as the distance between macroblocks in the info is smaller
+	 * than the target payload size.
+	 * Each MB info structure is 12 bytes, and is laid out as follows:
+	 * @code
+	 * u32le bit offset from the start of the packet
+	 * u8    current quantizer at the start of the macroblock
+	 * u8    GOB number
+	 * u16le macroblock address within the GOB
+	 * u8    horizontal MV predictor
+	 * u8    vertical MV predictor
+	 * u8    horizontal MV predictor for block number 3
+	 * u8    vertical MV predictor for block number 3
+	 * @endcode
+	 */
+	AV_PKT_DATA_H263_MB_INFO CAVPacketSideDataType = C.AV_PKT_DATA_H263_MB_INFO
 
-// 	 /**
-// 	  * This side data contains a 3x3 transformation matrix describing an affine
-// 	  * transformation that needs to be applied to the decoded video frames for
-// 	  * correct presentation.
-// 	  *
-// 	  * See libavutil/display.h for a detailed description of the data.
-// 	  */
-// 	 AV_PKT_DATA_DISPLAYMATRIX,
+	/**
+	 * This side data should be associated with an audio stream and contains
+	 * ReplayGain information in form of the AVReplayGain struct.
+	 */
+	AV_PKT_DATA_REPLAYGAIN CAVPacketSideDataType = C.AV_PKT_DATA_REPLAYGAIN
 
-// 	 /**
-// 	  * This side data should be associated with a video stream and contains
-// 	  * Stereoscopic 3D information in form of the AVStereo3D struct.
-// 	  */
-// 	 AV_PKT_DATA_STEREO3D,
+	/**
+	 * This side data contains a 3x3 transformation matrix describing an affine
+	 * transformation that needs to be applied to the decoded video frames for
+	 * correct presentation.
+	 *
+	 * See libavutil/display.h for a detailed description of the data.
+	 */
+	AV_PKT_DATA_DISPLAYMATRIX CAVPacketSideDataType = C.AV_PKT_DATA_DISPLAYMATRIX
 
-// 	 /**
-// 	  * This side data should be associated with an audio stream and corresponds
-// 	  * to enum AVAudioServiceType.
-// 	  */
-// 	 AV_PKT_DATA_AUDIO_SERVICE_TYPE,
+	/**
+	 * This side data should be associated with a video stream and contains
+	 * Stereoscopic 3D information in form of the AVStereo3D struct.
+	 */
+	AV_PKT_DATA_STEREO3D CAVPacketSideDataType = C.AV_PKT_DATA_STEREO3D
 
-// 	 /**
-// 	  * This side data contains quality related information from the encoder.
-// 	  * @code
-// 	  * u32le quality factor of the compressed frame. Allowed range is between 1 (good) and FF_LAMBDA_MAX (bad).
-// 	  * u8    picture type
-// 	  * u8    error count
-// 	  * u16   reserved
-// 	  * u64le[error count] sum of squared differences between encoder in and output
-// 	  * @endcode
-// 	  */
-// 	 AV_PKT_DATA_QUALITY_STATS,
+	/**
+	 * This side data should be associated with an audio stream and corresponds
+	 * to enum AVAudioServiceType.
+	 */
+	AV_PKT_DATA_AUDIO_SERVICE_TYPE CAVPacketSideDataType = C.AV_PKT_DATA_AUDIO_SERVICE_TYPE
 
-// 	 /**
-// 	  * This side data contains an integer value representing the stream index
-// 	  * of a "fallback" track.  A fallback track indicates an alternate
-// 	  * track to use when the current track can not be decoded for some reason.
-// 	  * e.g. no decoder available for codec.
-// 	  */
-// 	 AV_PKT_DATA_FALLBACK_TRACK,
+	/**
+	 * This side data contains quality related information from the encoder.
+	 * @code
+	 * u32le quality factor of the compressed frame. Allowed range is between 1 (good) and FF_LAMBDA_MAX (bad).
+	 * u8    picture type
+	 * u8    error count
+	 * u16   reserved
+	 * u64le[error count] sum of squared differences between encoder in and output
+	 * @endcode
+	 */
+	AV_PKT_DATA_QUALITY_STATS CAVPacketSideDataType = C.AV_PKT_DATA_QUALITY_STATS
 
-// 	 /**
-// 	  * This side data corresponds to the AVCPBProperties struct.
-// 	  */
-// 	 AV_PKT_DATA_CPB_PROPERTIES,
+	/**
+	 * This side data contains an integer value representing the stream index
+	 * of a "fallback" track.  A fallback track indicates an alternate
+	 * track to use when the current track can not be decoded for some reason.
+	 * e.g. no decoder available for codec.
+	 */
+	AV_PKT_DATA_FALLBACK_TRACK CAVPacketSideDataType = C.AV_PKT_DATA_FALLBACK_TRACK
 
-// 	 /**
-// 	  * Recommmends skipping the specified number of samples
-// 	  * @code
-// 	  * u32le number of samples to skip from start of this packet
-// 	  * u32le number of samples to skip from end of this packet
-// 	  * u8    reason for start skip
-// 	  * u8    reason for end   skip (0=padding silence, 1=convergence)
-// 	  * @endcode
-// 	  */
-// 	 AV_PKT_DATA_SKIP_SAMPLES,
+	/**
+	 * This side data corresponds to the AVCPBProperties struct.
+	 */
+	AV_PKT_DATA_CPB_PROPERTIES CAVPacketSideDataType = C.AV_PKT_DATA_CPB_PROPERTIES
 
-// 	 /**
-// 	  * An AV_PKT_DATA_JP_DUALMONO side data packet indicates that
-// 	  * the packet may contain "dual mono" audio specific to Japanese DTV
-// 	  * and if it is true, recommends only the selected channel to be used.
-// 	  * @code
-// 	  * u8    selected channels (0=main/left, 1=sub/right, 2=both)
-// 	  * @endcode
-// 	  */
-// 	 AV_PKT_DATA_JP_DUALMONO,
+	/**
+	 * Recommmends skipping the specified number of samples
+	 * @code
+	 * u32le number of samples to skip from start of this packet
+	 * u32le number of samples to skip from end of this packet
+	 * u8    reason for start skip
+	 * u8    reason for end   skip (0=padding silence, 1=convergence)
+	 * @endcode
+	 */
+	AV_PKT_DATA_SKIP_SAMPLES CAVPacketSideDataType = C.AV_PKT_DATA_SKIP_SAMPLES
 
-// 	 /**
-// 	  * A list of zero terminated key/value strings. There is no end marker for
-// 	  * the list, so it is required to rely on the side data size to stop.
-// 	  */
-// 	 AV_PKT_DATA_STRINGS_METADATA,
+	/**
+	 * An AV_PKT_DATA_JP_DUALMONO side data packet indicates that
+	 * the packet may contain "dual mono" audio specific to Japanese DTV
+	 * and if it is true, recommends only the selected channel to be used.
+	 * @code
+	 * u8    selected channels (0=main/left, 1=sub/right, 2=both)
+	 * @endcode
+	 */
+	AV_PKT_DATA_JP_DUALMONO CAVPacketSideDataType = C.AV_PKT_DATA_JP_DUALMONO
 
-// 	 /**
-// 	  * Subtitle event position
-// 	  * @code
-// 	  * u32le x1
-// 	  * u32le y1
-// 	  * u32le x2
-// 	  * u32le y2
-// 	  * @endcode
-// 	  */
-// 	 AV_PKT_DATA_SUBTITLE_POSITION,
+	/**
+	 * A list of zero terminated key/value strings. There is no end marker for
+	 * the list, so it is required to rely on the side data size to stop.
+	 */
+	AV_PKT_DATA_STRINGS_METADATA CAVPacketSideDataType = C.AV_PKT_DATA_STRINGS_METADATA
 
-// 	 /**
-// 	  * Data found in BlockAdditional element of matroska container. There is
-// 	  * no end marker for the data, so it is required to rely on the side data
-// 	  * size to recognize the end. 8 byte id (as found in BlockAddId) followed
-// 	  * by data.
-// 	  */
-// 	 AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
+	/**
+	 * Subtitle event position
+	 * @code
+	 * u32le x1
+	 * u32le y1
+	 * u32le x2
+	 * u32le y2
+	 * @endcode
+	 */
+	AV_PKT_DATA_SUBTITLE_POSITION CAVPacketSideDataType = C.AV_PKT_DATA_SUBTITLE_POSITION
 
-// 	 /**
-// 	  * The optional first identifier line of a WebVTT cue.
-// 	  */
-// 	 AV_PKT_DATA_WEBVTT_IDENTIFIER,
+	/**
+	 * Data found in BlockAdditional element of matroska container. There is
+	 * no end marker for the data, so it is required to rely on the side data
+	 * size to recognize the end. 8 byte id (as found in BlockAddId) followed
+	 * by data.
+	 */
+	AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL CAVPacketSideDataType = C.AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL
 
-// 	 /**
-// 	  * The optional settings (rendering instructions) that immediately
-// 	  * follow the timestamp specifier of a WebVTT cue.
-// 	  */
-// 	 AV_PKT_DATA_WEBVTT_SETTINGS,
+	/**
+	 * The optional first identifier line of a WebVTT cue.
+	 */
+	AV_PKT_DATA_WEBVTT_IDENTIFIER CAVPacketSideDataType = C.AV_PKT_DATA_WEBVTT_IDENTIFIER
 
-// 	 /**
-// 	  * A list of zero terminated key/value strings. There is no end marker for
-// 	  * the list, so it is required to rely on the side data size to stop. This
-// 	  * side data includes updated metadata which appeared in the stream.
-// 	  */
-// 	 AV_PKT_DATA_METADATA_UPDATE,
+	/**
+	 * The optional settings (rendering instructions) that immediately
+	 * follow the timestamp specifier of a WebVTT cue.
+	 */
+	AV_PKT_DATA_WEBVTT_SETTINGS CAVPacketSideDataType = C.AV_PKT_DATA_WEBVTT_SETTINGS
 
-// 	 /**
-// 	  * MPEGTS stream ID as uint8_t, this is required to pass the stream ID
-// 	  * information from the demuxer to the corresponding muxer.
-// 	  */
-// 	 AV_PKT_DATA_MPEGTS_STREAM_ID,
+	/**
+	 * A list of zero terminated key/value strings. There is no end marker for
+	 * the list, so it is required to rely on the side data size to stop. This
+	 * side data includes updated metadata which appeared in the stream.
+	 */
+	AV_PKT_DATA_METADATA_UPDATE CAVPacketSideDataType = C.AV_PKT_DATA_METADATA_UPDATE
 
-// 	 /**
-// 	  * Mastering display metadata (based on SMPTE-2086:2014). This metadata
-// 	  * should be associated with a video stream and contains data in the form
-// 	  * of the AVMasteringDisplayMetadata struct.
-// 	  */
-// 	 AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
+	/**
+	 * MPEGTS stream ID as uint8_t, this is required to pass the stream ID
+	 * information from the demuxer to the corresponding muxer.
+	 */
+	AV_PKT_DATA_MPEGTS_STREAM_ID CAVPacketSideDataType = C.AV_PKT_DATA_MPEGTS_STREAM_ID
 
-// 	 /**
-// 	  * This side data should be associated with a video stream and corresponds
-// 	  * to the AVSphericalMapping structure.
-// 	  */
-// 	 AV_PKT_DATA_SPHERICAL,
+	/**
+	 * Mastering display metadata (based on SMPTE-2086:2014). This metadata
+	 * should be associated with a video stream and contains data in the form
+	 * of the AVMasteringDisplayMetadata struct.
+	 */
+	AV_PKT_DATA_MASTERING_DISPLAY_METADATA CAVPacketSideDataType = C.AV_PKT_DATA_MASTERING_DISPLAY_METADATA
 
-// 	 /**
-// 	  * Content light level (based on CTA-861.3). This metadata should be
-// 	  * associated with a video stream and contains data in the form of the
-// 	  * AVContentLightMetadata struct.
-// 	  */
-// 	 AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
+	/**
+	 * This side data should be associated with a video stream and corresponds
+	 * to the AVSphericalMapping structure.
+	 */
+	AV_PKT_DATA_SPHERICAL CAVPacketSideDataType = C.AV_PKT_DATA_SPHERICAL
 
-// 	 /**
-// 	  * ATSC A53 Part 4 Closed Captions. This metadata should be associated with
-// 	  * a video stream. A53 CC bitstream is stored as uint8_t in AVPacketSideData.data.
-// 	  * The number of bytes of CC data is AVPacketSideData.size.
-// 	  */
-// 	 AV_PKT_DATA_A53_CC,
+	/**
+	 * Content light level (based on CTA-861.3). This metadata should be
+	 * associated with a video stream and contains data in the form of the
+	 * AVContentLightMetadata struct.
+	 */
+	AV_PKT_DATA_CONTENT_LIGHT_LEVEL CAVPacketSideDataType = C.AV_PKT_DATA_CONTENT_LIGHT_LEVEL
 
-// 	 /**
-// 	  * This side data is encryption initialization data.
-// 	  * The format is not part of ABI, use av_encryption_init_info_* methods to
-// 	  * access.
-// 	  */
-// 	 AV_PKT_DATA_ENCRYPTION_INIT_INFO,
+	/**
+	 * ATSC A53 Part 4 Closed Captions. This metadata should be associated with
+	 * a video stream. A53 CC bitstream is stored as uint8_t in AVPacketSideData.data.
+	 * The number of bytes of CC data is AVPacketSideData.size.
+	 */
+	AV_PKT_DATA_A53_CC CAVPacketSideDataType = C.AV_PKT_DATA_A53_CC
 
-// 	 /**
-// 	  * This side data contains encryption info for how to decrypt the packet.
-// 	  * The format is not part of ABI, use av_encryption_info_* methods to access.
-// 	  */
-// 	 AV_PKT_DATA_ENCRYPTION_INFO,
+	/**
+	 * This side data is encryption initialization data.
+	 * The format is not part of ABI, use av_encryption_init_info_* methods to
+	 * access.
+	 */
+	AV_PKT_DATA_ENCRYPTION_INIT_INFO CAVPacketSideDataType = C.AV_PKT_DATA_ENCRYPTION_INIT_INFO
 
-// 	 /**
-// 	  * Active Format Description data consisting of a single byte as specified
-// 	  * in ETSI TS 101 154 using AVActiveFormatDescription enum.
-// 	  */
-// 	 AV_PKT_DATA_AFD,
+	/**
+	 * This side data contains encryption info for how to decrypt the packet.
+	 * The format is not part of ABI, use av_encryption_info_* methods to access.
+	 */
+	AV_PKT_DATA_ENCRYPTION_INFO CAVPacketSideDataType = C.AV_PKT_DATA_ENCRYPTION_INFO
 
-// 	 /**
-// 	  * Producer Reference Time data corresponding to the AVProducerReferenceTime struct,
-// 	  * usually exported by some encoders (on demand through the prft flag set in the
-// 	  * AVCodecContext export_side_data field).
-// 	  */
-// 	 AV_PKT_DATA_PRFT,
+	/**
+	 * Active Format Description data consisting of a single byte as specified
+	 * in ETSI TS 101 154 using AVActiveFormatDescription enum.
+	 */
+	AV_PKT_DATA_AFD CAVPacketSideDataType = C.AV_PKT_DATA_AFD
 
-// 	 /**
-// 	  * ICC profile data consisting of an opaque octet buffer following the
-// 	  * format described by ISO 15076-1.
-// 	  */
-// 	 AV_PKT_DATA_ICC_PROFILE,
+	/**
+	 * Producer Reference Time data corresponding to the AVProducerReferenceTime struct,
+	 * usually exported by some encoders (on demand through the prft flag set in the
+	 * AVCodecContext export_side_data field).
+	 */
+	AV_PKT_DATA_PRFT CAVPacketSideDataType = C.AV_PKT_DATA_PRFT
 
-// 	 /**
-// 	  * DOVI configuration
-// 	  * ref:
-// 	  * dolby-vision-bitstreams-within-the-iso-base-media-file-format-v2.1.2, section 2.2
-// 	  * dolby-vision-bitstreams-in-mpeg-2-transport-stream-multiplex-v1.2, section 3.3
-// 	  * Tags are stored in struct AVDOVIDecoderConfigurationRecord.
-// 	  */
-// 	 AV_PKT_DATA_DOVI_CONF,
+	/**
+	 * ICC profile data consisting of an opaque octet buffer following the
+	 * format described by ISO 15076-1.
+	 */
+	AV_PKT_DATA_ICC_PROFILE CAVPacketSideDataType = C.AV_PKT_DATA_ICC_PROFILE
 
-// 	 /**
-// 	  * Timecode which conforms to SMPTE ST 12-1:2014. The data is an array of 4 uint32_t
-// 	  * where the first uint32_t describes how many (1-3) of the other timecodes are used.
-// 	  * The timecode format is described in the documentation of av_timecode_get_smpte_from_framenum()
-// 	  * function in libavutil/timecode.h.
-// 	  */
-// 	 AV_PKT_DATA_S12M_TIMECODE,
+	/**
+	 * DOVI configuration
+	 * ref:
+	 * dolby-vision-bitstreams-within-the-iso-base-media-file-format-v2.1.2, section 2.2
+	 * dolby-vision-bitstreams-in-mpeg-2-transport-stream-multiplex-v1.2, section 3.3
+	 * Tags are stored in struct AVDOVIDecoderConfigurationRecord.
+	 */
+	AV_PKT_DATA_DOVI_CONF CAVPacketSideDataType = C.AV_PKT_DATA_DOVI_CONF
 
-// 	 /**
-// 	  * HDR10+ dynamic metadata associated with a video frame. The metadata is in
-// 	  * the form of the AVDynamicHDRPlus struct and contains
-// 	  * information for color volume transform - application 4 of
-// 	  * SMPTE 2094-40:2016 standard.
-// 	  */
-// 	 AV_PKT_DATA_DYNAMIC_HDR10_PLUS,
+	/**
+	 * Timecode which conforms to SMPTE ST 12-1:2014. The data is an array of 4 uint32_t
+	 * where the first uint32_t describes how many (1-3) of the other timecodes are used.
+	 * The timecode format is described in the documentation of av_timecode_get_smpte_from_framenum()
+	 * function in libavutil/timecode.h.
+	 */
+	AV_PKT_DATA_S12M_TIMECODE CAVPacketSideDataType = C.AV_PKT_DATA_S12M_TIMECODE
 
-// 	 /**
-// 	  * The number of side data types.
-// 	  * This is not part of the public API/ABI in the sense that it may
-// 	  * change when new side data types are added.
-// 	  * This must stay the last enum value.
-// 	  * If its value becomes huge, some code using it
-// 	  * needs to be updated as it assumes it to be smaller than other limits.
-// 	  */
-// 	 AV_PKT_DATA_NB
-//  };
+	/**
+	 * HDR10+ dynamic metadata associated with a video frame. The metadata is in
+	 * the form of the AVDynamicHDRPlus struct and contains
+	 * information for color volume transform - application 4 of
+	 * SMPTE 2094-40:2016 standard.
+	 */
+	AV_PKT_DATA_DYNAMIC_HDR10_PLUS CAVPacketSideDataType = C.AV_PKT_DATA_DYNAMIC_HDR10_PLUS
+
+	/**
+	 * The number of side data types.
+	 * This is not part of the public API/ABI in the sense that it may
+	 * change when new side data types are added.
+	 * This must stay the last enum value.
+	 * If its value becomes huge, some code using it
+	 * needs to be updated as it assumes it to be smaller than other limits.
+	 */
+	AV_PKT_DATA_NB CAVPacketSideDataType = C.AV_PKT_DATA_NB
+)
 
 //  #define AV_PKT_DATA_QUALITY_FACTOR AV_PKT_DATA_QUALITY_STATS //DEPRECATED
 
-//  /**
-//   * This structure stores auxiliary information for decoding, presenting, or
-//   * otherwise processing the coded stream. It is typically exported by demuxers
-//   * and encoders and can be fed to decoders and muxers either in a per packet
-//   * basis, or as global side data (applying to the entire coded stream).
-//   *
-//   * Global side data is handled as follows:
-//   * - During demuxing, it may be exported through
-//   *   @ref AVStream.codecpar.side_data "AVStream's codec parameters", which can
-//   *   then be passed as input to decoders through the
-//   *   @ref AVCodecContext.coded_side_data "decoder context's side data", for
-//   *   initialization.
-//   * - For muxing, it can be fed through @ref AVStream.codecpar.side_data
-//   *   "AVStream's codec parameters", typically  the output of encoders through
-//   *   the @ref AVCodecContext.coded_side_data "encoder context's side data", for
-//   *   initialization.
-//   *
-//   * Packet specific side data is handled as follows:
-//   * - During demuxing, it may be exported through @ref AVPacket.side_data
-//   *   "AVPacket's side data", which can then be passed as input to decoders.
-//   * - For muxing, it can be fed through @ref AVPacket.side_data "AVPacket's
-//   *   side data", typically the output of encoders.
-//   *
-//   * Different modules may accept or export different types of side data
-//   * depending on media type and codec. Refer to @ref AVPacketSideDataType for a
-//   * list of defined types and where they may be found or used.
-//   */
-//  typedef struct AVPacketSideData {
-// 	 uint8_t *data;
-// 	 size_t   size;
-// 	 enum AVPacketSideDataType type;
-//  } AVPacketSideData;
+/**
+ * This structure stores auxiliary information for decoding, presenting, or
+ * otherwise processing the coded stream. It is typically exported by demuxers
+ * and encoders and can be fed to decoders and muxers either in a per packet
+ * basis, or as global side data (applying to the entire coded stream).
+ *
+ * Global side data is handled as follows:
+ * - During demuxing, it may be exported through
+ *   @ref AVStream.codecpar.side_data "AVStream's codec parameters", which can
+ *   then be passed as input to decoders through the
+ *   @ref AVCodecContext.coded_side_data "decoder context's side data", for
+ *   initialization.
+ * - For muxing, it can be fed through @ref AVStream.codecpar.side_data
+ *   "AVStream's codec parameters", typically  the output of encoders through
+ *   the @ref AVCodecContext.coded_side_data "encoder context's side data", for
+ *   initialization.
+ *
+ * Packet specific side data is handled as follows:
+ * - During demuxing, it may be exported through @ref AVPacket.side_data
+ *   "AVPacket's side data", which can then be passed as input to decoders.
+ * - For muxing, it can be fed through @ref AVPacket.side_data "AVPacket's
+ *   side data", typically the output of encoders.
+ *
+ * Different modules may accept or export different types of side data
+ * depending on media type and codec. Refer to @ref AVPacketSideDataType for a
+ * list of defined types and where they may be found or used.
+ */
+type CAVPacketSideData C.AVPacketSideData
 
-//  /**
-//   * Allocate a new packet side data.
-//   *
-//   * @param sd    pointer to an array of side data to which the side data should
-//   *              be added. *sd may be NULL, in which case the array will be
-//   *              initialized.
-//   * @param nb_sd pointer to an integer containing the number of entries in
-//   *              the array. The integer value will be increased by 1 on success.
-//   * @param type  side data type
-//   * @param size  desired side data size
-//   * @param flags currently unused. Must be zero
-//   *
-//   * @return pointer to freshly allocated side data on success, or NULL otherwise.
-//   */
-//  AVPacketSideData *av_packet_side_data_new(AVPacketSideData **psd, int *pnb_sd,
-// 										   enum AVPacketSideDataType type,
-// 										   size_t size, int flags);
+// #region CAVPacketSideData
 
-//  /**
-//   * Wrap existing data as packet side data.
-//   *
-//   * @param sd    pointer to an array of side data to which the side data should
-//   *              be added. *sd may be NULL, in which case the array will be
-//   *              initialized
-//   * @param nb_sd pointer to an integer containing the number of entries in
-//   *              the array. The integer value will be increased by 1 on success.
-//   * @param type  side data type
-//   * @param data  a data array. It must be allocated with the av_malloc() family
-//   *              of functions. The ownership of the data is transferred to the
-//   *              side data array on success
-//   * @param size  size of the data array
-//   * @param flags currently unused. Must be zero
-//   *
-//   * @return pointer to freshly allocated side data on success, or NULL otherwise
-//   *         On failure, the side data array is unchanged and the data remains
-//   *         owned by the caller.
-//   */
-//  AVPacketSideData *av_packet_side_data_add(AVPacketSideData **sd, int *nb_sd,
-// 										   enum AVPacketSideDataType type,
-// 										   void *data, size_t size, int flags);
+func (psd *CAVPacketSideData) GetData() unsafe.Pointer {
+	return unsafe.Pointer(psd.data)
+}
+func (psd *CAVPacketSideData) SetData(data unsafe.Pointer) {
+	psd.data = (*C.uint8_t)(data)
+}
 
-//  /**
-//   * Get side information from a side data array.
-//   *
-//   * @param sd    the array from which the side data should be fetched
-//   * @param nb_sd value containing the number of entries in the array.
-//   * @param type  desired side information type
-//   *
-//   * @return pointer to side data if present or NULL otherwise
-//   */
-//  const AVPacketSideData *av_packet_side_data_get(const AVPacketSideData *sd,
-// 												 int nb_sd,
-// 												 enum AVPacketSideDataType type);
+func (psd *CAVPacketSideData) GetSize() ctypes.SizeT {
+	return ctypes.SizeT(psd.size)
+}
+func (psd *CAVPacketSideData) SetSize(size ctypes.SizeT) {
+	psd.size = C.size_t(size)
+}
 
-//  /**
-//   * Remove side data of the given type from a side data array.
-//   *
-//   * @param sd    the array from which the side data should be removed
-//   * @param nb_sd pointer to an integer containing the number of entries in
-//   *              the array. Will be reduced by the amount of entries removed
-//   *              upon return
-//   * @param type  side information type
-//   */
-//  void av_packet_side_data_remove(AVPacketSideData *sd, int *nb_sd,
-// 								 enum AVPacketSideDataType type);
+func (psd *CAVPacketSideData) GetType() CAVPacketSideDataType {
+	return CAVPacketSideDataType(psd._type)
+}
+func (psd *CAVPacketSideData) SetType(_type CAVPacketSideDataType) {
+	psd._type = C.enum_AVPacketSideDataType(_type)
+}
 
-//  /**
-//   * Convenience function to free all the side data stored in an array, and
-//   * the array itself.
-//   *
-//   * @param sd    pointer to array of side data to free. Will be set to NULL
-//   *              upon return.
-//   * @param nb_sd pointer to an integer containing the number of entries in
-//   *              the array. Will be set to 0 upon return.
-//   */
-//  void av_packet_side_data_free(AVPacketSideData **sd, int *nb_sd);
+//#endregion CAVPacketSideData
 
-//  const char *av_packet_side_data_name(enum AVPacketSideDataType type);
+/**
+ * Allocate a new packet side data.
+ *
+ * @param sd    pointer to an array of side data to which the side data should
+ *              be added. *sd may be NULL, in which case the array will be
+ *              initialized.
+ * @param nb_sd pointer to an integer containing the number of entries in
+ *              the array. The integer value will be increased by 1 on success.
+ * @param type  side data type
+ * @param size  desired side data size
+ * @param flags currently unused. Must be zero
+ *
+ * @return pointer to freshly allocated side data on success, or NULL otherwise.
+ */
+func AvPacketSideDataNew(psd **CAVPacketSideData, pnb_sd *ctypes.Int, _type CAVPacketSideDataType,
+	size ctypes.SizeT, flags int) *CAVPacketSideData {
+	return (*CAVPacketSideData)(C.av_packet_side_data_new(
+		(**C.AVPacketSideData)(unsafe.Pointer(psd)),
+		(*C.int)(pnb_sd),
+		C.enum_AVPacketSideDataType(_type),
+		C.size_t(size),
+		C.int(flags),
+	))
+}
+
+/**
+ * Wrap existing data as packet side data.
+ *
+ * @param sd    pointer to an array of side data to which the side data should
+ *              be added. *sd may be NULL, in which case the array will be
+ *              initialized
+ * @param nb_sd pointer to an integer containing the number of entries in
+ *              the array. The integer value will be increased by 1 on success.
+ * @param type  side data type
+ * @param data  a data array. It must be allocated with the av_malloc() family
+ *              of functions. The ownership of the data is transferred to the
+ *              side data array on success
+ * @param size  size of the data array
+ * @param flags currently unused. Must be zero
+ *
+ * @return pointer to freshly allocated side data on success, or NULL otherwise
+ *         On failure, the side data array is unchanged and the data remains
+ *         owned by the caller.
+ */
+func AvPacketSideDataAdd(sd **CAVPacketSideData, nb_sd *ctypes.Int, _type CAVPacketSideDataType,
+	data unsafe.Pointer, size ctypes.SizeT, flags int) *CAVPacketSideData {
+	return (*CAVPacketSideData)(C.av_packet_side_data_add(
+		(**C.AVPacketSideData)(unsafe.Pointer(sd)),
+		(*C.int)(nb_sd),
+		C.enum_AVPacketSideDataType(_type),
+		data,
+		C.size_t(size),
+		C.int(flags),
+	))
+}
+
+/**
+ * Get side information from a side data array.
+ *
+ * @param sd    the array from which the side data should be fetched
+ * @param nb_sd value containing the number of entries in the array.
+ * @param type  desired side information type
+ *
+ * @return pointer to side data if present or NULL otherwise
+ */
+func AvPacketSideDataGet(sd *CAVPacketSideData, nb_sd ctypes.Int, _type CAVPacketSideDataType) *CAVPacketSideData {
+	return (*CAVPacketSideData)(C.av_packet_side_data_get(
+		(*C.AVPacketSideData)(sd),
+		C.int(nb_sd),
+		C.enum_AVPacketSideDataType(_type),
+	))
+}
+
+/**
+ * Remove side data of the given type from a side data array.
+ *
+ * @param sd    the array from which the side data should be removed
+ * @param nb_sd pointer to an integer containing the number of entries in
+ *              the array. Will be reduced by the amount of entries removed
+ *              upon return
+ * @param type  side information type
+ */
+func AvPacketSideDataRemove(sd *CAVPacketSideData, nb_sd *ctypes.Int, _type CAVPacketSideDataType) {
+	C.av_packet_side_data_remove(
+		(*C.AVPacketSideData)(sd),
+		(*C.int)(nb_sd),
+		C.enum_AVPacketSideDataType(_type),
+	)
+}
+
+/**
+ * Convenience function to free all the side data stored in an array, and
+ * the array itself.
+ *
+ * @param sd    pointer to array of side data to free. Will be set to NULL
+ *              upon return.
+ * @param nb_sd pointer to an integer containing the number of entries in
+ *              the array. Will be set to 0 upon return.
+ */
+func AvPacketSideDataFree(sd **CAVPacketSideData, nb_sd *ctypes.Int) {
+	C.av_packet_side_data_free(
+		(**C.AVPacketSideData)(unsafe.Pointer(sd)),
+		(*C.int)(nb_sd),
+	)
+}
+
+func AvPacketSideDataName(_type CAVPacketSideDataType) string {
+	return C.GoString(C.av_packet_side_data_name(
+		C.enum_AVPacketSideDataType(_type),
+	))
+}
 
 /**
  * @}
@@ -481,13 +538,26 @@ import (
  */
 type CAVPacket C.AVPacket
 
-// /**
-//   - A reference to the reference-counted buffer where the packet data is
-//   - stored.
-//   - May be NULL, then the packet data is not reference-counted.
-//     */
-//
-// AVBufferRef *buf;
+//#region CAVPacket
+
+/**
+ * A reference to the reference-counted buffer where the packet data is
+ * stored.
+ * May be NULL, then the packet data is not reference-counted.
+ */
+func (pkt *CAVPacket) GetBuf() *avutil.CAVBufferRef {
+	return (*avutil.CAVBufferRef)(unsafe.Pointer(pkt.buf))
+}
+
+/**
+ * A reference to the reference-counted buffer where the packet data is
+ * stored.
+ * May be NULL, then the packet data is not reference-counted.
+ */
+func (pkt *CAVPacket) SetBuf(buf *avutil.CAVBufferRef) {
+	pkt.buf = (*C.AVBufferRef)(unsafe.Pointer(buf))
+}
+
 /**
  * Presentation timestamp in AVStream->time_base units; the time at which
  * the decompressed packet will be presented to the user.
@@ -502,6 +572,19 @@ func (pkt *CAVPacket) GetPts() int64 {
 }
 
 /**
+ * Presentation timestamp in AVStream->time_base units; the time at which
+ * the decompressed packet will be presented to the user.
+ * Can be AV_NOPTS_VALUE if it is not stored in the file.
+ * pts MUST be larger or equal to dts as presentation cannot happen before
+ * decompression, unless one wants to view hex dumps. Some formats misuse
+ * the terms dts and pts/cts to mean something different. Such timestamps
+ * must be converted to true pts/dts before they are stored in AVPacket.
+ */
+func (pkt *CAVPacket) SetPts(pts int64) {
+	pkt.pts = C.int64_t(pts)
+}
+
+/**
  * Decompression timestamp in AVStream->time_base units; the time at which
  * the packet is decompressed.
  * Can be AV_NOPTS_VALUE if it is not stored in the file.
@@ -509,12 +592,30 @@ func (pkt *CAVPacket) GetPts() int64 {
 func (pkt *CAVPacket) GetDts() int64 {
 	return int64(pkt.dts)
 }
+
+/**
+ * Decompression timestamp in AVStream->time_base units; the time at which
+ * the packet is decompressed.
+ * Can be AV_NOPTS_VALUE if it is not stored in the file.
+ */
+func (pkt *CAVPacket) SetDts(dts int64) {
+	pkt.dts = C.int64_t(dts)
+}
+
 func (pkt *CAVPacket) GetData() unsafe.Pointer {
 	return unsafe.Pointer(pkt.data)
 }
+func (pkt *CAVPacket) SetData(data unsafe.Pointer) {
+	pkt.data = (*C.uint8_t)(data)
+}
+
 func (pkt *CAVPacket) GetSize() int {
 	return int(pkt.size)
 }
+func (pkt *CAVPacket) SetSize(size int) {
+	pkt.size = C.int(size)
+}
+
 func (pkt *CAVPacket) GetStreamIndex() int {
 	return int(pkt.stream_index)
 }
@@ -529,14 +630,35 @@ func (pkt *CAVPacket) GetFlags() int {
 	return int(pkt.flags)
 }
 
-// /**
-//   - Additional packet data that can be provided by the container.
-//   - Packet can contain several types of side information.
-//     */
-//
-// AVPacketSideData *side_data;
+/**
+ * A combination of AV_PKT_FLAG values
+ */
+func (pkt *CAVPacket) SetFlags(flags int) {
+	pkt.flags = C.int(flags)
+}
+
+/**
+ * Additional packet data that can be provided by the container.
+ * Packet can contain several types of side information.
+ */
+func (pkt *CAVPacket) GetSideData() *CAVPacketSideData {
+	return (*CAVPacketSideData)(pkt.side_data)
+}
+
+/**
+ * Additional packet data that can be provided by the container.
+ * Packet can contain several types of side information.
+ */
+func (pkt *CAVPacket) SetSideData(sideData *CAVPacketSideData) {
+	pkt.side_data = (*C.AVPacketSideData)(sideData)
+}
+
 func (pkt *CAVPacket) GetSideDataElems() int {
 	return int(pkt.side_data_elems)
+}
+
+func (pkt *CAVPacket) SetSideDataElems(sideDataElems int) {
+	pkt.side_data_elems = C.int(sideDataElems)
 }
 
 /**
@@ -547,37 +669,85 @@ func (pkt *CAVPacket) GetDuration() int64 {
 	return int64(pkt.duration)
 }
 
+/**
+ * Duration of this packet in AVStream->time_base units, 0 if unknown.
+ * Equals next_pts - this_pts in presentation order.
+ */
+func (pkt *CAVPacket) SetDuration(duration int64) {
+	pkt.duration = C.int64_t(duration)
+}
+
 // /< byte position in stream, -1 if unknown
 func (pkt *CAVPacket) GetPos() int64 {
 	return int64(pkt.pos)
+}
+
+// /< byte position in stream, -1 if unknown
+func (pkt *CAVPacket) SetPos(pos int64) {
+	pkt.pos = C.int64_t(pos)
 }
 
 /**
  * for some private data of the user
  */
 func (pkt *CAVPacket) GetOpaque() unsafe.Pointer {
-	return unsafe.Pointer(pkt.opaque)
+	return pkt.opaque
 }
 
-// 	 /**
-// 	  * AVBufferRef for free use by the API user. FFmpeg will never check the
-// 	  * contents of the buffer ref. FFmpeg calls av_buffer_unref() on it when
-// 	  * the packet is unreferenced. av_packet_copy_props() calls create a new
-// 	  * reference with av_buffer_ref() for the target packet's opaque_ref field.
-// 	  *
-// 	  * This is unrelated to the opaque field, although it serves a similar
-// 	  * purpose.
-// 	  */
-// 	 AVBufferRef *opaque_ref;
+/**
+ * for some private data of the user
+ */
+func (pkt *CAVPacket) SetOpaque(opaque unsafe.Pointer) {
+	pkt.opaque = opaque
+}
 
-// 	 /**
-// 	  * Time base of the packet's timestamps.
-// 	  * In the future, this field may be set on packets output by encoders or
-// 	  * demuxers, but its value will be by default ignored on input to decoders
-// 	  * or muxers.
-// 	  */
-// 	 AVRational time_base;
-//  } AVPacket;
+/**
+ * AVBufferRef for free use by the API user. FFmpeg will never check the
+ * contents of the buffer ref. FFmpeg calls av_buffer_unref() on it when
+ * the packet is unreferenced. av_packet_copy_props() calls create a new
+ * reference with av_buffer_ref() for the target packet's opaque_ref field.
+ *
+ * This is unrelated to the opaque field, although it serves a similar
+ * purpose.
+ */
+func (pkt *CAVPacket) GetOpaqueRef() *avutil.CAVBufferRef {
+	return (*avutil.CAVBufferRef)(unsafe.Pointer(pkt.opaque_ref))
+}
+
+/**
+ * AVBufferRef for free use by the API user. FFmpeg will never check the
+ * contents of the buffer ref. FFmpeg calls av_buffer_unref() on it when
+ * the packet is unreferenced. av_packet_copy_props() calls create a new
+ * reference with av_buffer_ref() for the target packet's opaque_ref field.
+ *
+ * This is unrelated to the opaque field, although it serves a similar
+ * purpose.
+ */
+func (pkt *CAVPacket) SetOpaqueRef(opaqueRef *avutil.CAVBufferRef) {
+	pkt.opaque_ref = (*C.AVBufferRef)(unsafe.Pointer(opaqueRef))
+}
+
+/**
+ * Time base of the packet's timestamps.
+ * In the future, this field may be set on packets output by encoders or
+ * demuxers, but its value will be by default ignored on input to decoders
+ * or muxers.
+ */
+func (pkt *CAVPacket) GetTimeBase() avutil.CAVRational {
+	return *(*avutil.CAVRational)(unsafe.Pointer(&pkt.time_base))
+}
+
+/**
+ * Time base of the packet's timestamps.
+ * In the future, this field may be set on packets output by encoders or
+ * demuxers, but its value will be by default ignored on input to decoders
+ * or muxers.
+ */
+func (pkt *CAVPacket) SetTimeBase(timeBase avutil.CAVRational) {
+	pkt.time_base = *(*C.AVRational)(unsafe.Pointer(&timeBase))
+}
+
+//#endregion CAVPacket
 
 //  #if FF_API_INIT_PACKET
 //  attribute_deprecated
@@ -587,38 +757,42 @@ func (pkt *CAVPacket) GetOpaque() unsafe.Pointer {
 //  } AVPacketList;
 //  #endif
 
-//  #define AV_PKT_FLAG_KEY     0x0001 ///< The packet contains a keyframe
-//  #define AV_PKT_FLAG_CORRUPT 0x0002 ///< The packet content is corrupted
-//  /**
-//   * Flag is used to discard packets which are required to maintain valid
-//   * decoder state but are not required for output and should be dropped
-//   * after decoding.
-//   **/
-//  #define AV_PKT_FLAG_DISCARD   0x0004
-//  /**
-//   * The packet comes from a trusted source.
-//   *
-//   * Otherwise-unsafe constructs such as arbitrary pointers to data
-//   * outside the packet may be followed.
-//   */
-//  #define AV_PKT_FLAG_TRUSTED   0x0008
-//  /**
-//   * Flag is used to indicate packets that contain frames that can
-//   * be discarded by the decoder.  I.e. Non-reference frames.
-//   */
-//  #define AV_PKT_FLAG_DISPOSABLE 0x0010
+const (
+	AV_PKT_FLAG_KEY     = C.AV_PKT_FLAG_KEY     ///< The packet contains a keyframe
+	AV_PKT_FLAG_CORRUPT = C.AV_PKT_FLAG_CORRUPT ///< The packet content is corrupted
+	/**
+	 * Flag is used to discard packets which are required to maintain valid
+	 * decoder state but are not required for output and should be dropped
+	 * after decoding.
+	 **/
+	AV_PKT_FLAG_DISCARD = C.AV_PKT_FLAG_DISCARD
+	/**
+	 * The packet comes from a trusted source.
+	 *
+	 * Otherwise-unsafe constructs such as arbitrary pointers to data
+	 * outside the packet may be followed.
+	 */
+	AV_PKT_FLAG_TRUSTED = C.AV_PKT_FLAG_TRUSTED
+	/**
+	 * Flag is used to indicate packets that contain frames that can
+	 * be discarded by the decoder.  I.e. Non-reference frames.
+	 */
+	AV_PKT_FLAG_DISPOSABLE = C.AV_PKT_FLAG_DISPOSABLE
+)
 
-//  enum AVSideDataParamChangeFlags {
-//  #if FF_API_OLD_CHANNEL_LAYOUT
-// 	 /**
-// 	  * @deprecated those are not used by any decoder
-// 	  */
-// 	 AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT  = 0x0001,
-// 	 AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT = 0x0002,
-//  #endif
-// 	 AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE    = 0x0004,
-// 	 AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS     = 0x0008,
-//  };
+type CAVSideDataParamChangeFlags C.enum_AVSideDataParamChangeFlags
+
+const (
+	//  #if FF_API_OLD_CHANNEL_LAYOUT
+	// 	 /**
+	// 	  * @deprecated those are not used by any decoder
+	// 	  */
+	// 	 AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT  = 0x0001,
+	// 	 AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT = 0x0002,
+	//  #endif
+	AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE = C.AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE
+	AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS  = C.AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS
+)
 
 /**
  * Allocate an AVPacket and set its fields to default values.  The resulting
@@ -691,105 +865,119 @@ func AvNewPacket(pkt *CAVPacket, size int) int {
 	return int(C.av_new_packet((*C.AVPacket)(pkt), C.int(size)))
 }
 
-//  /**
-//   * Reduce packet size, correctly zeroing padding
-//   *
-//   * @param pkt packet
-//   * @param size new size
-//   */
-//  void av_shrink_packet(AVPacket *pkt, int size);
+/**
+ * Reduce packet size, correctly zeroing padding
+ *
+ * @param pkt packet
+ * @param size new size
+ */
+func AvShrinkPacket(pkt *CAVPacket, size int) {
+	C.av_shrink_packet((*C.AVPacket)(pkt), C.int(size))
+}
 
-//  /**
-//   * Increase packet size, correctly zeroing padding
-//   *
-//   * @param pkt packet
-//   * @param grow_by number of bytes by which to increase the size of the packet
-//   */
-//  int av_grow_packet(AVPacket *pkt, int grow_by);
+/**
+ * Increase packet size, correctly zeroing padding
+ *
+ * @param pkt packet
+ * @param grow_by number of bytes by which to increase the size of the packet
+ */
+func AvGrowPacket(pkt *CAVPacket, grow_by int) int {
+	return int(C.av_grow_packet((*C.AVPacket)(pkt), C.int(grow_by)))
+}
 
-//  /**
-//   * Initialize a reference-counted packet from av_malloc()ed data.
-//   *
-//   * @param pkt packet to be initialized. This function will set the data, size,
-//   *        and buf fields, all others are left untouched.
-//   * @param data Data allocated by av_malloc() to be used as packet data. If this
-//   *        function returns successfully, the data is owned by the underlying AVBuffer.
-//   *        The caller may not access the data through other means.
-//   * @param size size of data in bytes, without the padding. I.e. the full buffer
-//   *        size is assumed to be size + AV_INPUT_BUFFER_PADDING_SIZE.
-//   *
-//   * @return 0 on success, a negative AVERROR on error
-//   */
-//  int av_packet_from_data(AVPacket *pkt, uint8_t *data, int size);
+/**
+ * Initialize a reference-counted packet from av_malloc()ed data.
+ *
+ * @param pkt packet to be initialized. This function will set the data, size,
+ *        and buf fields, all others are left untouched.
+ * @param data Data allocated by av_malloc() to be used as packet data. If this
+ *        function returns successfully, the data is owned by the underlying AVBuffer.
+ *        The caller may not access the data through other means.
+ * @param size size of data in bytes, without the padding. I.e. the full buffer
+ *        size is assumed to be size + AV_INPUT_BUFFER_PADDING_SIZE.
+ *
+ * @return 0 on success, a negative AVERROR on error
+ */
+func AvPacketFromData(pkt *CAVPacket, data unsafe.Pointer, size int) int {
+	return int(C.av_packet_from_data((*C.AVPacket)(pkt), (*C.uint8_t)(data), C.int(size)))
+}
 
-//  /**
-//   * Allocate new information of a packet.
-//   *
-//   * @param pkt packet
-//   * @param type side information type
-//   * @param size side information size
-//   * @return pointer to fresh allocated data or NULL otherwise
-//   */
-//  uint8_t* av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
-// 								  size_t size);
+/**
+ * Allocate new information of a packet.
+ *
+ * @param pkt packet
+ * @param type side information type
+ * @param size side information size
+ * @return pointer to fresh allocated data or NULL otherwise
+ */
+func AvPacketNewSideData(pkt *CAVPacket, _type CAVPacketSideDataType, size ctypes.SizeT) unsafe.Pointer {
+	return unsafe.Pointer(C.av_packet_new_side_data((*C.AVPacket)(pkt), C.enum_AVPacketSideDataType(_type), C.size_t(size)))
+}
 
-//  /**
-//   * Wrap an existing array as a packet side data.
-//   *
-//   * @param pkt packet
-//   * @param type side information type
-//   * @param data the side data array. It must be allocated with the av_malloc()
-//   *             family of functions. The ownership of the data is transferred to
-//   *             pkt.
-//   * @param size side information size
-//   * @return a non-negative number on success, a negative AVERROR code on
-//   *         failure. On failure, the packet is unchanged and the data remains
-//   *         owned by the caller.
-//   */
-//  int av_packet_add_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
-// 							 uint8_t *data, size_t size);
+/**
+ * Wrap an existing array as a packet side data.
+ *
+ * @param pkt packet
+ * @param type side information type
+ * @param data the side data array. It must be allocated with the av_malloc()
+ *             family of functions. The ownership of the data is transferred to
+ *             pkt.
+ * @param size side information size
+ * @return a non-negative number on success, a negative AVERROR code on
+ *         failure. On failure, the packet is unchanged and the data remains
+ *         owned by the caller.
+ */
+func AvPacketAddSideData(pkt *CAVPacket, _type CAVPacketSideDataType, data unsafe.Pointer, size ctypes.SizeT) int {
+	return int(C.av_packet_add_side_data((*C.AVPacket)(pkt), C.enum_AVPacketSideDataType(_type), (*C.uint8_t)(data), C.size_t(size)))
+}
 
-//  /**
-//   * Shrink the already allocated side data buffer
-//   *
-//   * @param pkt packet
-//   * @param type side information type
-//   * @param size new side information size
-//   * @return 0 on success, < 0 on failure
-//   */
-//  int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
-// 								size_t size);
+/**
+ * Shrink the already allocated side data buffer
+ *
+ * @param pkt packet
+ * @param type side information type
+ * @param size new side information size
+ * @return 0 on success, < 0 on failure
+ */
+func AvPacketShrinkSideData(pkt *CAVPacket, _type CAVPacketSideDataType, size ctypes.SizeT) int {
+	return int(C.av_packet_shrink_side_data((*C.AVPacket)(pkt), C.enum_AVPacketSideDataType(_type), C.size_t(size)))
+}
 
-//  /**
-//   * Get side information from packet.
-//   *
-//   * @param pkt packet
-//   * @param type desired side information type
-//   * @param size If supplied, *size will be set to the size of the side data
-//   *             or to zero if the desired side data is not present.
-//   * @return pointer to data if present or NULL otherwise
-//   */
-//  uint8_t* av_packet_get_side_data(const AVPacket *pkt, enum AVPacketSideDataType type,
-// 								  size_t *size);
+/**
+ * Get side information from packet.
+ *
+ * @param pkt packet
+ * @param type desired side information type
+ * @param size If supplied, *size will be set to the size of the side data
+ *             or to zero if the desired side data is not present.
+ * @return pointer to data if present or NULL otherwise
+ */
+func AvPacketGetSideData(pkt *CAVPacket, _type CAVPacketSideDataType, size *ctypes.SizeT) unsafe.Pointer {
+	return unsafe.Pointer(C.av_packet_get_side_data((*C.AVPacket)(pkt), C.enum_AVPacketSideDataType(_type), (*C.size_t)(size)))
+}
 
-//  /**
-//   * Pack a dictionary for use in side_data.
-//   *
-//   * @param dict The dictionary to pack.
-//   * @param size pointer to store the size of the returned data
-//   * @return pointer to data if successful, NULL otherwise
-//   */
-//  uint8_t *av_packet_pack_dictionary(AVDictionary *dict, size_t *size);
-//  /**
-//   * Unpack a dictionary from side_data.
-//   *
-//   * @param data data from side_data
-//   * @param size size of the data
-//   * @param dict the metadata storage dictionary
-//   * @return 0 on success, < 0 on failure
-//   */
-//  int av_packet_unpack_dictionary(const uint8_t *data, size_t size,
-// 								 AVDictionary **dict);
+/**
+ * Pack a dictionary for use in side_data.
+ *
+ * @param dict The dictionary to pack.
+ * @param size pointer to store the size of the returned data
+ * @return pointer to data if successful, NULL otherwise
+ */
+func AvPacketPackDictionary(dict *avutil.CAVDictionary, size *ctypes.SizeT) unsafe.Pointer {
+	return unsafe.Pointer(C.av_packet_pack_dictionary((*C.AVDictionary)(unsafe.Pointer(dict)), (*C.size_t)(size)))
+}
+
+/**
+ * Unpack a dictionary from side_data.
+ *
+ * @param data data from side_data
+ * @param size size of the data
+ * @param dict the metadata storage dictionary
+ * @return 0 on success, < 0 on failure
+ */
+func AvPacketUnpackDictionary(data unsafe.Pointer, size ctypes.SizeT, dict **avutil.CAVDictionary) int {
+	return int(C.av_packet_unpack_dictionary((*C.uint8_t)(data), C.size_t(size), (**C.AVDictionary)(unsafe.Pointer(dict))))
+}
 
 /**
  * Convenience function to free all the side data stored.
