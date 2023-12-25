@@ -4,6 +4,7 @@ package avutil
 #cgo pkg-config: libavutil
 
 #include "libavutil/dict.h"
+#include <stdlib.h>
 */
 import "C"
 import "unsafe"

@@ -4,6 +4,7 @@ package avutil
 #cgo pkg-config: libavutil
 
 #include "libavutil/log.h"
+#include <stdlib.h>
 
 // call marco method
 void marco_av_log(void *avcl, int level, const char *fmt) {
