@@ -45,7 +45,7 @@ func (swrCtx *SwrContext) Free() {
 	swresample.SwrFree(&swrCtx.CSwrContext)
 }
 
-func (swrCtx *SwrContext) ConvertUnsafe(out *unsafe.Pointer, outCount int, in *unsafe.Pointer, inCount int) int {
+func (swrCtx *SwrContext) ConvertUnsafeToUnsafe(out *unsafe.Pointer, outCount int, in *unsafe.Pointer, inCount int) int {
 	return swresample.SwrConvert(swrCtx.CSwrContext, out, outCount, in, inCount)
 }
 
@@ -65,7 +65,7 @@ func (swrCtx *SwrContext) Convert(in []byte, inCount int) ([]byte, int) {
 	defer avutil.AvFree(cIn)
 	copy(unsafe.Slice((*byte)(cIn), inBufSize), in)
 
-	ret := swrCtx.ConvertUnsafe(&cOut, outCount, &cIn, inCount)
+	ret := swrCtx.ConvertUnsafeToUnsafe(&cOut, outCount, &cIn, inCount)
 	if ret <= 0 {
 		return nil, ret
 	}
@@ -79,8 +79,19 @@ func (swrCtx *SwrContext) GetDelay(base int64) int64 {
 	return swresample.SwrGetDelay(swrCtx.CSwrContext, base)
 }
 
-func (swrCtx *SwrContext) ConvertFrame(output *goavutil.AVFrame, input *goavutil.AVFrame) {
-	swresample.SwrConvertFrame(swrCtx.CSwrContext, output.CAVFrame, input.CAVFrame)
+func (swrCtx *SwrContext) ConvertFrameTo(output *goavutil.AVFrame, input *goavutil.AVFrame) int {
+	return swresample.SwrConvertFrame(swrCtx.CSwrContext, output.CAVFrame, input.CAVFrame)
+}
+
+func (swrCtx *SwrContext) ConvertFrame(input *goavutil.AVFrame) (*goavutil.AVFrame, int) {
+	var cOutput avutil.CAVFrame
+	ret := swresample.SwrConvertFrame(swrCtx.CSwrContext, &cOutput, input.CAVFrame)
+	if ret != 0 {
+		return nil, ret
+	}
+	return &goavutil.AVFrame{
+		CAVFrame: &cOutput,
+	}, ret
 }
 
 func (swrCtx *SwrContext) GetInChLayout() (*goavutil.AVChannelLayout, int) {
