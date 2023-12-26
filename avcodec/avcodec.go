@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/Lensual/go-libav/avutil"
+	"github.com/Lensual/go-libav/ctypes"
 )
 
 /*
@@ -3378,14 +3379,12 @@ func AvParserInit(codec_id int) *CAVCodecParserContext {
 */
 
 func AvParserParse2(s *CAVCodecParserContext, avctx *CAVCodecContext,
-	poutbuf unsafe.Pointer, poutbuf_size int,
+	poutbuf unsafe.Pointer, poutbuf_size *ctypes.Int,
 	buf unsafe.Pointer, buf_size int,
 	pts int64, dts int64, pos int64) int {
 
-	cpoutbuf_size := C.int(poutbuf_size)
-
 	return int(C.av_parser_parse2((*C.AVCodecParserContext)(s), (*C.AVCodecContext)(avctx),
-		(**C.uint8_t)(poutbuf), &cpoutbuf_size,
+		(**C.uint8_t)(poutbuf), (*C.int)(poutbuf_size),
 		(*C.uint8_t)(buf), C.int(buf_size),
 		C.int64_t(pts), C.int64_t(dts), C.int64_t(pos)))
 }
