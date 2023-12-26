@@ -23,7 +23,7 @@ func NewAVCodecParserContext(codecId int) *AVCodecParserContext {
 	}
 }
 
-func (parser *AVCodecParserContext) ParseUnsafe(avctx *AVCodecContext,
+func (parser *AVCodecParserContext) ParseUnsafeToUnsafe(avctx *AVCodecContext,
 	poutbuf unsafe.Pointer, poutbufSize *ctypes.Int,
 	buf unsafe.Pointer, bufSize int,
 	pts int64, dts int64, pos int64) int {
@@ -34,25 +34,41 @@ func (parser *AVCodecParserContext) ParseUnsafe(avctx *AVCodecContext,
 		pts, dts, pos)
 }
 
-func (parser *AVCodecParserContext) ParsePktUnsafe(avctx *AVCodecContext, pkt *AVPacket,
-	data unsafe.Pointer, length int,
+func (parser *AVCodecParserContext) ParseUnsafeTo(avctx *AVCodecContext,
+	pkt *AVPacket,
+	buf unsafe.Pointer, bufSize int,
 	pts int64, dts int64, pos int64) int {
 
-	return parser.ParseUnsafe(avctx,
+	return parser.ParseUnsafeToUnsafe(avctx,
 		pkt.CAVPacket.GetData(), pkt.CAVPacket.GetSizePtr(),
-		data, length, pts, dts, pos)
+		buf, bufSize,
+		pts, dts, pos)
 }
 
-func (parser *AVCodecParserContext) ParsePkt(avctx *AVCodecContext, pkt *AVPacket,
-	data []byte,
+func (parser *AVCodecParserContext) ParseToUnsafe(avctx *AVCodecContext,
+	poutbuf unsafe.Pointer, poutbufSize *ctypes.Int,
+	buf []byte,
 	pts int64, dts int64, pos int64) int {
 
-	length := len(data)
-	cData := avutil.AvMalloc(ctypes.SizeT(length))
-	defer avutil.AvFree(cData)
-	copy(unsafe.Slice((*byte)(cData), length), data)
+	length := len(buf)
+	cBuf := avutil.AvMalloc(ctypes.SizeT(length))
+	defer avutil.AvFree(cBuf)
+	copy(unsafe.Slice((*byte)(cBuf), length), buf)
 
-	return parser.ParsePktUnsafe(avctx, pkt, cData, length, pts, dts, pos)
+	return parser.ParseUnsafeToUnsafe(avctx,
+		poutbuf, poutbufSize,
+		cBuf, len(buf),
+		pts, dts, pos)
+}
+
+func (parser *AVCodecParserContext) ParseTo(avctx *AVCodecContext,
+	pkt *AVPacket, buf []byte,
+	pts int64, dts int64, pos int64) int {
+
+	return parser.ParseToUnsafe(avctx,
+		pkt.CAVPacket.GetData(), pkt.CAVPacket.GetSizePtr(),
+		buf,
+		pts, dts, pos)
 }
 
 func (parser *AVCodecParserContext) Parse(avctx *AVCodecContext, data []byte,
@@ -63,7 +79,21 @@ func (parser *AVCodecParserContext) Parse(avctx *AVCodecContext, data []byte,
 		return nil, int(syscall.ENOMEM)
 	}
 
-	return pkt, parser.ParsePkt(avctx, pkt, data, pts, dts, pos)
+	ret := parser.ParseTo(avctx,
+		pkt,
+		data,
+		pts, dts, pos)
+
+	if ret != 0 {
+		pkt.Free()
+		return nil, ret
+	}
+
+	if pkt.CAVPacket.GetData() == nil {
+		pkt = nil
+	}
+
+	return pkt, ret
 }
 
 func (parser *AVCodecParserContext) Free() {
