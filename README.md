@@ -22,7 +22,7 @@ Package `go-libav/av*` are cgo bindings. Before using this package, you'd better
 
 Package `golibav/advance` is a secondary package to simplify use in go.
 
-Need Golang version `1.20` and FFmpeg library version `6.1`.
+Need Golang version `1.21` and FFmpeg library version `6.1`.
 
 Set your environment variable if your library is not in the default directory.
 
