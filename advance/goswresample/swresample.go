@@ -65,7 +65,7 @@ func (swrCtx *SwrContext) Convert(in []byte, inCount int) ([]byte, int) {
 	defer avutil.AvFree(cIn)
 	copy(unsafe.Slice((*byte)(cIn), inBufSize), in)
 
-	ret := swresample.SwrConvert(swrCtx.CSwrContext, &cOut, int(outCount), &cIn, int(inCount))
+	ret := swrCtx.ConvertUnsafe(&cOut, outCount, &cIn, inCount)
 	if ret <= 0 {
 		return nil, ret
 	}

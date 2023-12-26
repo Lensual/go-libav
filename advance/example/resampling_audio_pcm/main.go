@@ -35,18 +35,21 @@ func main() {
 	}
 	defer outFile.Close()
 
-	outChLayout := goavutil.GetAvChannelLayoutDefault(1)
+	outChLayout := goavutil.NewAvChannelLayoutDefault(1)
 	outSampleFmt := avutil.AV_SAMPLE_FMT_S16
 	outSampleRate := 8000
 
-	inChLayout := goavutil.GetAvChannelLayoutDefault(2)
+	inChLayout := goavutil.NewAvChannelLayoutDefault(2)
 	inSampleFmt := avutil.AV_SAMPLE_FMT_S16
 	inSampleRate := 44100
 
-	swrCtx, _ := goswresample.NewSwrContextWithOpts(outChLayout, outSampleFmt, outSampleRate, inChLayout, inSampleFmt, inSampleRate)
+	swrCtx, code := goswresample.NewSwrContextWithOpts(outChLayout, outSampleFmt, outSampleRate, inChLayout, inSampleFmt, inSampleRate)
+	if code != 0 {
+		panic(goavutil.AvErr(code))
+	}
 	defer swrCtx.Free()
 
-	code := swrCtx.Init()
+	code = swrCtx.Init()
 	if code != 0 {
 		panic(goavutil.AvErr(code))
 	}
