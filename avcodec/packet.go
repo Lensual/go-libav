@@ -612,6 +612,9 @@ func (pkt *CAVPacket) SetData(data unsafe.Pointer) {
 func (pkt *CAVPacket) GetSize() int {
 	return int(pkt.size)
 }
+func (pkt *CAVPacket) GetSizePtr() *ctypes.Int {
+	return (*ctypes.Int)(&pkt.size)
+}
 func (pkt *CAVPacket) SetSize(size int) {
 	pkt.size = C.int(size)
 }

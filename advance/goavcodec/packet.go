@@ -29,7 +29,11 @@ func NewAvPacket(size int) (*AVPacket, int) {
 }
 
 func AllocAvPacket() *AVPacket {
+	pkt := avcodec.AvPacketAlloc()
+	if pkt == nil {
+		return nil
+	}
 	return &AVPacket{
-		CAVPacket: avcodec.AvPacketAlloc(),
+		CAVPacket: pkt,
 	}
 }
