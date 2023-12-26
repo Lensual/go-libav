@@ -62,6 +62,9 @@ func (layout *AVChannelLayout) Check() bool {
 }
 
 func (layout *AVChannelLayout) EqualsErr(b *AVChannelLayout) (bool, error) {
+	if layout.CAVChannelLayout == b.CAVChannelLayout {
+		return true, nil
+	}
 	ret := avutil.AvChannelLayoutCompare(layout.CAVChannelLayout, b.CAVChannelLayout)
 	if ret != 0 && ret != 1 {
 		return false, AvErr(ret)
