@@ -111,13 +111,13 @@ func (avctx *AVCodecContext) Decode(pkt *AVPacket) ([]*goavutil.AVFrame, int) {
 	return frames, code
 }
 
-func (avctx *AVCodecContext) Encode(frame *goavutil.AVFrame) ([]AVPacket, int) {
+func (avctx *AVCodecContext) Encode(frame *goavutil.AVFrame) ([]*AVPacket, int) {
 	code := avctx.SendFrame(frame)
 	if code < 0 {
 		return nil, code
 	}
 
-	pkts := make([]AVPacket, 0)
+	pkts := make([]*AVPacket, 0)
 
 	for {
 		var pkt *AVPacket
@@ -132,7 +132,7 @@ func (avctx *AVCodecContext) Encode(frame *goavutil.AVFrame) ([]AVPacket, int) {
 			break
 		}
 
-		pkts = append(pkts, *pkt)
+		pkts = append(pkts, pkt)
 	}
 
 	return pkts, code
