@@ -247,23 +247,49 @@ const (
 	AV_MATRIX_ENCODING_NB             CAVMatrixEncoding = C.AV_MATRIX_ENCODING_NB
 )
 
-// /**
-//  * @}
-//  */
+/**
+ * @}
+ */
 
-// /**
-//  * An AVChannelCustom defines a single channel within a custom order layout
-//  *
-//  * Unlike most structures in FFmpeg, sizeof(AVChannelCustom) is a part of the
-//  * public ABI.
-//  *
-//  * No new fields may be added to it without a major version bump.
-//  */
-// typedef struct AVChannelCustom {
-//     enum AVChannel id;
-//     char name[16];
-//     void *opaque;
-// } AVChannelCustom;
+/**
+ * An AVChannelCustom defines a single channel within a custom order layout
+ *
+ * Unlike most structures in FFmpeg, sizeof(AVChannelCustom) is a part of the
+ * public ABI.
+ *
+ * No new fields may be added to it without a major version bump.
+ */
+type CAVChannelCustom C.AVChannelCustom
+
+//#region CAVChannelCustom
+
+func (cc *CAVChannelCustom) GetId() CAVChannel {
+	return CAVChannel(cc.id)
+}
+func (cc *CAVChannelCustom) SetId(id CAVChannel) {
+	cc.id = C.enum_AVChannel(id)
+}
+
+func (cc *CAVChannelCustom) GetName() string {
+	return C.GoString(unsafe.SliceData(cc.name[:]))
+}
+
+// WARNING: Characters exceeding 16 bytes will be discarded.
+func (cc *CAVChannelCustom) SetName(name string) {
+	if len(name) > 16 {
+		name = name[:16]
+	}
+	copy(unsafe.Slice((*byte)(unsafe.Pointer(&cc.name)), 16), name)
+}
+
+func (cc *CAVChannelCustom) GetOpaque() unsafe.Pointer {
+	return cc.opaque
+}
+func (cc *CAVChannelCustom) SetOpaque(opaque unsafe.Pointer) {
+	cc.opaque = opaque
+}
+
+//#endregion CAVChannelCustom
 
 /**
  * An AVChannelLayout holds information about the channel layout of audio data.
@@ -299,11 +325,21 @@ type CAVChannelLayout C.AVChannelLayout
 
 //#region CAVChannelLayout
 
-//     /**
-//      * Channel order used in this layout.
-//      * This is a mandatory field.
-//      */
-//     enum AVChannelOrder order;
+/**
+ * Channel order used in this layout.
+ * This is a mandatory field.
+ */
+func (l CAVChannelLayout) GetOrder() CAVChannelOrder {
+	return CAVChannelOrder(l.order)
+}
+
+/**
+ * Channel order used in this layout.
+ * This is a mandatory field.
+ */
+func (l *CAVChannelLayout) SetOrder(order CAVChannelOrder) {
+	l.order = C.enum_AVChannelOrder(order)
+}
 
 /**
  * Number of channels in this layout. Mandatory field.
@@ -312,52 +348,121 @@ func (l CAVChannelLayout) GetNbChannels() int {
 	return int(l.nb_channels)
 }
 
-//     /**
-//      * Details about which channels are present in this layout.
-//      * For AV_CHANNEL_ORDER_UNSPEC, this field is undefined and must not be
-//      * used.
-//      */
+/**
+ * Number of channels in this layout. Mandatory field.
+ */
+func (l *CAVChannelLayout) SetNbChannels(nbChannels int) {
+	l.nb_channels = C.int(nbChannels)
+}
+
+/**
+ * Details about which channels are present in this layout.
+ * For AV_CHANNEL_ORDER_UNSPEC, this field is undefined and must not be
+ * used.
+ */
 //     union {
-//         /**
-//          * This member must be used for AV_CHANNEL_ORDER_NATIVE, and may be used
-//          * for AV_CHANNEL_ORDER_AMBISONIC to signal non-diegetic channels.
-//          * It is a bitmask, where the position of each set bit means that the
-//          * AVChannel with the corresponding value is present.
-//          *
-//          * I.e. when (mask & (1 << AV_CHAN_FOO)) is non-zero, then AV_CHAN_FOO
-//          * is present in the layout. Otherwise it is not present.
-//          *
-//          * @note when a channel layout using a bitmask is constructed or
-//          * modified manually (i.e.  not using any of the av_channel_layout_*
-//          * functions), the code doing it must ensure that the number of set bits
-//          * is equal to nb_channels.
-//          */
-//         uint64_t mask;
-//         /**
-//          * This member must be used when the channel order is
-//          * AV_CHANNEL_ORDER_CUSTOM. It is a nb_channels-sized array, with each
-//          * element signalling the presence of the AVChannel with the
-//          * corresponding value in map[i].id.
-//          *
-//          * I.e. when map[i].id is equal to AV_CHAN_FOO, then AV_CH_FOO is the
-//          * i-th channel in the audio data.
-//          *
-//          * When map[i].id is in the range between AV_CHAN_AMBISONIC_BASE and
-//          * AV_CHAN_AMBISONIC_END (inclusive), the channel contains an ambisonic
-//          * component with ACN index (as defined above)
-//          * n = map[i].id - AV_CHAN_AMBISONIC_BASE.
-//          *
-//          * map[i].name may be filled with a 0-terminated string, in which case
-//          * it will be used for the purpose of identifying the channel with the
-//          * convenience functions below. Otherise it must be zeroed.
-//          */
-//         AVChannelCustom *map;
+
+/**
+ * This member must be used for AV_CHANNEL_ORDER_NATIVE, and may be used
+ * for AV_CHANNEL_ORDER_AMBISONIC to signal non-diegetic channels.
+ * It is a bitmask, where the position of each set bit means that the
+ * AVChannel with the corresponding value is present.
+ *
+ * I.e. when (mask & (1 << AV_CHAN_FOO)) is non-zero, then AV_CHAN_FOO
+ * is present in the layout. Otherwise it is not present.
+ *
+ * @note when a channel layout using a bitmask is constructed or
+ * modified manually (i.e.  not using any of the av_channel_layout_*
+ * functions), the code doing it must ensure that the number of set bits
+ * is equal to nb_channels.
+ */
+// uint64_t mask;
+func (l CAVChannelLayout) GetMask() uint64 {
+	return binary.NativeEndian.Uint64(l.u[:])
+}
+
+/**
+ * This member must be used for AV_CHANNEL_ORDER_NATIVE, and may be used
+ * for AV_CHANNEL_ORDER_AMBISONIC to signal non-diegetic channels.
+ * It is a bitmask, where the position of each set bit means that the
+ * AVChannel with the corresponding value is present.
+ *
+ * I.e. when (mask & (1 << AV_CHAN_FOO)) is non-zero, then AV_CHAN_FOO
+ * is present in the layout. Otherwise it is not present.
+ *
+ * @note when a channel layout using a bitmask is constructed or
+ * modified manually (i.e.  not using any of the av_channel_layout_*
+ * functions), the code doing it must ensure that the number of set bits
+ * is equal to nb_channels.
+ */
+// uint64_t mask;
+func (l *CAVChannelLayout) SetMask(mask uint64) {
+	binary.NativeEndian.PutUint64(l.u[:], mask)
+}
+
+/**
+ * This member must be used when the channel order is
+ * AV_CHANNEL_ORDER_CUSTOM. It is a nb_channels-sized array, with each
+ * element signalling the presence of the AVChannel with the
+ * corresponding value in map[i].id.
+ *
+ * I.e. when map[i].id is equal to AV_CHAN_FOO, then AV_CH_FOO is the
+ * i-th channel in the audio data.
+ *
+ * When map[i].id is in the range between AV_CHAN_AMBISONIC_BASE and
+ * AV_CHAN_AMBISONIC_END (inclusive), the channel contains an ambisonic
+ * component with ACN index (as defined above)
+ * n = map[i].id - AV_CHAN_AMBISONIC_BASE.
+ *
+ * map[i].name may be filled with a 0-terminated string, in which case
+ * it will be used for the purpose of identifying the channel with the
+ * convenience functions below. Otherise it must be zeroed.
+ */
+// AVChannelCustom *map;
+func (l CAVChannelLayout) GetMap() *CAVChannelCustom {
+	cMapPtr := unsafe.Pointer(uintptr(binary.NativeEndian.Uint64(l.u[:])))
+	return (*CAVChannelCustom)(cMapPtr)
+}
+
+/**
+ * This member must be used when the channel order is
+ * AV_CHANNEL_ORDER_CUSTOM. It is a nb_channels-sized array, with each
+ * element signalling the presence of the AVChannel with the
+ * corresponding value in map[i].id.
+ *
+ * I.e. when map[i].id is equal to AV_CHAN_FOO, then AV_CH_FOO is the
+ * i-th channel in the audio data.
+ *
+ * When map[i].id is in the range between AV_CHAN_AMBISONIC_BASE and
+ * AV_CHAN_AMBISONIC_END (inclusive), the channel contains an ambisonic
+ * component with ACN index (as defined above)
+ * n = map[i].id - AV_CHAN_AMBISONIC_BASE.
+ *
+ * map[i].name may be filled with a 0-terminated string, in which case
+ * it will be used for the purpose of identifying the channel with the
+ * convenience functions below. Otherise it must be zeroed.
+ */
+// AVChannelCustom *map;
+func (l *CAVChannelLayout) SetMap(_map *CAVChannelCustom) {
+	cMapPtr := uint64(uintptr(unsafe.Pointer(_map)))
+	binary.NativeEndian.PutUint64(l.u[:], cMapPtr)
+}
+
 //     } u;
 
-//     /**
-//      * For some private data of the user.
-//      */
-//     void *opaque;
+/**
+ * For some private data of the user.
+ */
+func (l *CAVChannelLayout) GetOpaque() unsafe.Pointer {
+	return l.opaque
+}
+
+/**
+ * For some private data of the user.
+ */
+func (l *CAVChannelLayout) SetOpaque(opaque unsafe.Pointer) {
+	l.opaque = opaque
+}
 
 //#endregion CAVChannelLayout
 
@@ -374,7 +479,7 @@ func AV_CHANNEL_LAYOUT_MASK(nb int, m uint64) CAVChannelLayout {
 		opaque: nil,
 	}
 
-	binary.NativeEndian.PutUint64(l.u[0:8], m)
+	l.SetMask(m)
 	return l
 }
 
@@ -868,32 +973,36 @@ func AvChannelLayoutCopy(dst *CAVChannelLayout, src *CAVChannelLayout) int {
 // uint64_t av_channel_layout_subset(const AVChannelLayout *channel_layout,
 //                                   uint64_t mask);
 
-// /**
-//  * Check whether a channel layout is valid, i.e. can possibly describe audio
-//  * data.
-//  *
-//  * @param channel_layout input channel layout
-//  * @return 1 if channel_layout is valid, 0 otherwise.
-//  */
-// int av_channel_layout_check(const AVChannelLayout *channel_layout);
+/**
+ * Check whether a channel layout is valid, i.e. can possibly describe audio
+ * data.
+ *
+ * @param channel_layout input channel layout
+ * @return 1 if channel_layout is valid, 0 otherwise.
+ */
+func AvChannelLayoutCheck(channelLayout *CAVChannelLayout) int {
+	return int(C.av_channel_layout_check((*C.AVChannelLayout)(channelLayout)))
+}
 
-// /**
-//  * Check whether two channel layouts are semantically the same, i.e. the same
-//  * channels are present on the same positions in both.
-//  *
-//  * If one of the channel layouts is AV_CHANNEL_ORDER_UNSPEC, while the other is
-//  * not, they are considered to be unequal. If both are AV_CHANNEL_ORDER_UNSPEC,
-//  * they are considered equal iff the channel counts are the same in both.
-//  *
-//  * @param chl input channel layout
-//  * @param chl1 input channel layout
-//  * @return 0 if chl and chl1 are equal, 1 if they are not equal. A negative
-//  *         AVERROR code if one or both are invalid.
-//  */
-// int av_channel_layout_compare(const AVChannelLayout *chl, const AVChannelLayout *chl1);
+/**
+ * Check whether two channel layouts are semantically the same, i.e. the same
+ * channels are present on the same positions in both.
+ *
+ * If one of the channel layouts is AV_CHANNEL_ORDER_UNSPEC, while the other is
+ * not, they are considered to be unequal. If both are AV_CHANNEL_ORDER_UNSPEC,
+ * they are considered equal iff the channel counts are the same in both.
+ *
+ * @param chl input channel layout
+ * @param chl1 input channel layout
+ * @return 0 if chl and chl1 are equal, 1 if they are not equal. A negative
+ *         AVERROR code if one or both are invalid.
+ */
+func AvChannelLayoutCompare(chl *CAVChannelLayout, chl1 *CAVChannelLayout) int {
+	return int(C.av_channel_layout_compare((*C.AVChannelLayout)(chl), (*C.AVChannelLayout)(chl1)))
+}
 
-// /**
-//  * @}
-//  */
+/**
+ * @}
+ */
 
 // #endif /* AVUTIL_CHANNEL_LAYOUT_H */
