@@ -1,6 +1,7 @@
 package goavcodec
 
 import (
+	"context"
 	"syscall"
 
 	"github.com/Lensual/go-libav/advance/goavutil"
@@ -69,7 +70,11 @@ func (avctx *AVCodecContext) Free() {
 }
 
 func (avctx *AVCodecContext) SendPacket(pkt *AVPacket) int {
-	return avcodec.AvcodecSendPacket(avctx.CAVCodecContext, pkt.CAVPacket)
+	var cPkt *avcodec.CAVPacket
+	if pkt != nil {
+		cPkt = pkt.CAVPacket
+	}
+	return avcodec.AvcodecSendPacket(avctx.CAVCodecContext, cPkt)
 }
 
 func (avctx *AVCodecContext) ReceiveFrame(frame *goavutil.AVFrame) int {
@@ -77,13 +82,19 @@ func (avctx *AVCodecContext) ReceiveFrame(frame *goavutil.AVFrame) int {
 }
 
 func (avctx *AVCodecContext) SendFrame(frame *goavutil.AVFrame) int {
-	return avcodec.AvcodecSendFrame(avctx.CAVCodecContext, frame.CAVFrame)
+	var cFrame *avutil.CAVFrame
+	if frame != nil {
+		cFrame = frame.CAVFrame
+	}
+	return avcodec.AvcodecSendFrame(avctx.CAVCodecContext, cFrame)
 }
 
 func (avctx *AVCodecContext) ReceivePacket(pkt *AVPacket) int {
 	return avcodec.AvcodecReceivePacket(avctx.CAVCodecContext, pkt.CAVPacket)
 }
 
+// Decode AVPacket.
+// Return a slice of decoded AVFrame, May be nil or empty.
 func (avctx *AVCodecContext) Decode(pkt *AVPacket) ([]*goavutil.AVFrame, int) {
 	code := avctx.SendPacket(pkt)
 	if code < 0 {
@@ -111,6 +122,74 @@ func (avctx *AVCodecContext) Decode(pkt *AVPacket) ([]*goavutil.AVFrame, int) {
 	return frames, code
 }
 
+// Decode AVPacket from channel.
+//
+// @param ctx The context.Context to cancel this goroutine.
+// @param pktChan The AVPacket channe
+//
+// @return context.Context The context.Context to get the cause of this gorouine.
+// @return <-chan *goavutil.AVFrame The channel to read decoded AVFrame.
+func (avctx *AVCodecContext) DecodeChan(ctx context.Context, pktChan <-chan *AVPacket) (context.Context, <-chan *goavutil.AVFrame) {
+	ctx, cancel := context.WithCancelCause(ctx)
+	frameChan := make(chan *goavutil.AVFrame)
+
+	go func() {
+		defer close(frameChan)
+	loop:
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case pkt, ok := <-pktChan:
+				if !ok {
+					break loop
+				}
+				frames, code := avctx.Decode(pkt)
+				pkt.Unref()
+				for _, frame := range frames {
+					select {
+					case <-ctx.Done():
+						for _, frame := range frames {
+							frame.Unref()
+						}
+						return
+					case frameChan <- frame:
+					}
+				}
+				if code == avutil.AVERROR(int(syscall.EAGAIN)) || code == avutil.AVERROR_EOF {
+					continue
+				}
+				if code < 0 {
+					cancel(goavutil.AvErr(code))
+				}
+			}
+		}
+
+		//flush codec
+		frames, code := avctx.Decode(nil)
+		for _, frame := range frames {
+			select {
+			case <-ctx.Done():
+				for _, frame := range frames {
+					frame.Unref()
+				}
+				return
+			case frameChan <- frame:
+			}
+		}
+		if code == avutil.AVERROR(int(syscall.EAGAIN)) || code == avutil.AVERROR_EOF {
+			return
+		}
+		if code < 0 {
+			cancel(goavutil.AvErr(code))
+		}
+	}()
+
+	return ctx, frameChan
+}
+
+// Encode AVFrame.
+// Return a slice of encoded AVPacket, May be nil or empty.
 func (avctx *AVCodecContext) Encode(frame *goavutil.AVFrame) ([]*AVPacket, int) {
 	code := avctx.SendFrame(frame)
 	if code < 0 {
@@ -120,12 +199,11 @@ func (avctx *AVCodecContext) Encode(frame *goavutil.AVFrame) ([]*AVPacket, int) 
 	pkts := make([]*AVPacket, 0)
 
 	for {
-		var pkt *AVPacket
-		pkt, code = NewAvPacket(0)
-		if code != 0 {
+		pkt := AllocAvPacket()
+		if pkt == nil {
+			code = int(syscall.ENOMEM)
 			break
 		}
-
 		code = avctx.ReceivePacket(pkt)
 		if code < 0 {
 			pkt.Free()
@@ -136,6 +214,72 @@ func (avctx *AVCodecContext) Encode(frame *goavutil.AVFrame) ([]*AVPacket, int) 
 	}
 
 	return pkts, code
+}
+
+// Encode AVPacket from channel.
+//
+// @param ctx The context.Context to cancel this goroutine.
+// @param frameChan The AVFrame channel.
+//
+// @return context.Context The context.Context to get the cause of this gorouine.
+// @return <-chan *AVPacket The channel to read encoded AVPacket.
+func (avctx *AVCodecContext) EncodeChan(ctx context.Context, frameChan <-chan *goavutil.AVFrame) (context.Context, <-chan *AVPacket) {
+	ctx, cancel := context.WithCancelCause(ctx)
+	pktChan := make(chan *AVPacket)
+
+	go func() {
+		defer close(pktChan)
+	loop:
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case frame, ok := <-frameChan:
+				if !ok {
+					break loop
+				}
+				pkts, code := avctx.Encode(frame)
+				frame.Unref()
+				for _, pkt := range pkts {
+					select {
+					case <-ctx.Done():
+						for _, pkt := range pkts {
+							pkt.Unref()
+						}
+						return
+					case pktChan <- pkt:
+					}
+				}
+				if code == avutil.AVERROR(int(syscall.EAGAIN)) || code == avutil.AVERROR_EOF {
+					continue
+				}
+				if code < 0 {
+					cancel(goavutil.AvErr(code))
+				}
+			}
+		}
+
+		//flush codec
+		pkts, code := avctx.Encode(nil)
+		for _, pkt := range pkts {
+			select {
+			case <-ctx.Done():
+				for _, pkt := range pkts {
+					pkt.Unref()
+				}
+				return
+			case pktChan <- pkt:
+			}
+		}
+		if code == avutil.AVERROR(int(syscall.EAGAIN)) || code == avutil.AVERROR_EOF {
+			return
+		}
+		if code < 0 {
+			cancel(goavutil.AvErr(code))
+		}
+	}()
+
+	return ctx, pktChan
 }
 
 func (avctx *AVCodecContext) ParametersFrom(par *avcodec.CAVCodecParameters) int {

@@ -1,6 +1,7 @@
 package goswresample
 
 import (
+	"context"
 	"unsafe"
 
 	"github.com/Lensual/go-libav/advance/goavutil"
@@ -84,14 +85,95 @@ func (swrCtx *SwrContext) ConvertFrameTo(output *goavutil.AVFrame, input *goavut
 }
 
 func (swrCtx *SwrContext) ConvertFrame(input *goavutil.AVFrame) (*goavutil.AVFrame, int) {
-	var cOutput avutil.CAVFrame
-	ret := swresample.SwrConvertFrame(swrCtx.CSwrContext, &cOutput, input.CAVFrame)
-	if ret != 0 {
-		return nil, ret
+	output := goavutil.AllocAVFrame()
+
+	outChLayout, code := swrCtx.GetOutChLayout()
+	if code != 0 {
+		output.Free()
+		return nil, code
 	}
-	return &goavutil.AVFrame{
-		CAVFrame: &cOutput,
-	}, ret
+	output.SetChLayout(outChLayout)
+
+	outSampleRate, code := swrCtx.GetOutSampleRate()
+	if code != 0 {
+		output.Free()
+		return nil, code
+	}
+	output.SetSampleRate(int(outSampleRate))
+
+	outSampleFmt, code := swrCtx.GetOutSampleFmt()
+	if code != 0 {
+		output.Free()
+		return nil, code
+	}
+	output.SetFormat(int(outSampleFmt))
+
+	var cInput *avutil.CAVFrame
+	if input != nil {
+		cInput = input.CAVFrame
+	}
+
+	code = swresample.SwrConvertFrame(swrCtx.CSwrContext, output.CAVFrame, cInput)
+	if code != 0 {
+		output.Free()
+		return nil, code
+	}
+	return output, code
+}
+
+func ConvertFrames() {
+	// TODO
+}
+
+func (swrCtx *SwrContext) ConvertFrameChan(ctx context.Context, inputChan <-chan *goavutil.AVFrame) (context.Context, <-chan *goavutil.AVFrame) {
+	ctx, cancel := context.WithCancelCause(ctx)
+	outputChan := make(chan *goavutil.AVFrame)
+
+	go func() {
+		defer close(outputChan)
+	loop:
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case input, ok := <-inputChan:
+				if !ok {
+					break loop
+				}
+				output, code := swrCtx.ConvertFrame(input)
+				input.Unref()
+				if output != nil {
+					select {
+					case <-ctx.Done():
+						output.Unref()
+						return
+					case outputChan <- output:
+					}
+				}
+				if code != 0 {
+					cancel(goavutil.AvErr(code))
+					return
+				}
+			}
+		}
+
+		//flush resample
+		output, code := swrCtx.ConvertFrame(nil)
+		if output != nil {
+			select {
+			case <-ctx.Done():
+				output.Unref()
+				return
+			case outputChan <- output:
+			}
+		}
+		if code != 0 {
+			cancel(goavutil.AvErr(code))
+			return
+		}
+	}()
+
+	return ctx, outputChan
 }
 
 func (swrCtx *SwrContext) GetInChLayout() (*goavutil.AVChannelLayout, int) {
