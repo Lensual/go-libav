@@ -605,6 +605,9 @@ func (pkt *CAVPacket) SetDts(dts int64) {
 func (pkt *CAVPacket) GetData() unsafe.Pointer {
 	return unsafe.Pointer(pkt.data)
 }
+func (pkt *CAVPacket) GetDataPtr() *unsafe.Pointer {
+	return (*unsafe.Pointer)(unsafe.Pointer(&pkt.data))
+}
 func (pkt *CAVPacket) SetData(data unsafe.Pointer) {
 	pkt.data = (*C.uint8_t)(data)
 }
@@ -793,8 +796,8 @@ const (
 	// 	 AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT  = 0x0001,
 	// 	 AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT = 0x0002,
 	//  #endif
-	AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE = C.AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE
-	AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS  = C.AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS
+	AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE CAVSideDataParamChangeFlags = C.AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE
+	AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS  CAVSideDataParamChangeFlags = C.AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS
 )
 
 /**
