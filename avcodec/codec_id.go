@@ -8,6 +8,39 @@ package avcodec
 import "C"
 import "github.com/Lensual/go-libav/avutil"
 
+/*
+ * Codec IDs
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+//  #ifndef AVCODEC_CODEC_ID_H
+//  #define AVCODEC_CODEC_ID_H
+
+//  #include "libavutil/avutil.h"
+//  #include "libavutil/samplefmt.h"
+
+//  #include "version_major.h"
+
+/**
+ * @addtogroup lavc_core
+ * @{
+ */
+
 /**
  * Identify the syntax and semantics of the bitstream.
  * The principle is roughly:
@@ -590,12 +623,12 @@ const (
 	AV_CODEC_ID_ANULL CAVCodecID = C.AV_CODEC_ID_ANULL
 )
 
-// /**
-//  * Get the type of the given codec.
-//  */
-// func AvcodecGetType(codec_id AVCodecID) AVMediaType {
-// 	C.avcodec_get_type(C.enum_AVCodecID(codec_id))
-// }
+/**
+ * Get the type of the given codec.
+ */
+func AvcodecGetType(codecId CAVCodecID) avutil.CAVMediaType {
+	return avutil.CAVMediaType(C.avcodec_get_type(C.enum_AVCodecID(codecId)))
+}
 
 /**
  * Get the name of a codec.
@@ -611,8 +644,8 @@ func AvcodecGetName(id CAVCodecID) string {
  * @param[in] codec_id the codec
  * @return Number of bits per sample or zero if unknown for the given codec.
  */
-func AvGetBitsPerSample(codec_id CAVCodecID) int {
-	return int(C.av_get_bits_per_sample(C.enum_AVCodecID(codec_id)))
+func AvGetBitsPerSample(codecId CAVCodecID) int {
+	return int(C.av_get_bits_per_sample(C.enum_AVCodecID(codecId)))
 }
 
 /**
@@ -623,8 +656,8 @@ func AvGetBitsPerSample(codec_id CAVCodecID) int {
  * @param[in] codec_id the codec
  * @return Number of bits per sample or zero if unknown for the given codec.
  */
-func AvGetExactBitsPerSample(codec_id CAVCodecID) int {
-	return int(C.av_get_exact_bits_per_sample(C.enum_AVCodecID(codec_id)))
+func AvGetExactBitsPerSample(codecId CAVCodecID) int {
+	return int(C.av_get_exact_bits_per_sample(C.enum_AVCodecID(codecId)))
 }
 
 /**
@@ -638,8 +671,8 @@ func AvGetExactBitsPerSample(codec_id CAVCodecID) int {
  *       supported by a specific decoder or encoder implementation, this
  *       function searches the list of profiles from the AVCodecDescriptor
  */
-func AvcodecProfileName(codec_id CAVCodecID, profile int) string {
-	return C.GoString(C.avcodec_profile_name(C.enum_AVCodecID(codec_id), C.int(profile)))
+func AvcodecProfileName(codecId CAVCodecID, profile int) string {
+	return C.GoString(C.avcodec_profile_name(C.enum_AVCodecID(codecId), C.int(profile)))
 }
 
 /**
@@ -648,6 +681,12 @@ func AvcodecProfileName(codec_id CAVCodecID, profile int) string {
  *            -1 (or anything else) for native
  * @return  AV_CODEC_ID_PCM_* or AV_CODEC_ID_NONE
  */
-func av_get_pcm_codec(fmt avutil.CAVSampleFormat, be int) CAVCodecID {
+func AvGetPcmCodec(fmt avutil.CAVSampleFormat, be int) CAVCodecID {
 	return CAVCodecID(C.av_get_pcm_codec(C.enum_AVSampleFormat(fmt), C.int(be)))
 }
+
+/**
+ * @}
+ */
+
+//  #endif // AVCODEC_CODEC_ID_H
