@@ -3,7 +3,7 @@ package avformat
 /*
 #cgo pkg-config: libavformat
 
-#include "libavformat/avformat.h"
+#include "libavformat/avio.h"
 */
 import "C"
 import (

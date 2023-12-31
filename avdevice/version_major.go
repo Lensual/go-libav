@@ -3,7 +3,7 @@ package avdevice
 /*
 #cgo pkg-config: libavdevice
 
-#include "libavdevice/avdevice.h"
+#include "libavdevice/version_major.h"
 */
 import "C"
 

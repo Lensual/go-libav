@@ -3,7 +3,7 @@ package avcodec
 /*
 #cgo pkg-config: libavcodec
 
-#include "libavcodec/avcodec.h"
+#include "libavcodec/packet.h"
 */
 import "C"
 import (

@@ -3,7 +3,7 @@ package swscale
 /*
 #cgo pkg-config: libswscale
 
-#include "libswscale/swscale.h"
+#include "libswscale/version.h"
 */
 import "C"
 

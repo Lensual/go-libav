@@ -3,7 +3,7 @@ package swresample
 /*
 #cgo pkg-config: libswresample
 
-#include "libswresample/swresample.h"
+#include "libswresample/version.h"
 */
 import "C"
 
