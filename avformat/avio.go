@@ -4,6 +4,7 @@ package avformat
 #cgo pkg-config: libavformat
 
 #include "libavformat/avio.h"
+#include <stdlib.h>
 */
 import "C"
 import (
