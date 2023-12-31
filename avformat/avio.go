@@ -13,8 +13,6 @@ import (
 	"github.com/Lensual/go-libav/ctypes"
 )
 
-type CFunc unsafe.Pointer
-
 /*
  * copyright (c) 2001 Fabrice Bellard
  *
@@ -78,12 +76,12 @@ type CAVIOInterruptCB C.AVIOInterruptCB
 //#region CAVIOInterruptCB
 
 // int (*callback)(void*)
-func (intCb *CAVIOInterruptCB) GetCallback() CFunc {
-	return CFunc(unsafe.Pointer(intCb.callback))
+func (intCb *CAVIOInterruptCB) GetCallback() ctypes.CFunc {
+	return ctypes.CFunc(unsafe.Pointer(intCb.callback))
 }
 
 // int (*callback)(void*)
-func (intCb *CAVIOInterruptCB) SetCallback(callback CFunc) {
+func (intCb *CAVIOInterruptCB) SetCallback(callback ctypes.CFunc) {
 	intCb.callback = (*[0]byte)(callback)
 }
 
@@ -367,15 +365,15 @@ func (avioCtx *CAVIOContext) GetOpaque() unsafe.Pointer {
 }
 
 // int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
-func (avioCtx *CAVIOContext) GetReadPacket() CFunc {
-	return CFunc(avioCtx.read_packet)
+func (avioCtx *CAVIOContext) GetReadPacket() ctypes.CFunc {
+	return ctypes.CFunc(avioCtx.read_packet)
 }
 
 //  #if FF_API_AVIO_WRITE_NONCONST
 
 // int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
-func (avioCtx *CAVIOContext) GetWritePacket() CFunc {
-	return CFunc(avioCtx.write_packet)
+func (avioCtx *CAVIOContext) GetWritePacket() ctypes.CFunc {
+	return ctypes.CFunc(avioCtx.write_packet)
 }
 
 //  #else
@@ -383,8 +381,8 @@ func (avioCtx *CAVIOContext) GetWritePacket() CFunc {
 //  #endif
 
 // int64_t (*seek)(void *opaque, int64_t offset, int whence);
-func (avioCtx *CAVIOContext) GetSeek() CFunc {
-	return CFunc(avioCtx.seek)
+func (avioCtx *CAVIOContext) GetSeek() ctypes.CFunc {
+	return ctypes.CFunc(avioCtx.seek)
 }
 
 /**< position in the file of the current buffer */
@@ -428,16 +426,16 @@ func (avioCtx *CAVIOContext) GetCheckSumPtr() unsafe.Pointer {
 }
 
 // unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
-func (avioCtx *CAVIOContext) GetUpdateCheckSum() CFunc {
-	return CFunc(avioCtx.update_checksum)
+func (avioCtx *CAVIOContext) GetUpdateCheckSum() ctypes.CFunc {
+	return ctypes.CFunc(avioCtx.update_checksum)
 }
 
 /**
  * Pause or resume playback for network streaming protocols - e.g. MMS.
  */
 // int (*read_pause)(void *opaque, int pause);
-func (avioCtx *CAVIOContext) GetReadPause() CFunc {
-	return CFunc(avioCtx.read_pause)
+func (avioCtx *CAVIOContext) GetReadPause() ctypes.CFunc {
+	return ctypes.CFunc(avioCtx.read_pause)
 }
 
 /**
@@ -446,8 +444,8 @@ func (avioCtx *CAVIOContext) GetReadPause() CFunc {
  * to byte position.
  */
 // int64_t (*read_seek)(void *opaque, int stream_index, int64_t timestamp, int flags);
-func (avioCtx *CAVIOContext) GetReadSeek() CFunc {
-	return CFunc(avioCtx.read_seek)
+func (avioCtx *CAVIOContext) GetReadSeek() ctypes.CFunc {
+	return ctypes.CFunc(avioCtx.read_seek)
 }
 
 /**
@@ -487,8 +485,8 @@ func (avioCtx *CAVIOContext) GetProtocolBlacklist() string {
 
 //	 int (*write_data_type)(void *opaque, uint8_t *buf, int buf_size,
 //							enum AVIODataMarkerType type, int64_t time);
-func (avioCtx *CAVIOContext) GetWriteDataType() CFunc {
-	return CFunc(avioCtx.write_data_type)
+func (avioCtx *CAVIOContext) GetWriteDataType() ctypes.CFunc {
+	return ctypes.CFunc(avioCtx.write_data_type)
 }
 
 //  #else
@@ -649,7 +647,7 @@ func AvioFreeDirectoryEntry(s **CAVIODirEntry) {
  * @return Allocated AVIOContext or NULL on failure.
  */
 func AvioAllocContext(buffer unsafe.Pointer, bufferSize int, writeFlag int,
-	opaque unsafe.Pointer, readPacket CFunc, writePacket CFunc, seek CFunc) *CAVIOContext {
+	opaque unsafe.Pointer, readPacket ctypes.CFunc, writePacket ctypes.CFunc, seek ctypes.CFunc) *CAVIOContext {
 
 	return (*CAVIOContext)(C.avio_alloc_context((*C.uchar)(buffer), C.int(bufferSize), C.int(writeFlag),
 		opaque, (*[0]byte)(readPacket), (*[0]byte)(writePacket), (*[0]byte)(seek)))

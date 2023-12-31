@@ -11,6 +11,7 @@ import (
 
 	"github.com/Lensual/go-libav/avcodec"
 	"github.com/Lensual/go-libav/avutil"
+	"github.com/Lensual/go-libav/ctypes"
 )
 
 /*
@@ -695,8 +696,8 @@ func (iFormat *CAVInputFormat) GetFlagsInternal() int {
  * big so you do not have to check for that unless you need more.
  */
 // int (*read_probe)(const AVProbeData *);
-func (iFormat *CAVInputFormat) GetReadProbe() CFunc {
-	return CFunc(iFormat.read_probe)
+func (iFormat *CAVInputFormat) GetReadProbe() ctypes.CFunc {
+	return ctypes.CFunc(iFormat.read_probe)
 }
 
 /**
@@ -705,8 +706,8 @@ func (iFormat *CAVInputFormat) GetReadProbe() CFunc {
  * called to create new streams.
  */
 // int (*read_header)(struct AVFormatContext *);
-func (iFormat *CAVInputFormat) GetReadHeader() CFunc {
-	return CFunc(iFormat.read_header)
+func (iFormat *CAVInputFormat) GetReadHeader() ctypes.CFunc {
+	return ctypes.CFunc(iFormat.read_header)
 }
 
 /**
@@ -718,8 +719,8 @@ func (iFormat *CAVInputFormat) GetReadHeader() CFunc {
  *         Upon returning an error, pkt must be unreferenced by the caller.
  */
 // int (*read_packet)(struct AVFormatContext *, AVPacket *pkt);
-func (iFormat *CAVInputFormat) GetReadPacket() CFunc {
-	return CFunc(iFormat.read_header)
+func (iFormat *CAVInputFormat) GetReadPacket() ctypes.CFunc {
+	return ctypes.CFunc(iFormat.read_header)
 }
 
 /**
@@ -727,8 +728,8 @@ func (iFormat *CAVInputFormat) GetReadPacket() CFunc {
  * freed by this function
  */
 // int (*read_close)(struct AVFormatContext *);
-func (iFormat *CAVInputFormat) GetReadClose() CFunc {
-	return CFunc(iFormat.read_close)
+func (iFormat *CAVInputFormat) GetReadClose() ctypes.CFunc {
+	return ctypes.CFunc(iFormat.read_close)
 }
 
 /**
@@ -741,8 +742,8 @@ func (iFormat *CAVInputFormat) GetReadClose() CFunc {
  */
 // int (*read_seek)(struct AVFormatContext *,
 //                  int stream_index, int64_t timestamp, int flags);
-func (iFormat *CAVInputFormat) GetReadSeek() CFunc {
-	return CFunc(iFormat.read_seek)
+func (iFormat *CAVInputFormat) GetReadSeek() ctypes.CFunc {
+	return ctypes.CFunc(iFormat.read_seek)
 }
 
 /**
@@ -751,8 +752,8 @@ func (iFormat *CAVInputFormat) GetReadSeek() CFunc {
  */
 // int64_t (*read_timestamp)(struct AVFormatContext *s, int stream_index,
 //                           int64_t *pos, int64_t pos_limit);
-func (iFormat *CAVInputFormat) GetReadTimestamp() CFunc {
-	return CFunc(iFormat.read_timestamp)
+func (iFormat *CAVInputFormat) GetReadTimestamp() ctypes.CFunc {
+	return ctypes.CFunc(iFormat.read_timestamp)
 }
 
 /**
@@ -760,8 +761,8 @@ func (iFormat *CAVInputFormat) GetReadTimestamp() CFunc {
  * (RTSP).
  */
 // int (*read_play)(struct AVFormatContext *);
-func (iFormat *CAVInputFormat) GetReadPlay() CFunc {
-	return CFunc(iFormat.read_play)
+func (iFormat *CAVInputFormat) GetReadPlay() ctypes.CFunc {
+	return ctypes.CFunc(iFormat.read_play)
 }
 
 /**
@@ -769,8 +770,8 @@ func (iFormat *CAVInputFormat) GetReadPlay() CFunc {
  * (RTSP).
  */
 // int (*read_pause)(struct AVFormatContext *);
-func (iFormat *CAVInputFormat) GetReadPause() CFunc {
-	return CFunc(iFormat.read_pause)
+func (iFormat *CAVInputFormat) GetReadPause() ctypes.CFunc {
+	return ctypes.CFunc(iFormat.read_pause)
 }
 
 /**
@@ -780,8 +781,8 @@ func (iFormat *CAVInputFormat) GetReadPause() CFunc {
  * Active streams are all streams that have AVStream.discard < AVDISCARD_ALL.
  */
 // int (*read_seek2)(struct AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
-func (iFormat *CAVInputFormat) GetReadSeek2() CFunc {
-	return CFunc(iFormat.read_seek2)
+func (iFormat *CAVInputFormat) GetReadSeek2() ctypes.CFunc {
+	return ctypes.CFunc(iFormat.read_seek2)
 }
 
 /**
@@ -789,8 +790,8 @@ func (iFormat *CAVInputFormat) GetReadSeek2() CFunc {
  * @see avdevice_list_devices() for more details.
  */
 // int (*get_device_list)(struct AVFormatContext *s, struct AVDeviceInfoList *device_list);
-func (iFormat *CAVInputFormat) GetDeviceList() CFunc {
-	return CFunc(iFormat.get_device_list)
+func (iFormat *CAVInputFormat) GetDeviceList() ctypes.CFunc {
+	return ctypes.CFunc(iFormat.get_device_list)
 }
 
 //#endregion CAVInputFormat
@@ -1297,8 +1298,8 @@ func (p *CAVProgram) GetFlags() int {
 func (p *CAVProgram) GetDiscard() C.enum_AVDiscard {
 	return p.discard
 }
-func (p *CAVProgram) GetStreamIndex() *uint {
-	return (*uint)(unsafe.Pointer(p.stream_index))
+func (p *CAVProgram) GetStreamIndex() *ctypes.UInt {
+	return (*ctypes.UInt)(unsafe.Pointer(p.stream_index))
 }
 func (p *CAVProgram) GetNbStreamIndexes() uint {
 	return uint(p.nb_stream_indexes)
@@ -1389,11 +1390,11 @@ func (c *CAVChapter) GetMetadata() *avutil.CAVDictionary {
  */
 //  typedef int (*av_format_control_message)(struct AVFormatContext *s, int type,
 // 	void *data, size_t data_size);
-type CAvFormatControlMessage CFunc
+type CAvFormatControlMessage ctypes.CFunc
 
 // typedef int (*AVOpenCallback)(struct AVFormatContext *s, AVIOContext **pb, const char *url, int flags,
 // const AVIOInterruptCB *int_cb, AVDictionary **options);
-type CAVOpenCallback CFunc
+type CAVOpenCallback ctypes.CFunc
 
 /**
 * The duration of a video can be estimated through various ways, and this enum can be used
@@ -2159,8 +2160,8 @@ func (fmtCtx *CAVFormatContext) GetProtocolWhitelist() string {
  */
 // 	 int (*io_open)(struct AVFormatContext *s, AVIOContext **pb, const char *url,
 // 					int flags, AVDictionary **options);
-func (fmtCtx *CAVFormatContext) GetIoOpen() CFunc {
-	return CFunc(fmtCtx.io_open)
+func (fmtCtx *CAVFormatContext) GetIoOpen() ctypes.CFunc {
+	return ctypes.CFunc(fmtCtx.io_open)
 }
 
 //  #if FF_API_AVFORMAT_IO_CLOSE
@@ -2221,8 +2222,8 @@ func (fmtCtx *CAVFormatContext) GetMaxProbePackets() int {
  * @return 0 on success, a negative AVERROR code on failure
  */
 // 	 int (*io_close2)(struct AVFormatContext *s, AVIOContext *pb);
-func (fmtCtx *CAVFormatContext) GetIoClose2() CFunc {
-	return CFunc(fmtCtx.io_close2)
+func (fmtCtx *CAVFormatContext) GetIoClose2() ctypes.CFunc {
+	return ctypes.CFunc(fmtCtx.io_close2)
 }
 
 //#endregion CAVFormatContext

@@ -86,17 +86,17 @@ func NewGoAvioContext(bufSize int, readFunc AVIOReadCallback, writeFunc AVIOWrit
 		wf = 1
 	}
 
-	var readCallback avformat.CFunc
+	var readCallback ctypes.CFunc
 	if readFunc != nil {
-		readCallback = avformat.CFunc(C.go_read_packet)
+		readCallback = ctypes.CFunc(C.go_read_packet)
 	}
-	var writeCallback avformat.CFunc
+	var writeCallback ctypes.CFunc
 	if writeFunc != nil {
-		writeCallback = avformat.CFunc(C.go_write_packet)
+		writeCallback = ctypes.CFunc(C.go_write_packet)
 	}
-	var seekCallback avformat.CFunc
+	var seekCallback ctypes.CFunc
 	if seekFunc != nil {
-		seekCallback = avformat.CFunc(C.go_seek)
+		seekCallback = ctypes.CFunc(C.go_seek)
 	}
 
 	//初始化AVIO
