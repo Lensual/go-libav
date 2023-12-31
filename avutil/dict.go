@@ -198,7 +198,6 @@ func AvDictSet(pm **CAVDictionary, key string, value string, flags int) int {
 	var cValue *C.char = nil
 	if len(value) > 0 {
 		cValue = C.CString(value)
-		defer C.free(unsafe.Pointer(cValue))
 	}
 
 	return int(C.av_dict_set((**C.AVDictionary)(unsafe.Pointer(pm)), cKey, cValue, C.int(flags)))

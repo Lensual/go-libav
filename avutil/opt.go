@@ -714,7 +714,6 @@ func AvOptSet(obj unsafe.Pointer, name string, val string, searchFlags int) int 
 	var cVal *C.char = nil
 	if len(val) > 0 {
 		cVal = C.CString(val)
-		defer C.free(unsafe.Pointer(cVal))
 	}
 
 	return int(C.av_opt_set(obj, cName, cVal, C.int(searchFlags)))
