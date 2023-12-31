@@ -416,3 +416,17 @@ func (frame *AVFrame) RemoveSideData(_type avutil.CAVFrameSideDataType) {
 func (frame *AVFrame) ApplyCropping(flags int) int {
 	return avutil.AvFrameApplyCropping(frame.CAVFrame, flags)
 }
+
+func (frame *AVFrame) GetAudioDataSize(align int) int {
+	return avutil.AvSamplesGetBufferSize(nil, frame.GetChLayout().GetNbChannels(), frame.GetNbSamples(), avutil.CAVSampleFormat(frame.GetFormat()), align)
+}
+
+func (frame *AVFrame) GetAudioData() [][]byte {
+	planarSize := frame.GetLineSize()[0]
+	frameData := frame.GetData()
+	audioData := make([][]byte, len(frameData))
+	for i, data := range frameData {
+		audioData[i] = unsafe.Slice((*byte)(data), planarSize)
+	}
+	return audioData
+}
