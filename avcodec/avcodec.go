@@ -214,14 +214,39 @@ const AV_INPUT_BUFFER_MIN_SIZE = C.AV_INPUT_BUFFER_MIN_SIZE
  */
 type CRcOverride C.RcOverride
 
-//#region CRcOverride
-//TODO
-//  typedef struct RcOverride{
-// 	 int start_frame;
-// 	 int end_frame;
-// 	 int qscale; // If this is 0 then quality_factor will be used instead.
-// 	 float quality_factor;
-//  } RcOverride;
+// #region CRcOverride
+
+func (ro *CRcOverride) GetStartFrame() int {
+	return int(ro.start_frame)
+}
+func (ro *CRcOverride) SetStartFrame(startFrame int) {
+	ro.start_frame = C.int(startFrame)
+}
+
+func (ro *CRcOverride) GetEndFrame() int {
+	return int(ro.end_frame)
+}
+func (ro *CRcOverride) SetEndFrame(endFrame int) {
+	ro.end_frame = C.int(endFrame)
+}
+
+// If this is 0 then quality_factor will be used instead.
+func (ro *CRcOverride) GetQscale() int {
+	return int(ro.qscale)
+}
+
+// If this is 0 then quality_factor will be used instead.
+func (ro *CRcOverride) SetQscale(qscale int) {
+	ro.qscale = C.int(qscale)
+}
+
+func (ro *CRcOverride) GetQualityFactor() float32 {
+	return float32(ro.quality_factor)
+}
+func (ro *CRcOverride) SetQualityFactor(qualityFactor float32) {
+	ro.quality_factor = C.float(qualityFactor)
+}
+
 //#endregion CRcOverride
 
 /* encoding support
@@ -475,16 +500,37 @@ type CAVCodecContext C.AVCodecContext
 func (codecCtx *CAVCodecContext) GetAvClass() *avutil.CAVClass {
 	return (*avutil.CAVClass)(unsafe.Pointer(codecCtx.av_class))
 }
+
+/**
+ * information on struct for av_log
+ * - set by avcodec_alloc_context3
+ */
+func (codecCtx *CAVCodecContext) SetAvClass(avClass *avutil.CAVClass) {
+	codecCtx.av_class = (*C.AVClass)(unsafe.Pointer(avClass))
+}
+
 func (codecCtx *CAVCodecContext) GetLogLevelOffset() int {
 	return int(codecCtx.log_level_offset)
+}
+func (codecCtx *CAVCodecContext) SetLogLevelOffset(logLevelOffset int) {
+	codecCtx.log_level_offset = C.int(logLevelOffset)
 }
 
 /* see AVMEDIA_TYPE_xxx */
 func (codecCtx *CAVCodecContext) GetCodecType() avutil.CAVMediaType {
 	return avutil.CAVMediaType(codecCtx.codec_type)
 }
+
+/* see AVMEDIA_TYPE_xxx */
+func (codecCtx *CAVCodecContext) SetCodecType(codecType avutil.CAVMediaType) {
+	codecCtx.codec_type = C.enum_AVMediaType(codecType)
+}
+
 func (codecCtx *CAVCodecContext) GetCodec() *CAVCodec {
 	return (*CAVCodec)(codecCtx.codec)
+}
+func (codecCtx *CAVCodecContext) SetCodec(codec *CAVCodec) {
+	codecCtx.codec = (*C.AVCodec)(codec)
 }
 
 /* see AV_CODEC_ID_xxx */
@@ -494,7 +540,7 @@ func (codecCtx *CAVCodecContext) GetCodecId() CAVCodecID {
 
 /* see AV_CODEC_ID_xxx */
 func (codecCtx *CAVCodecContext) SetCodecId(codecId CAVCodecID) {
-	codecCtx.codec_id = uint32(codecId)
+	codecCtx.codec_id = C.enum_AVCodecID(codecId)
 }
 
 /**
@@ -514,8 +560,28 @@ func (codecCtx *CAVCodecContext) GetCodecTag() uint {
 	return uint(codecCtx.codec_tag)
 }
 
+/**
+ * fourcc (LSB first, so "ABCD" -> ('D'<<24) + ('C'<<16) + ('B'<<8) + 'A').
+ * This is used to work around some encoder bugs.
+ * A demuxer should set this to what is stored in the field used to identify the codec.
+ * If there are multiple such fields in a container then the demuxer should choose the one
+ * which maximizes the information about the used codec.
+ * If the codec tag field in a container is larger than 32 bits then the demuxer should
+ * remap the longer ID to 32 bits with a table or other structure. Alternatively a new
+ * extra_codec_tag + size could be added but for this a clear advantage must be demonstrated
+ * first.
+ * - encoding: Set by user, if not then the default based on codec_id will be used.
+ * - decoding: Set by user, will be converted to uppercase by libavcodec during init.
+ */
+func (codecCtx *CAVCodecContext) SetCodecTag(codecTag uint) {
+	codecCtx.codec_tag = C.uint(codecTag)
+}
+
 func (codecCtx *CAVCodecContext) GetPrivData() unsafe.Pointer {
 	return codecCtx.priv_data
+}
+func (codecCtx *CAVCodecContext) SetPrivData(privData unsafe.Pointer) {
+	codecCtx.priv_data = privData
 }
 
 /**
@@ -524,8 +590,18 @@ func (codecCtx *CAVCodecContext) GetPrivData() unsafe.Pointer {
  * Unlike priv_data, this is not codec-specific. It is used in general
  * libavcodec functions.
  */
-func (codecCtx *CAVCodecContext) GetInternal() unsafe.Pointer {
-	return unsafe.Pointer(codecCtx.internal)
+func (codecCtx *CAVCodecContext) GetInternal() *C.struct_AVCodecInternal {
+	return codecCtx.internal
+}
+
+/**
+ * Private context used for internal data.
+ *
+ * Unlike priv_data, this is not codec-specific. It is used in general
+ * libavcodec functions.
+ */
+func (codecCtx *CAVCodecContext) SetInternal(internal *C.struct_AVCodecInternal) {
+	codecCtx.internal = internal
 }
 
 /**
@@ -535,6 +611,15 @@ func (codecCtx *CAVCodecContext) GetInternal() unsafe.Pointer {
  */
 func (codecCtx *CAVCodecContext) GetOpaque() unsafe.Pointer {
 	return codecCtx.opaque
+}
+
+/**
+ * Private data of the user, can be used to carry app specific stuff.
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetOpaque(opaque unsafe.Pointer) {
+	codecCtx.opaque = opaque
 }
 
 /**
@@ -568,6 +653,16 @@ func (codecCtx *CAVCodecContext) GetBitRateTolerance() int {
 }
 
 /**
+ * number of bits the bitstream is allowed to diverge from the reference.
+ *           the reference can be CBR (for CBR pass1) or VBR (for pass2)
+ * - encoding: Set by user; unused for constant quantizer encoding.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetBitRateTolerance(bitRateTolerance int) {
+	codecCtx.bit_rate_tolerance = C.int(bitRateTolerance)
+}
+
+/**
  * Global quality for codecs which cannot change it per frame.
  * This should be proportional to MPEG-1/2/4 qscale.
  * - encoding: Set by user.
@@ -578,11 +673,29 @@ func (codecCtx *CAVCodecContext) GetGlobalQuality() int {
 }
 
 /**
+ * Global quality for codecs which cannot change it per frame.
+ * This should be proportional to MPEG-1/2/4 qscale.
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetGlobalQuality(globalQuality int) {
+	codecCtx.global_quality = C.int(globalQuality)
+}
+
+/**
  * - encoding: Set by user.
  * - decoding: unused
  */
 func (codecCtx *CAVCodecContext) GetCompressionLevel() int {
 	return int(codecCtx.compression_level)
+}
+
+/**
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetCompressionLevel(compressionLevel int) {
+	codecCtx.compression_level = C.int(compressionLevel)
 }
 
 const FF_COMPRESSION_DEFAULT = C.FF_COMPRESSION_DEFAULT
@@ -657,6 +770,9 @@ func (codecCtx *CAVCodecContext) SetExtradata(extradata *C.uint8_t) {
 
 func (codecCtx *CAVCodecContext) GetExtradataSize() int {
 	return int(codecCtx.extradata_size)
+}
+func (codecCtx *CAVCodecContext) SetExtradataSize(extradataSize int) {
+	codecCtx.extradata_size = C.int(extradataSize)
 }
 
 /**
@@ -744,6 +860,32 @@ func (codecCtx *CAVCodecContext) SetTimeBase(timeBase avutil.CAVRational) {
  */
 func (codecCtx *CAVCodecContext) GetDelay() int {
 	return int(codecCtx.delay)
+}
+
+/**
+ * Codec delay.
+ *
+ * Encoding: Number of frames delay there will be from the encoder input to
+ *           the decoder output. (we assume the decoder matches the spec)
+ * Decoding: Number of frames delay in addition to what a standard decoder
+ *           as specified in the spec would produce.
+ *
+ * Video:
+ *   Number of frames the decoded output will be delayed relative to the
+ *   encoded input.
+ *
+ * Audio:
+ *   For encoding, this field is unused (see initial_padding).
+ *
+ *   For decoding, this is the number of samples the decoder needs to
+ *   output before the decoder's output is valid. When seeking, you should
+ *   start decoding this many samples prior to your desired seek point.
+ *
+ * - encoding: Set by libavcodec.
+ * - decoding: Set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) SetDelay(delay int) {
+	codecCtx.delay = C.int(delay)
 }
 
 /* video only */
@@ -932,62 +1074,128 @@ func (codecCtx *CAVCodecContext) GetPixFmt() avutil.CAVPixelFormat {
  *             parsing the data.
  */
 func (codecCtx *CAVCodecContext) SetPixFmt(pixFmt avutil.CAVPixelFormat) {
-	codecCtx.pix_fmt = int32(pixFmt)
+	codecCtx.pix_fmt = C.enum_AVPixelFormat(pixFmt)
 }
 
-//     /**
-//      * If non NULL, 'draw_horiz_band' is called by the libavcodec
-//      * decoder to draw a horizontal band. It improves cache usage. Not
-//      * all codecs can do that. You must check the codec capabilities
-//      * beforehand.
-//      * When multithreading is used, it may be called from multiple threads
-//      * at the same time; threads might draw different parts of the same AVFrame,
-//      * or multiple AVFrames, and there is no guarantee that slices will be drawn
-//      * in order.
-//      * The function is also used by hardware acceleration APIs.
-//      * It is called at least once during frame decoding to pass
-//      * the data needed for hardware render.
-//      * In that mode instead of pixel data, AVFrame points to
-//      * a structure specific to the acceleration API. The application
-//      * reads the structure and can change some fields to indicate progress
-//      * or mark state.
-//      * - encoding: unused
-//      * - decoding: Set by user.
-//      * @param height the height of the slice
-//      * @param y the y position of the slice
-//      * @param type 1->top field, 2->bottom field, 3->frame
-//      * @param offset offset into the AVFrame.data from which the slice should be read
-//      */
+/**
+ * If non NULL, 'draw_horiz_band' is called by the libavcodec
+ * decoder to draw a horizontal band. It improves cache usage. Not
+ * all codecs can do that. You must check the codec capabilities
+ * beforehand.
+ * When multithreading is used, it may be called from multiple threads
+ * at the same time; threads might draw different parts of the same AVFrame,
+ * or multiple AVFrames, and there is no guarantee that slices will be drawn
+ * in order.
+ * The function is also used by hardware acceleration APIs.
+ * It is called at least once during frame decoding to pass
+ * the data needed for hardware render.
+ * In that mode instead of pixel data, AVFrame points to
+ * a structure specific to the acceleration API. The application
+ * reads the structure and can change some fields to indicate progress
+ * or mark state.
+ * - encoding: unused
+ * - decoding: Set by user.
+ * @param height the height of the slice
+ * @param y the y position of the slice
+ * @param type 1->top field, 2->bottom field, 3->frame
+ * @param offset offset into the AVFrame.data from which the slice should be read
+ */
 // 	 void (*draw_horiz_band)(struct AVCodecContext *s,
 // 		const AVFrame *src, int offset[AV_NUM_DATA_POINTERS],
 // 		int y, int type, int height);
+func (codecCtx *CAVCodecContext) GetDrawHorizBand() ctypes.CFunc {
+	return ctypes.CFunc(codecCtx.draw_horiz_band)
+}
 
-// /**
-// * Callback to negotiate the pixel format. Decoding only, may be set by the
-// * caller before avcodec_open2().
-// *
-// * Called by some decoders to select the pixel format that will be used for
-// * the output frames. This is mainly used to set up hardware acceleration,
-// * then the provided format list contains the corresponding hwaccel pixel
-// * formats alongside the "software" one. The software pixel format may also
-// * be retrieved from \ref sw_pix_fmt.
-// *
-// * This callback will be called when the coded frame properties (such as
-// * resolution, pixel format, etc.) change and more than one output format is
-// * supported for those new properties. If a hardware pixel format is chosen
-// * and initialization for it fails, the callback may be called again
-// * immediately.
-// *
-// * This callback may be called from different threads if the decoder is
-// * multi-threaded, but not from more than one thread simultaneously.
-// *
-// * @param fmt list of formats which may be used in the current
-// *            configuration, terminated by AV_PIX_FMT_NONE.
-// * @warning Behavior is undefined if the callback returns a value other
-// *          than one of the formats in fmt or AV_PIX_FMT_NONE.
-// * @return the chosen format or AV_PIX_FMT_NONE
-// */
+/**
+ * If non NULL, 'draw_horiz_band' is called by the libavcodec
+ * decoder to draw a horizontal band. It improves cache usage. Not
+ * all codecs can do that. You must check the codec capabilities
+ * beforehand.
+ * When multithreading is used, it may be called from multiple threads
+ * at the same time; threads might draw different parts of the same AVFrame,
+ * or multiple AVFrames, and there is no guarantee that slices will be drawn
+ * in order.
+ * The function is also used by hardware acceleration APIs.
+ * It is called at least once during frame decoding to pass
+ * the data needed for hardware render.
+ * In that mode instead of pixel data, AVFrame points to
+ * a structure specific to the acceleration API. The application
+ * reads the structure and can change some fields to indicate progress
+ * or mark state.
+ * - encoding: unused
+ * - decoding: Set by user.
+ * @param height the height of the slice
+ * @param y the y position of the slice
+ * @param type 1->top field, 2->bottom field, 3->frame
+ * @param offset offset into the AVFrame.data from which the slice should be read
+ */
+// 	 void (*draw_horiz_band)(struct AVCodecContext *s,
+// 		const AVFrame *src, int offset[AV_NUM_DATA_POINTERS],
+// 		int y, int type, int height);
+func (codecCtx *CAVCodecContext) SetDrawHorizBand(draw_horiz_band ctypes.CFunc) {
+	codecCtx.draw_horiz_band = (*[0]byte)(unsafe.Pointer(draw_horiz_band))
+}
+
+/**
+* Callback to negotiate the pixel format. Decoding only, may be set by the
+* caller before avcodec_open2().
+*
+* Called by some decoders to select the pixel format that will be used for
+* the output frames. This is mainly used to set up hardware acceleration,
+* then the provided format list contains the corresponding hwaccel pixel
+* formats alongside the "software" one. The software pixel format may also
+* be retrieved from \ref sw_pix_fmt.
+*
+* This callback will be called when the coded frame properties (such as
+* resolution, pixel format, etc.) change and more than one output format is
+* supported for those new properties. If a hardware pixel format is chosen
+* and initialization for it fails, the callback may be called again
+* immediately.
+*
+* This callback may be called from different threads if the decoder is
+* multi-threaded, but not from more than one thread simultaneously.
+*
+* @param fmt list of formats which may be used in the current
+*            configuration, terminated by AV_PIX_FMT_NONE.
+* @warning Behavior is undefined if the callback returns a value other
+*          than one of the formats in fmt or AV_PIX_FMT_NONE.
+* @return the chosen format or AV_PIX_FMT_NONE
+ */
 // enum AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
+func (codecCtx *CAVCodecContext) GetGetFormat() ctypes.CFunc {
+	return ctypes.CFunc(codecCtx.get_format)
+}
+
+/**
+* Callback to negotiate the pixel format. Decoding only, may be set by the
+* caller before avcodec_open2().
+*
+* Called by some decoders to select the pixel format that will be used for
+* the output frames. This is mainly used to set up hardware acceleration,
+* then the provided format list contains the corresponding hwaccel pixel
+* formats alongside the "software" one. The software pixel format may also
+* be retrieved from \ref sw_pix_fmt.
+*
+* This callback will be called when the coded frame properties (such as
+* resolution, pixel format, etc.) change and more than one output format is
+* supported for those new properties. If a hardware pixel format is chosen
+* and initialization for it fails, the callback may be called again
+* immediately.
+*
+* This callback may be called from different threads if the decoder is
+* multi-threaded, but not from more than one thread simultaneously.
+*
+* @param fmt list of formats which may be used in the current
+*            configuration, terminated by AV_PIX_FMT_NONE.
+* @warning Behavior is undefined if the callback returns a value other
+*          than one of the formats in fmt or AV_PIX_FMT_NONE.
+* @return the chosen format or AV_PIX_FMT_NONE
+ */
+// enum AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
+func (codecCtx *CAVCodecContext) SetGetFormat(getFormat ctypes.CFunc) {
+	codecCtx.get_format = (*[0]byte)(getFormat)
+}
 
 /**
 * maximum number of B-frames between non-B-frames
@@ -1009,80 +1217,195 @@ func (codecCtx *CAVCodecContext) SetMaxBFrames(maxBFrames int) {
 	codecCtx.max_b_frames = C.int(maxBFrames)
 }
 
-// /**
-// * qscale factor between IP and B-frames
-// * If > 0 then the last P-frame quantizer will be used (q= lastp_q*factor+offset).
-// * If < 0 then normal ratecontrol will be done (q= -normal_q*factor+offset).
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// float b_quant_factor;
+/**
+* qscale factor between IP and B-frames
+* If > 0 then the last P-frame quantizer will be used (q= lastp_q*factor+offset).
+* If < 0 then normal ratecontrol will be done (q= -normal_q*factor+offset).
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetBQuantFactor() float32 {
+	return float32(codecCtx.b_quant_factor)
+}
 
-// /**
-// * qscale offset between IP and B-frames
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// float b_quant_offset;
+/**
+* qscale factor between IP and B-frames
+* If > 0 then the last P-frame quantizer will be used (q= lastp_q*factor+offset).
+* If < 0 then normal ratecontrol will be done (q= -normal_q*factor+offset).
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetBQuantFactor(bQuantFactor float32) {
+	codecCtx.b_quant_factor = C.float(bQuantFactor)
+}
 
-// /**
-// * Size of the frame reordering buffer in the decoder.
-// * For MPEG-2 it is 1 IPB or 0 low delay IP.
-// * - encoding: Set by libavcodec.
-// * - decoding: Set by libavcodec.
-// */
-// int has_b_frames;
+/**
+* qscale offset between IP and B-frames
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetBQuantOffset() float32 {
+	return float32(codecCtx.b_quant_offset)
+}
 
-// /**
-// * qscale factor between P- and I-frames
-// * If > 0 then the last P-frame quantizer will be used (q = lastp_q * factor + offset).
-// * If < 0 then normal ratecontrol will be done (q= -normal_q*factor+offset).
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// float i_quant_factor;
+/**
+* qscale offset between IP and B-frames
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetBQuantOffset(bQuantOffset float32) {
+	codecCtx.b_quant_offset = C.float(bQuantOffset)
+}
 
-// /**
-// * qscale offset between P and I-frames
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// float i_quant_offset;
+/**
+* Size of the frame reordering buffer in the decoder.
+* For MPEG-2 it is 1 IPB or 0 low delay IP.
+* - encoding: Set by libavcodec.
+* - decoding: Set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) GetHasBFrames() int {
+	return int(codecCtx.has_b_frames)
+}
 
-// /**
-// * luminance masking (0-> disabled)
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// float lumi_masking;
+/**
+* Size of the frame reordering buffer in the decoder.
+* For MPEG-2 it is 1 IPB or 0 low delay IP.
+* - encoding: Set by libavcodec.
+* - decoding: Set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) SetHasBFrames(hasBFrames int) {
+	codecCtx.has_b_frames = C.int(hasBFrames)
+}
 
-// /**
-// * temporary complexity masking (0-> disabled)
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// float temporal_cplx_masking;
+/**
+* qscale factor between P- and I-frames
+* If > 0 then the last P-frame quantizer will be used (q = lastp_q * factor + offset).
+* If < 0 then normal ratecontrol will be done (q= -normal_q*factor+offset).
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetIQuantFactor() float32 {
+	return float32(codecCtx.i_quant_factor)
+}
 
-// /**
-// * spatial complexity masking (0-> disabled)
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// float spatial_cplx_masking;
+/**
+* qscale factor between P- and I-frames
+* If > 0 then the last P-frame quantizer will be used (q = lastp_q * factor + offset).
+* If < 0 then normal ratecontrol will be done (q= -normal_q*factor+offset).
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetIQuantFactor(iQuantFactor float32) {
+	codecCtx.i_quant_factor = C.float(iQuantFactor)
+}
 
-// /**
-// * p block masking (0-> disabled)
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// float p_masking;
+/**
+* qscale offset between P and I-frames
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetIQuantOffset() float32 {
+	return float32(codecCtx.i_quant_offset)
+}
 
-// /**
-// * darkness masking (0-> disabled)
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// float dark_masking;
+/**
+* qscale offset between P and I-frames
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetIQuantOffset(iQuantOffset float32) {
+	codecCtx.i_quant_offset = C.float(iQuantOffset)
+}
+
+/**
+* luminance masking (0-> disabled)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetLumiMasking() float32 {
+	return float32(codecCtx.lumi_masking)
+}
+
+/**
+* luminance masking (0-> disabled)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetLumiMasking(lumiMasking float32) {
+	codecCtx.lumi_masking = C.float(lumiMasking)
+}
+
+/**
+* temporary complexity masking (0-> disabled)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetTemporalCplxMasking() float32 {
+	return float32(codecCtx.temporal_cplx_masking)
+}
+
+/**
+* temporary complexity masking (0-> disabled)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetTemporalCplxMasking(temporalCplxMasking float32) {
+	codecCtx.temporal_cplx_masking = C.float(temporalCplxMasking)
+}
+
+/**
+* spatial complexity masking (0-> disabled)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetSpatialCplxMasking() float32 {
+	return float32(codecCtx.spatial_cplx_masking)
+}
+
+/**
+* spatial complexity masking (0-> disabled)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetSpatialCplxMasking(spatialCplxMasking float32) {
+	codecCtx.temporal_cplx_masking = C.float(spatialCplxMasking)
+}
+
+/**
+* p block masking (0-> disabled)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetPMasking() float32 {
+	return float32(codecCtx.p_masking)
+}
+
+/**
+* p block masking (0-> disabled)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetPMasking(pMasking float32) {
+	codecCtx.p_masking = C.float(pMasking)
+}
+
+/**
+* darkness masking (0-> disabled)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetDarkMasking() float32 {
+	return float32(codecCtx.dark_masking)
+}
+
+/**
+* darkness masking (0-> disabled)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetDarkMasking(darkMasking float32) {
+	codecCtx.dark_masking = C.float(darkMasking)
+}
 
 // #if FF_API_SLICE_OFFSET
 // /**
@@ -1124,101 +1447,233 @@ func (codecCtx *CAVCodecContext) SetSampleAspectRatio(sampleAspectRation avutil.
 	codecCtx.sample_aspect_ratio = *(*C.AVRational)(unsafe.Pointer(&sampleAspectRation))
 }
 
-// /**
-// * motion estimation comparison function
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int me_cmp;
-// /**
-// * subpixel motion estimation comparison function
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int me_sub_cmp;
-// /**
-// * macroblock comparison function (not supported yet)
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int mb_cmp;
-// /**
-// * interlaced DCT comparison function
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int ildct_cmp;
-// #define FF_CMP_SAD          0
-// #define FF_CMP_SSE          1
-// #define FF_CMP_SATD         2
-// #define FF_CMP_DCT          3
-// #define FF_CMP_PSNR         4
-// #define FF_CMP_BIT          5
-// #define FF_CMP_RD           6
-// #define FF_CMP_ZERO         7
-// #define FF_CMP_VSAD         8
-// #define FF_CMP_VSSE         9
-// #define FF_CMP_NSSE         10
-// #define FF_CMP_W53          11
-// #define FF_CMP_W97          12
-// #define FF_CMP_DCTMAX       13
-// #define FF_CMP_DCT264       14
-// #define FF_CMP_MEDIAN_SAD   15
-// #define FF_CMP_CHROMA       256
+/**
+* motion estimation comparison function
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetMeCmp() int {
+	return int(codecCtx.me_cmp)
+}
 
-// /**
-// * ME diamond size & shape
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int dia_size;
+/**
+* motion estimation comparison function
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetMeCmp(meCmp int) {
+	codecCtx.me_cmp = C.int(meCmp)
+}
 
-// /**
-// * amount of previous MV predictors (2a+1 x 2a+1 square)
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int last_predictor_count;
+/**
+* subpixel motion estimation comparison function
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetMeSubCmp() int {
+	return int(codecCtx.me_sub_cmp)
+}
 
-// /**
-// * motion estimation prepass comparison function
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int me_pre_cmp;
+/**
+* subpixel motion estimation comparison function
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetMeSubCmp(meSubCmp int) {
+	codecCtx.me_sub_cmp = C.int(meSubCmp)
+}
 
-// /**
-// * ME prepass diamond size & shape
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int pre_dia_size;
+/**
+* macroblock comparison function (not supported yet)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetMbCmp() int {
+	return int(codecCtx.mb_cmp)
+}
 
-// /**
-// * subpel ME quality
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int me_subpel_quality;
+/**
+* macroblock comparison function (not supported yet)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetMbCmp(mbCmp int) {
+	codecCtx.mb_cmp = C.int(mbCmp)
+}
 
-// /**
-// * maximum motion estimation search range in subpel units
-// * If 0 then no limit.
-// *
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int me_range;
+/**
+* interlaced DCT comparison function
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetIldctCmp() int {
+	return int(codecCtx.ildct_cmp)
+}
 
-// /**
-// * slice flags
-// * - encoding: unused
-// * - decoding: Set by user.
-// */
-// int slice_flags;
-// #define SLICE_FLAG_CODED_ORDER    0x0001 ///< draw_horiz_band() is called in coded order instead of display
-// #define SLICE_FLAG_ALLOW_FIELD    0x0002 ///< allow draw_horiz_band() with field slices (MPEG-2 field pics)
-// #define SLICE_FLAG_ALLOW_PLANE    0x0004 ///< allow draw_horiz_band() with 1 component at a time (SVQ1)
+/**
+* interlaced DCT comparison function
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetIldctCmp(ildctCmp int) {
+	codecCtx.ildct_cmp = C.int(ildctCmp)
+}
+
+const (
+	FF_CMP_SAD        = C.FF_CMP_SAD
+	FF_CMP_SSE        = C.FF_CMP_SSE
+	FF_CMP_SATD       = C.FF_CMP_SATD
+	FF_CMP_DCT        = C.FF_CMP_DCT
+	FF_CMP_PSNR       = C.FF_CMP_PSNR
+	FF_CMP_BIT        = C.FF_CMP_BIT
+	FF_CMP_RD         = C.FF_CMP_RD
+	FF_CMP_ZERO       = C.FF_CMP_ZERO
+	FF_CMP_VSAD       = C.FF_CMP_VSAD
+	FF_CMP_VSSE       = C.FF_CMP_VSSE
+	FF_CMP_NSSE       = C.FF_CMP_NSSE
+	FF_CMP_W53        = C.FF_CMP_W53
+	FF_CMP_W97        = C.FF_CMP_W97
+	FF_CMP_DCTMAX     = C.FF_CMP_DCTMAX
+	FF_CMP_DCT264     = C.FF_CMP_DCT264
+	FF_CMP_MEDIAN_SAD = C.FF_CMP_MEDIAN_SAD
+	FF_CMP_CHROMA     = C.FF_CMP_CHROMA
+)
+
+/**
+* ME diamond size & shape
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetDiaSize() int {
+	return int(codecCtx.dia_size)
+}
+
+/**
+* ME diamond size & shape
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetDiaSize(diaSize int) {
+	codecCtx.dia_size = C.int(diaSize)
+}
+
+/**
+* amount of previous MV predictors (2a+1 x 2a+1 square)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetLastPredictorCount() int {
+	return int(codecCtx.last_predictor_count)
+}
+
+/**
+* amount of previous MV predictors (2a+1 x 2a+1 square)
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetLastPredictorCount(lastPredictorCount int) {
+	codecCtx.last_predictor_count = C.int(lastPredictorCount)
+}
+
+/**
+* motion estimation prepass comparison function
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetMePreCmp() int {
+	return int(codecCtx.me_pre_cmp)
+}
+
+/**
+* motion estimation prepass comparison function
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetMePreCmp(mePreCmp int) {
+	codecCtx.me_pre_cmp = C.int(mePreCmp)
+}
+
+/**
+* ME prepass diamond size & shape
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetPreDiaSize() int {
+	return int(codecCtx.pre_dia_size)
+}
+
+/**
+* ME prepass diamond size & shape
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetPreDiaSize(preDiaSize int) {
+	codecCtx.pre_dia_size = C.int(preDiaSize)
+}
+
+/**
+* subpel ME quality
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetMeSubpelQuality() int {
+	return int(codecCtx.me_subpel_quality)
+}
+
+/**
+* subpel ME quality
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetMeSubpelQuality(meSubpelQuality int) {
+	codecCtx.me_subpel_quality = C.int(meSubpelQuality)
+}
+
+/**
+* maximum motion estimation search range in subpel units
+* If 0 then no limit.
+*
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetMeRange() int {
+	return int(codecCtx.me_range)
+}
+
+/**
+* maximum motion estimation search range in subpel units
+* If 0 then no limit.
+*
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetMeRange(meRange int) {
+	codecCtx.me_range = C.int(meRange)
+}
+
+/**
+* slice flags
+* - encoding: unused
+* - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetSliceFlags() int {
+	return int(codecCtx.slice_flags)
+}
+
+/**
+* slice flags
+* - encoding: unused
+* - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetSliceFlags(sliceFlags int) {
+	codecCtx.slice_flags = C.int(sliceFlags)
+}
+
+const (
+	SLICE_FLAG_CODED_ORDER = C.SLICE_FLAG_CODED_ORDER ///< draw_horiz_band() is called in coded order instead of display
+	SLICE_FLAG_ALLOW_FIELD = C.SLICE_FLAG_ALLOW_FIELD ///< allow draw_horiz_band() with field slices (MPEG-2 field pics)
+	SLICE_FLAG_ALLOW_PLANE = C.SLICE_FLAG_ALLOW_PLANE ///< allow draw_horiz_band() with 1 component at a time (SVQ1)
+)
 
 /**
 * macroblock decision mode
@@ -1244,123 +1699,305 @@ const (
 	FF_MB_DECISION_RD     = C.FF_MB_DECISION_RD     ///< rate distortion
 )
 
-// /**
-// * custom intra quantization matrix
-// * Must be allocated with the av_malloc() family of functions, and will be freed in
-// * avcodec_free_context().
-// * - encoding: Set/allocated by user, freed by libavcodec. Can be NULL.
-// * - decoding: Set/allocated/freed by libavcodec.
-// */
-// uint16_t *intra_matrix;
+/**
+* custom intra quantization matrix
+* Must be allocated with the av_malloc() family of functions, and will be freed in
+* avcodec_free_context().
+* - encoding: Set/allocated by user, freed by libavcodec. Can be NULL.
+* - decoding: Set/allocated/freed by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) GetIntraMatrix() *ctypes.UInt16 {
+	return (*ctypes.UInt16)(codecCtx.intra_matrix)
+}
 
-// /**
-// * custom inter quantization matrix
-// * Must be allocated with the av_malloc() family of functions, and will be freed in
-// * avcodec_free_context().
-// * - encoding: Set/allocated by user, freed by libavcodec. Can be NULL.
-// * - decoding: Set/allocated/freed by libavcodec.
-// */
-// uint16_t *inter_matrix;
+/**
+* custom intra quantization matrix
+* Must be allocated with the av_malloc() family of functions, and will be freed in
+* avcodec_free_context().
+* - encoding: Set/allocated by user, freed by libavcodec. Can be NULL.
+* - decoding: Set/allocated/freed by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) SetIntraMatrix(intraMatrix *ctypes.UInt16) {
+	codecCtx.intra_matrix = (*C.uint16_t)(intraMatrix)
+}
 
-// /**
-// * precision of the intra DC coefficient - 8
-// * - encoding: Set by user.
-// * - decoding: Set by libavcodec
-// */
-// int intra_dc_precision;
+/**
+* custom inter quantization matrix
+* Must be allocated with the av_malloc() family of functions, and will be freed in
+* avcodec_free_context().
+* - encoding: Set/allocated by user, freed by libavcodec. Can be NULL.
+* - decoding: Set/allocated/freed by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) GetInterMatrix() *ctypes.UInt16 {
+	return (*ctypes.UInt16)(codecCtx.inter_matrix)
+}
 
-// /**
-// * Number of macroblock rows at the top which are skipped.
-// * - encoding: unused
-// * - decoding: Set by user.
-// */
-// int skip_top;
+/**
+* custom inter quantization matrix
+* Must be allocated with the av_malloc() family of functions, and will be freed in
+* avcodec_free_context().
+* - encoding: Set/allocated by user, freed by libavcodec. Can be NULL.
+* - decoding: Set/allocated/freed by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) SetInterMatrix(interMatrix *ctypes.UInt16) {
+	codecCtx.inter_matrix = (*C.uint16_t)(interMatrix)
+}
 
-// /**
-// * Number of macroblock rows at the bottom which are skipped.
-// * - encoding: unused
-// * - decoding: Set by user.
-// */
-// int skip_bottom;
+/**
+* precision of the intra DC coefficient - 8
+* - encoding: Set by user.
+* - decoding: Set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) GetIntraDcPrecision() int {
+	return int(codecCtx.intra_dc_precision)
+}
 
-// /**
-// * minimum MB Lagrange multiplier
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int mb_lmin;
+/**
+* precision of the intra DC coefficient - 8
+* - encoding: Set by user.
+* - decoding: Set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) SetIntraDcPrecision(intraDcPrecision int) {
+	codecCtx.intra_dc_precision = C.int(intraDcPrecision)
+}
 
-// /**
-// * maximum MB Lagrange multiplier
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int mb_lmax;
+/**
+* Number of macroblock rows at the top which are skipped.
+* - encoding: unused
+* - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetSkipTop() int {
+	return int(codecCtx.skip_top)
+}
 
-// /**
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int bidir_refine;
+/**
+* Number of macroblock rows at the top which are skipped.
+* - encoding: unused
+* - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetSkipTop(skipTop int) {
+	codecCtx.skip_top = C.int(skipTop)
+}
 
-// /**
-// * minimum GOP size
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int keyint_min;
+/**
+* Number of macroblock rows at the bottom which are skipped.
+* - encoding: unused
+* - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetSkipBottom() int {
+	return int(codecCtx.skip_bottom)
+}
 
-// /**
-// * number of reference frames
-// * - encoding: Set by user.
-// * - decoding: Set by lavc.
-// */
-// int refs;
+/**
+* Number of macroblock rows at the bottom which are skipped.
+* - encoding: unused
+* - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetSkipBottom(skipBottom int) {
+	codecCtx.skip_bottom = C.int(skipBottom)
+}
 
-// /**
-// * Note: Value depends upon the compare function used for fullpel ME.
-// * - encoding: Set by user.
-// * - decoding: unused
-// */
-// int mv0_threshold;
+/**
+* minimum MB Lagrange multiplier
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetMbLmin() int {
+	return int(codecCtx.mb_lmin)
+}
 
-// /**
-// * Chromaticity coordinates of the source primaries.
-// * - encoding: Set by user
-// * - decoding: Set by libavcodec
-// */
-// enum AVColorPrimaries color_primaries;
+/**
+* minimum MB Lagrange multiplier
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetmbLmin(mbLmin int) {
+	codecCtx.mb_lmin = C.int(mbLmin)
+}
 
-// /**
-// * Color Transfer Characteristic.
-// * - encoding: Set by user
-// * - decoding: Set by libavcodec
-// */
-// enum AVColorTransferCharacteristic color_trc;
+/**
+* maximum MB Lagrange multiplier
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetMbLmax() int {
+	return int(codecCtx.mb_lmax)
+}
 
-// /**
-// * YUV colorspace type.
-// * - encoding: Set by user
-// * - decoding: Set by libavcodec
-// */
-// enum AVColorSpace colorspace;
+/**
+* maximum MB Lagrange multiplier
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetMbLmax(mbLmax int) {
+	codecCtx.mb_lmax = C.int(mbLmax)
+}
 
-// /**
-// * MPEG vs JPEG YUV range.
-// * - encoding: Set by user to override the default output color range value,
-// *   If not specified, libavcodec sets the color range depending on the
-// *   output format.
-// * - decoding: Set by libavcodec, can be set by the user to propagate the
-// *   color range to components reading from the decoder context.
-// */
-// enum AVColorRange color_range;
+/**
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetBidirRefine() int {
+	return int(codecCtx.bidir_refine)
+}
 
-// /**
-// * This defines the location of chroma samples.
-// * - encoding: Set by user
-// * - decoding: Set by libavcodec
-// */
-// enum AVChromaLocation chroma_sample_location;
+/**
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetBidirRefine(bidirRefine int) {
+	codecCtx.bidir_refine = C.int(bidirRefine)
+}
+
+/**
+* minimum GOP size
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetKeyintMin() int {
+	return int(codecCtx.keyint_min)
+}
+
+/**
+* minimum GOP size
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetMeyintMin(keyintMin int) {
+	codecCtx.keyint_min = C.int(keyintMin)
+}
+
+/**
+* number of reference frames
+* - encoding: Set by user.
+* - decoding: Set by lavc.
+ */
+func (codecCtx *CAVCodecContext) GetRefs() int {
+	return int(codecCtx.refs)
+}
+
+/**
+* number of reference frames
+* - encoding: Set by user.
+* - decoding: Set by lavc.
+ */
+func (codecCtx *CAVCodecContext) SetRefs(refs int) {
+	codecCtx.refs = C.int(refs)
+}
+
+/**
+* Note: Value depends upon the compare function used for fullpel ME.
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetMv0Threshold() int {
+	return int(codecCtx.mv0_threshold)
+}
+
+/**
+* Note: Value depends upon the compare function used for fullpel ME.
+* - encoding: Set by user.
+* - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetMv0Threshold(mv0Threshold int) {
+	codecCtx.mv0_threshold = C.int(mv0Threshold)
+}
+
+/**
+* Chromaticity coordinates of the source primaries.
+* - encoding: Set by user
+* - decoding: Set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) GetColorPrimaries() avutil.CAVColorPrimaries {
+	return avutil.CAVColorPrimaries(codecCtx.color_primaries)
+}
+
+/**
+* Chromaticity coordinates of the source primaries.
+* - encoding: Set by user
+* - decoding: Set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) SetColorPrimaries(colorPrimaries avutil.CAVColorPrimaries) {
+	codecCtx.color_primaries = C.enum_AVColorPrimaries(colorPrimaries)
+}
+
+/**
+* Color Transfer Characteristic.
+* - encoding: Set by user
+* - decoding: Set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) GetColorTrc() avutil.CAVColorTransferCharacteristic {
+	return avutil.CAVColorTransferCharacteristic(codecCtx.color_trc)
+}
+
+/**
+* Color Transfer Characteristic.
+* - encoding: Set by user
+* - decoding: Set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) SetColorTrc(colorTrc avutil.CAVColorTransferCharacteristic) {
+	codecCtx.color_trc = C.enum_AVColorTransferCharacteristic(colorTrc)
+}
+
+/**
+* YUV colorspace type.
+* - encoding: Set by user
+* - decoding: Set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) GetColorspace() avutil.CAVColorSpace {
+	return avutil.CAVColorSpace(codecCtx.colorspace)
+}
+
+/**
+* YUV colorspace type.
+* - encoding: Set by user
+* - decoding: Set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) SetColorspace(colorspace avutil.CAVColorSpace) {
+	codecCtx.colorspace = C.enum_AVColorSpace(colorspace)
+}
+
+/**
+* MPEG vs JPEG YUV range.
+* - encoding: Set by user to override the default output color range value,
+*   If not specified, libavcodec sets the color range depending on the
+*   output format.
+* - decoding: Set by libavcodec, can be set by the user to propagate the
+*   color range to components reading from the decoder context.
+ */
+func (codecCtx *CAVCodecContext) GetColorRange() avutil.CAVColorRange {
+	return avutil.CAVColorRange(codecCtx.color_range)
+}
+
+/**
+* MPEG vs JPEG YUV range.
+* - encoding: Set by user to override the default output color range value,
+*   If not specified, libavcodec sets the color range depending on the
+*   output format.
+* - decoding: Set by libavcodec, can be set by the user to propagate the
+*   color range to components reading from the decoder context.
+ */
+func (codecCtx *CAVCodecContext) SetColorRange(colorRange avutil.CAVColorRange) {
+	codecCtx.color_range = C.enum_AVColorRange(colorRange)
+}
+
+/**
+* This defines the location of chroma samples.
+* - encoding: Set by user
+* - decoding: Set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) GetSampleChromaLocation() avutil.CAVChromaLocation {
+	return avutil.CAVChromaLocation(codecCtx.chroma_sample_location)
+}
+
+/**
+* This defines the location of chroma samples.
+* - encoding: Set by user
+* - decoding: Set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) SetSampleChromaLocation(chromaLocation avutil.CAVChromaLocation) {
+	codecCtx.chroma_sample_location = C.enum_AVChromaLocation(chromaLocation)
+}
 
 /**
  * Number of slices.
@@ -1419,10 +2056,11 @@ func (codecCtx *CAVCodecContext) GetSampleFmt() avutil.CAVSampleFormat {
  */
 ///< sample format
 func (codecCtx *CAVCodecContext) SetSampleFmt(sampleFmt avutil.CAVSampleFormat) {
-	codecCtx.sample_fmt = int32(sampleFmt)
+	codecCtx.sample_fmt = C.enum_AVSampleFormat(sampleFmt)
 }
 
 /* The following data should not be initialized. */
+
 /**
  * Number of samples per channel in an audio frame.
  *
@@ -1434,6 +2072,19 @@ func (codecCtx *CAVCodecContext) SetSampleFmt(sampleFmt avutil.CAVSampleFormat) 
  */
 func (codecCtx *CAVCodecContext) GetFrameSize() int {
 	return int(codecCtx.frame_size)
+}
+
+/**
+ * Number of samples per channel in an audio frame.
+ *
+ * - encoding: set by libavcodec in avcodec_open2(). Each submitted frame
+ *   except the last must contain exactly frame_size samples per channel.
+ *   May be 0 when the codec has AV_CODEC_CAP_VARIABLE_FRAME_SIZE set, then the
+ *   frame size is not restricted.
+ * - decoding: may be set by some decoders to indicate constant frame size
+ */
+func (codecCtx *CAVCodecContext) SetFrameSize(frameSize int) {
+	codecCtx.frame_size = C.int(frameSize)
 }
 
 // #if FF_API_AVCTX_FRAME_NUMBER
@@ -1451,18 +2102,39 @@ func (codecCtx *CAVCodecContext) GetFrameSize() int {
 //     int frame_number;
 // #endif
 
-//     /**
-//      * number of bytes per packet if constant and known or 0
-//      * Used by some WAV based audio codecs.
-//      */
-//     int block_align;
+/**
+ * number of bytes per packet if constant and known or 0
+ * Used by some WAV based audio codecs.
+ */
+func (codecCtx *CAVCodecContext) GetBlockAlign() int {
+	return int(codecCtx.block_align)
+}
 
-//     /**
-//      * Audio cutoff bandwidth (0 means "automatic")
-//      * - encoding: Set by user.
-//      * - decoding: unused
-//      */
-//     int cutoff;
+/**
+ * number of bytes per packet if constant and known or 0
+ * Used by some WAV based audio codecs.
+ */
+func (codecCtx *CAVCodecContext) SetBlockAlign(blockAlign int) {
+	codecCtx.block_align = C.int(blockAlign)
+}
+
+/**
+ * Audio cutoff bandwidth (0 means "automatic")
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetCutoff() int {
+	return int(codecCtx.cutoff)
+}
+
+/**
+ * Audio cutoff bandwidth (0 means "automatic")
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetCutoff(cutoff int) {
+	codecCtx.cutoff = C.int(cutoff)
+}
 
 // #if FF_API_OLD_CHANNEL_LAYOUT
 //     /**
@@ -1484,277 +2156,640 @@ func (codecCtx *CAVCodecContext) GetFrameSize() int {
 //     uint64_t request_channel_layout;
 // #endif
 
-//     /**
-//      * Type of service that the audio stream conveys.
-//      * - encoding: Set by user.
-//      * - decoding: Set by libavcodec.
-//      */
-//     enum AVAudioServiceType audio_service_type;
+/**
+ * Type of service that the audio stream conveys.
+ * - encoding: Set by user.
+ * - decoding: Set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) GetAudioServiceType() C.enum_AVAudioServiceType {
+	return C.enum_AVAudioServiceType(codecCtx.audio_service_type)
+}
 
-//     /**
-//      * desired sample format
-//      * - encoding: Not used.
-//      * - decoding: Set by user.
-//      * Decoder will decode to this format if it can.
-//      */
-//     enum AVSampleFormat request_sample_fmt;
+/**
+ * Type of service that the audio stream conveys.
+ * - encoding: Set by user.
+ * - decoding: Set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) SetAudioServiceType(audioServiceType C.enum_AVAudioServiceType) {
+	codecCtx.audio_service_type = C.enum_AVAudioServiceType(audioServiceType)
+}
 
-//     /**
-//      * This callback is called at the beginning of each frame to get data
-//      * buffer(s) for it. There may be one contiguous buffer for all the data or
-//      * there may be a buffer per each data plane or anything in between. What
-//      * this means is, you may set however many entries in buf[] you feel necessary.
-//      * Each buffer must be reference-counted using the AVBuffer API (see description
-//      * of buf[] below).
-//      *
-//      * The following fields will be set in the frame before this callback is
-//      * called:
-//      * - format
-//      * - width, height (video only)
-//      * - sample_rate, channel_layout, nb_samples (audio only)
-//      * Their values may differ from the corresponding values in
-//      * AVCodecContext. This callback must use the frame values, not the codec
-//      * context values, to calculate the required buffer size.
-//      *
-//      * This callback must fill the following fields in the frame:
-//      * - data[]
-//      * - linesize[]
-//      * - extended_data:
-//      *   * if the data is planar audio with more than 8 channels, then this
-//      *     callback must allocate and fill extended_data to contain all pointers
-//      *     to all data planes. data[] must hold as many pointers as it can.
-//      *     extended_data must be allocated with av_malloc() and will be freed in
-//      *     av_frame_unref().
-//      *   * otherwise extended_data must point to data
-//      * - buf[] must contain one or more pointers to AVBufferRef structures. Each of
-//      *   the frame's data and extended_data pointers must be contained in these. That
-//      *   is, one AVBufferRef for each allocated chunk of memory, not necessarily one
-//      *   AVBufferRef per data[] entry. See: av_buffer_create(), av_buffer_alloc(),
-//      *   and av_buffer_ref().
-//      * - extended_buf and nb_extended_buf must be allocated with av_malloc() by
-//      *   this callback and filled with the extra buffers if there are more
-//      *   buffers than buf[] can hold. extended_buf will be freed in
-//      *   av_frame_unref().
-//      *
-//      * If AV_CODEC_CAP_DR1 is not set then get_buffer2() must call
-//      * avcodec_default_get_buffer2() instead of providing buffers allocated by
-//      * some other means.
-//      *
-//      * Each data plane must be aligned to the maximum required by the target
-//      * CPU.
-//      *
-//      * @see avcodec_default_get_buffer2()
-//      *
-//      * Video:
-//      *
-//      * If AV_GET_BUFFER_FLAG_REF is set in flags then the frame may be reused
-//      * (read and/or written to if it is writable) later by libavcodec.
-//      *
-//      * avcodec_align_dimensions2() should be used to find the required width and
-//      * height, as they normally need to be rounded up to the next multiple of 16.
-//      *
-//      * Some decoders do not support linesizes changing between frames.
-//      *
-//      * If frame multithreading is used, this callback may be called from a
-//      * different thread, but not from more than one at once. Does not need to be
-//      * reentrant.
-//      *
-//      * @see avcodec_align_dimensions2()
-//      *
-//      * Audio:
-//      *
-//      * Decoders request a buffer of a particular size by setting
-//      * AVFrame.nb_samples prior to calling get_buffer2(). The decoder may,
-//      * however, utilize only part of the buffer by setting AVFrame.nb_samples
-//      * to a smaller value in the output frame.
-//      *
-//      * As a convenience, av_samples_get_buffer_size() and
-//      * av_samples_fill_arrays() in libavutil may be used by custom get_buffer2()
-//      * functions to find the required data size and to fill data pointers and
-//      * linesize. In AVFrame.linesize, only linesize[0] may be set for audio
-//      * since all planes must be the same size.
-//      *
-//      * @see av_samples_get_buffer_size(), av_samples_fill_arrays()
-//      *
-//      * - encoding: unused
-//      * - decoding: Set by libavcodec, user can override.
-//      */
-//     int (*get_buffer2)(struct AVCodecContext *s, AVFrame *frame, int flags);
+/**
+ * desired sample format
+ * - encoding: Not used.
+ * - decoding: Set by user.
+ * Decoder will decode to this format if it can.
+ */
+func (codecCtx *CAVCodecContext) GetRequestSampleFmt() avutil.CAVSampleFormat {
+	return avutil.CAVSampleFormat(codecCtx.request_sample_fmt)
+}
 
-//     /* - encoding parameters */
-//     float qcompress;  ///< amount of qscale change between easy & hard scenes (0.0-1.0)
-//     float qblur;      ///< amount of qscale smoothing over time (0.0-1.0)
+/**
+ * desired sample format
+ * - encoding: Not used.
+ * - decoding: Set by user.
+ * Decoder will decode to this format if it can.
+ */
+func (codecCtx *CAVCodecContext) SetRequestSampleFmt(requestSampleFmt avutil.CAVSampleFormat) {
+	codecCtx.request_sample_fmt = C.enum_AVSampleFormat(requestSampleFmt)
+}
 
-//     /**
-//      * minimum quantizer
-//      * - encoding: Set by user.
-//      * - decoding: unused
-//      */
-//     int qmin;
+/**
+ * This callback is called at the beginning of each frame to get data
+ * buffer(s) for it. There may be one contiguous buffer for all the data or
+ * there may be a buffer per each data plane or anything in between. What
+ * this means is, you may set however many entries in buf[] you feel necessary.
+ * Each buffer must be reference-counted using the AVBuffer API (see description
+ * of buf[] below).
+ *
+ * The following fields will be set in the frame before this callback is
+ * called:
+ * - format
+ * - width, height (video only)
+ * - sample_rate, channel_layout, nb_samples (audio only)
+ * Their values may differ from the corresponding values in
+ * AVCodecContext. This callback must use the frame values, not the codec
+ * context values, to calculate the required buffer size.
+ *
+ * This callback must fill the following fields in the frame:
+ * - data[]
+ * - linesize[]
+ * - extended_data:
+ *   * if the data is planar audio with more than 8 channels, then this
+ *     callback must allocate and fill extended_data to contain all pointers
+ *     to all data planes. data[] must hold as many pointers as it can.
+ *     extended_data must be allocated with av_malloc() and will be freed in
+ *     av_frame_unref().
+ *   * otherwise extended_data must point to data
+ * - buf[] must contain one or more pointers to AVBufferRef structures. Each of
+ *   the frame's data and extended_data pointers must be contained in these. That
+ *   is, one AVBufferRef for each allocated chunk of memory, not necessarily one
+ *   AVBufferRef per data[] entry. See: av_buffer_create(), av_buffer_alloc(),
+ *   and av_buffer_ref().
+ * - extended_buf and nb_extended_buf must be allocated with av_malloc() by
+ *   this callback and filled with the extra buffers if there are more
+ *   buffers than buf[] can hold. extended_buf will be freed in
+ *   av_frame_unref().
+ *
+ * If AV_CODEC_CAP_DR1 is not set then get_buffer2() must call
+ * avcodec_default_get_buffer2() instead of providing buffers allocated by
+ * some other means.
+ *
+ * Each data plane must be aligned to the maximum required by the target
+ * CPU.
+ *
+ * @see avcodec_default_get_buffer2()
+ *
+ * Video:
+ *
+ * If AV_GET_BUFFER_FLAG_REF is set in flags then the frame may be reused
+ * (read and/or written to if it is writable) later by libavcodec.
+ *
+ * avcodec_align_dimensions2() should be used to find the required width and
+ * height, as they normally need to be rounded up to the next multiple of 16.
+ *
+ * Some decoders do not support linesizes changing between frames.
+ *
+ * If frame multithreading is used, this callback may be called from a
+ * different thread, but not from more than one at once. Does not need to be
+ * reentrant.
+ *
+ * @see avcodec_align_dimensions2()
+ *
+ * Audio:
+ *
+ * Decoders request a buffer of a particular size by setting
+ * AVFrame.nb_samples prior to calling get_buffer2(). The decoder may,
+ * however, utilize only part of the buffer by setting AVFrame.nb_samples
+ * to a smaller value in the output frame.
+ *
+ * As a convenience, av_samples_get_buffer_size() and
+ * av_samples_fill_arrays() in libavutil may be used by custom get_buffer2()
+ * functions to find the required data size and to fill data pointers and
+ * linesize. In AVFrame.linesize, only linesize[0] may be set for audio
+ * since all planes must be the same size.
+ *
+ * @see av_samples_get_buffer_size(), av_samples_fill_arrays()
+ *
+ * - encoding: unused
+ * - decoding: Set by libavcodec, user can override.
+ */
+// int (*get_buffer2)(struct AVCodecContext *s, AVFrame *frame, int flags);
+func (codecCtx *CAVCodecContext) GetGetBuffer2() ctypes.CFunc {
+	return ctypes.CFunc(codecCtx.get_buffer2)
+}
 
-//     /**
-//      * maximum quantizer
-//      * - encoding: Set by user.
-//      * - decoding: unused
-//      */
-//     int qmax;
+/**
+ * This callback is called at the beginning of each frame to get data
+ * buffer(s) for it. There may be one contiguous buffer for all the data or
+ * there may be a buffer per each data plane or anything in between. What
+ * this means is, you may set however many entries in buf[] you feel necessary.
+ * Each buffer must be reference-counted using the AVBuffer API (see description
+ * of buf[] below).
+ *
+ * The following fields will be set in the frame before this callback is
+ * called:
+ * - format
+ * - width, height (video only)
+ * - sample_rate, channel_layout, nb_samples (audio only)
+ * Their values may differ from the corresponding values in
+ * AVCodecContext. This callback must use the frame values, not the codec
+ * context values, to calculate the required buffer size.
+ *
+ * This callback must fill the following fields in the frame:
+ * - data[]
+ * - linesize[]
+ * - extended_data:
+ *   * if the data is planar audio with more than 8 channels, then this
+ *     callback must allocate and fill extended_data to contain all pointers
+ *     to all data planes. data[] must hold as many pointers as it can.
+ *     extended_data must be allocated with av_malloc() and will be freed in
+ *     av_frame_unref().
+ *   * otherwise extended_data must point to data
+ * - buf[] must contain one or more pointers to AVBufferRef structures. Each of
+ *   the frame's data and extended_data pointers must be contained in these. That
+ *   is, one AVBufferRef for each allocated chunk of memory, not necessarily one
+ *   AVBufferRef per data[] entry. See: av_buffer_create(), av_buffer_alloc(),
+ *   and av_buffer_ref().
+ * - extended_buf and nb_extended_buf must be allocated with av_malloc() by
+ *   this callback and filled with the extra buffers if there are more
+ *   buffers than buf[] can hold. extended_buf will be freed in
+ *   av_frame_unref().
+ *
+ * If AV_CODEC_CAP_DR1 is not set then get_buffer2() must call
+ * avcodec_default_get_buffer2() instead of providing buffers allocated by
+ * some other means.
+ *
+ * Each data plane must be aligned to the maximum required by the target
+ * CPU.
+ *
+ * @see avcodec_default_get_buffer2()
+ *
+ * Video:
+ *
+ * If AV_GET_BUFFER_FLAG_REF is set in flags then the frame may be reused
+ * (read and/or written to if it is writable) later by libavcodec.
+ *
+ * avcodec_align_dimensions2() should be used to find the required width and
+ * height, as they normally need to be rounded up to the next multiple of 16.
+ *
+ * Some decoders do not support linesizes changing between frames.
+ *
+ * If frame multithreading is used, this callback may be called from a
+ * different thread, but not from more than one at once. Does not need to be
+ * reentrant.
+ *
+ * @see avcodec_align_dimensions2()
+ *
+ * Audio:
+ *
+ * Decoders request a buffer of a particular size by setting
+ * AVFrame.nb_samples prior to calling get_buffer2(). The decoder may,
+ * however, utilize only part of the buffer by setting AVFrame.nb_samples
+ * to a smaller value in the output frame.
+ *
+ * As a convenience, av_samples_get_buffer_size() and
+ * av_samples_fill_arrays() in libavutil may be used by custom get_buffer2()
+ * functions to find the required data size and to fill data pointers and
+ * linesize. In AVFrame.linesize, only linesize[0] may be set for audio
+ * since all planes must be the same size.
+ *
+ * @see av_samples_get_buffer_size(), av_samples_fill_arrays()
+ *
+ * - encoding: unused
+ * - decoding: Set by libavcodec, user can override.
+ */
+// int (*get_buffer2)(struct AVCodecContext *s, AVFrame *frame, int flags);
+func (codecCtx *CAVCodecContext) SetGetBuffer2(getBuffer2 ctypes.CFunc) {
+	codecCtx.get_buffer2 = (*[0]byte)(getBuffer2)
+}
 
-//     /**
-//      * maximum quantizer difference between frames
-//      * - encoding: Set by user.
-//      * - decoding: unused
-//      */
-//     int max_qdiff;
+/* - encoding parameters */
 
-//     /**
-//      * decoder bitstream buffer size
-//      * - encoding: Set by user.
-//      * - decoding: May be set by libavcodec.
-//      */
-//     int rc_buffer_size;
+// /< amount of qscale change between easy & hard scenes (0.0-1.0)
+func (codecCtx *CAVCodecContext) GetQcompress() float32 {
+	return float32(codecCtx.qcompress)
+}
 
-//     /**
-//      * ratecontrol override, see RcOverride
-//      * - encoding: Allocated/set/freed by user.
-//      * - decoding: unused
-//      */
-//     int rc_override_count;
-//     RcOverride *rc_override;
+// /< amount of qscale change between easy & hard scenes (0.0-1.0)
+func (codecCtx *CAVCodecContext) SetQcompress(qcompress float32) {
+	codecCtx.qcompress = C.float(qcompress)
+}
 
-//     /**
-//      * maximum bitrate
-//      * - encoding: Set by user.
-//      * - decoding: Set by user, may be overwritten by libavcodec.
-//      */
-//     int64_t rc_max_rate;
+// /< amount of qscale smoothing over time (0.0-1.0)
+func (codecCtx *CAVCodecContext) GetQblur() float32 {
+	return float32(codecCtx.qblur)
+}
 
-//     /**
-//      * minimum bitrate
-//      * - encoding: Set by user.
-//      * - decoding: unused
-//      */
-//     int64_t rc_min_rate;
+// /< amount of qscale smoothing over time (0.0-1.0)
+func (codecCtx *CAVCodecContext) SetQblur(qblur float32) {
+	codecCtx.qblur = C.float(qblur)
+}
 
-//     /**
-//      * Ratecontrol attempt to use, at maximum, <value> of what can be used without an underflow.
-//      * - encoding: Set by user.
-//      * - decoding: unused.
-//      */
-//     float rc_max_available_vbv_use;
+/**
+ * minimum quantizer
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetQmin() int {
+	return int(codecCtx.qmin)
+}
 
-//     /**
-//      * Ratecontrol attempt to use, at least, <value> times the amount needed to prevent a vbv overflow.
-//      * - encoding: Set by user.
-//      * - decoding: unused.
-//      */
-//     float rc_min_vbv_overflow_use;
+/**
+ * minimum quantizer
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetQmin(qmin int) {
+	codecCtx.qmin = C.int(qmin)
+}
 
-//     /**
-//      * Number of bits which should be loaded into the rc buffer before decoding starts.
-//      * - encoding: Set by user.
-//      * - decoding: unused
-//      */
-//     int rc_initial_buffer_occupancy;
+/**
+ * maximum quantizer
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetQmax() int {
+	return int(codecCtx.qmax)
+}
 
-//     /**
-//      * trellis RD quantization
-//      * - encoding: Set by user.
-//      * - decoding: unused
-//      */
-//     int trellis;
+/**
+ * maximum quantizer
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetQmax(qmax int) {
+	codecCtx.qmax = C.int(qmax)
+}
 
-//     /**
-//      * pass1 encoding statistics output buffer
-//      * - encoding: Set by libavcodec.
-//      * - decoding: unused
-//      */
-//     char *stats_out;
+/**
+ * maximum quantizer difference between frames
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetMaxQdiff() int {
+	return int(codecCtx.max_qdiff)
+}
 
-//     /**
-//      * pass2 encoding statistics input buffer
-//      * Concatenated stuff from stats_out of pass1 should be placed here.
-//      * - encoding: Allocated/set/freed by user.
-//      * - decoding: unused
-//      */
-//     char *stats_in;
+/**
+ * maximum quantizer difference between frames
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetMaxQdiff(maxQdiff int) {
+	codecCtx.max_qdiff = C.int(maxQdiff)
+}
 
-//     /**
-//      * Work around bugs in encoders which sometimes cannot be detected automatically.
-//      * - encoding: Set by user
-//      * - decoding: Set by user
-//      */
-//     int workaround_bugs;
-// #define FF_BUG_AUTODETECT       1  ///< autodetection
-// #define FF_BUG_XVID_ILACE       4
-// #define FF_BUG_UMP4             8
-// #define FF_BUG_NO_PADDING       16
-// #define FF_BUG_AMV              32
-// #define FF_BUG_QPEL_CHROMA      64
-// #define FF_BUG_STD_QPEL         128
-// #define FF_BUG_QPEL_CHROMA2     256
-// #define FF_BUG_DIRECT_BLOCKSIZE 512
-// #define FF_BUG_EDGE             1024
-// #define FF_BUG_HPEL_CHROMA      2048
-// #define FF_BUG_DC_CLIP          4096
-// #define FF_BUG_MS               8192 ///< Work around various bugs in Microsoft's broken decoders.
-// #define FF_BUG_TRUNCATED       16384
-// #define FF_BUG_IEDGE           32768
+/**
+ * decoder bitstream buffer size
+ * - encoding: Set by user.
+ * - decoding: May be set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) GetRcBufferSize() int {
+	return int(codecCtx.rc_buffer_size)
+}
 
-//     /**
-//      * strictly follow the standard (MPEG-4, ...).
-//      * - encoding: Set by user.
-//      * - decoding: Set by user.
-//      * Setting this to STRICT or higher means the encoder and decoder will
-//      * generally do stupid things, whereas setting it to unofficial or lower
-//      * will mean the encoder might produce output that is not supported by all
-//      * spec-compliant decoders. Decoders don't differentiate between normal,
-//      * unofficial and experimental (that is, they always try to decode things
-//      * when they can) unless they are explicitly asked to behave stupidly
-//      * (=strictly conform to the specs)
-//      * This may only be set to one of the FF_COMPLIANCE_* values in defs.h.
-//      */
-//     int strict_std_compliance;
+/**
+ * decoder bitstream buffer size
+ * - encoding: Set by user.
+ * - decoding: May be set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) SetRcBufferSize(rcBufferSize int) {
+	codecCtx.rc_buffer_size = C.int(rcBufferSize)
+}
 
-//     /**
-//      * error concealment flags
-//      * - encoding: unused
-//      * - decoding: Set by user.
-//      */
-//     int error_concealment;
-// #define FF_EC_GUESS_MVS   1
-// #define FF_EC_DEBLOCK     2
-// #define FF_EC_FAVOR_INTER 256
+/**
+ * ratecontrol override, see RcOverride
+ * - encoding: Allocated/set/freed by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetRcOverrideCount() int {
+	return int(codecCtx.rc_override_count)
+}
 
-//     /**
-//      * debug
-//      * - encoding: Set by user.
-//      * - decoding: Set by user.
-//      */
-//     int debug;
-// #define FF_DEBUG_PICT_INFO   1
-// #define FF_DEBUG_RC          2
-// #define FF_DEBUG_BITSTREAM   4
-// #define FF_DEBUG_MB_TYPE     8
-// #define FF_DEBUG_QP          16
-// #define FF_DEBUG_DCT_COEFF   0x00000040
-// #define FF_DEBUG_SKIP        0x00000080
-// #define FF_DEBUG_STARTCODE   0x00000100
-// #define FF_DEBUG_ER          0x00000400
-// #define FF_DEBUG_MMCO        0x00000800
-// #define FF_DEBUG_BUGS        0x00001000
-// #define FF_DEBUG_BUFFERS     0x00008000
-// #define FF_DEBUG_THREADS     0x00010000
-// #define FF_DEBUG_GREEN_MD    0x00800000
-// #define FF_DEBUG_NOMC        0x01000000
+/**
+ * ratecontrol override, see RcOverride
+ * - encoding: Allocated/set/freed by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetRcOverrideCount(rcOverrideCount int) {
+	codecCtx.rc_override_count = C.int(rcOverrideCount)
+}
 
-//     /**
-//      * Error recognition; may misdetect some more or less valid parts as errors.
-//      * This is a bitfield of the AV_EF_* values defined in defs.h.
-//      *
-//      * - encoding: Set by user.
-//      * - decoding: Set by user.
-//      */
-//     int err_recognition;
+func (codecCtx *CAVCodecContext) GetRcOverride() *CRcOverride {
+	return (*CRcOverride)(codecCtx.rc_override)
+}
+func (codecCtx *CAVCodecContext) SetRcOverride(rcOverride *CRcOverride) {
+	codecCtx.rc_override = (*C.RcOverride)(rcOverride)
+}
+
+/**
+ * maximum bitrate
+ * - encoding: Set by user.
+ * - decoding: Set by user, may be overwritten by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) GetRcMaxRate() int64 {
+	return int64(codecCtx.rc_max_rate)
+}
+
+/**
+ * maximum bitrate
+ * - encoding: Set by user.
+ * - decoding: Set by user, may be overwritten by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) SetRcMaxRate(rcMaxRate int64) {
+	codecCtx.rc_max_rate = C.int64_t(rcMaxRate)
+}
+
+/**
+ * minimum bitrate
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetRcMinRate() int64 {
+	return int64(codecCtx.rc_min_rate)
+}
+
+/**
+ * minimum bitrate
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetRcMinRate(rcMinRate int64) {
+	codecCtx.rc_min_rate = C.int64_t(rcMinRate)
+}
+
+/**
+ * Ratecontrol attempt to use, at maximum, <value> of what can be used without an underflow.
+ * - encoding: Set by user.
+ * - decoding: unused.
+ */
+func (codecCtx *CAVCodecContext) GetRcMaxAvailableVbvUse() float32 {
+	return float32(codecCtx.rc_max_available_vbv_use)
+}
+
+/**
+ * Ratecontrol attempt to use, at maximum, <value> of what can be used without an underflow.
+ * - encoding: Set by user.
+ * - decoding: unused.
+ */
+func (codecCtx *CAVCodecContext) SetRcMaxAvailableVbvUse(rcMaxAvailableVbvUse float32) {
+	codecCtx.rc_max_available_vbv_use = C.float(rcMaxAvailableVbvUse)
+}
+
+/**
+ * Ratecontrol attempt to use, at least, <value> times the amount needed to prevent a vbv overflow.
+ * - encoding: Set by user.
+ * - decoding: unused.
+ */
+func (codecCtx *CAVCodecContext) GetRcMinVbvOverflowUse() float32 {
+	return float32(codecCtx.rc_min_vbv_overflow_use)
+}
+
+/**
+ * Ratecontrol attempt to use, at least, <value> times the amount needed to prevent a vbv overflow.
+ * - encoding: Set by user.
+ * - decoding: unused.
+ */
+func (codecCtx *CAVCodecContext) SetRcMinVbvOverflowUse(rcMinVbvOverflowUse float32) {
+	codecCtx.rc_min_vbv_overflow_use = C.float(rcMinVbvOverflowUse)
+}
+
+/**
+ * Number of bits which should be loaded into the rc buffer before decoding starts.
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetRcInitialBufferOccupancy() int {
+	return int(codecCtx.rc_initial_buffer_occupancy)
+}
+
+/**
+ * Number of bits which should be loaded into the rc buffer before decoding starts.
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetRcInitialBufferOccupancy(rcInitialBufferOccupancy int) {
+	codecCtx.rc_initial_buffer_occupancy = C.int(rcInitialBufferOccupancy)
+}
+
+/**
+ * trellis RD quantization
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetTrellis() int {
+	return int(codecCtx.trellis)
+}
+
+/**
+ * trellis RD quantization
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetTrellis(trellis int) {
+	codecCtx.trellis = C.int(trellis)
+}
+
+/**
+ * pass1 encoding statistics output buffer
+ * - encoding: Set by libavcodec.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetStatsOut() string {
+	return C.GoString(codecCtx.stats_out)
+}
+
+/**
+ * pass1 encoding statistics output buffer
+ * - encoding: Set by libavcodec.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetStatsOut(statsOut string) {
+	var cStatsOut *C.char = nil
+	if len(statsOut) > 0 {
+		cStatsOut = C.CString(statsOut)
+	}
+
+	codecCtx.stats_out = cStatsOut
+}
+
+/**
+ * pass2 encoding statistics input buffer
+ * Concatenated stuff from stats_out of pass1 should be placed here.
+ * - encoding: Allocated/set/freed by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetStatsIn() string {
+	return C.GoString(codecCtx.stats_in)
+}
+
+/**
+ * pass2 encoding statistics input buffer
+ * Concatenated stuff from stats_out of pass1 should be placed here.
+ * - encoding: Allocated/set/freed by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetStatsIn(statsIn string) {
+	var cStatsIn *C.char = nil
+	if len(statsIn) > 0 {
+		cStatsIn = C.CString(statsIn)
+	}
+
+	codecCtx.stats_in = cStatsIn
+}
+
+/**
+ * Work around bugs in encoders which sometimes cannot be detected automatically.
+ * - encoding: Set by user
+ * - decoding: Set by user
+ */
+func (codecCtx *CAVCodecContext) GetWorkaroundBugs() int {
+	return int(codecCtx.workaround_bugs)
+}
+
+/**
+ * Work around bugs in encoders which sometimes cannot be detected automatically.
+ * - encoding: Set by user
+ * - decoding: Set by user
+ */
+func (codecCtx *CAVCodecContext) SetWorkaroundBugs(workaroundBugs int) {
+	codecCtx.workaround_bugs = C.int(workaroundBugs)
+}
+
+const (
+	FF_BUG_AUTODETECT       = C.FF_BUG_AUTODETECT ///< autodetection
+	FF_BUG_XVID_ILACE       = C.FF_BUG_XVID_ILACE
+	FF_BUG_UMP4             = C.FF_BUG_UMP4
+	FF_BUG_NO_PADDING       = C.FF_BUG_NO_PADDING
+	FF_BUG_AMV              = C.FF_BUG_AMV
+	FF_BUG_QPEL_CHROMA      = C.FF_BUG_QPEL_CHROMA
+	FF_BUG_STD_QPEL         = C.FF_BUG_STD_QPEL
+	FF_BUG_QPEL_CHROMA2     = C.FF_BUG_QPEL_CHROMA2
+	FF_BUG_DIRECT_BLOCKSIZE = C.FF_BUG_DIRECT_BLOCKSIZE
+	FF_BUG_EDGE             = C.FF_BUG_EDGE
+	FF_BUG_HPEL_CHROMA      = C.FF_BUG_HPEL_CHROMA
+	FF_BUG_DC_CLIP          = C.FF_BUG_DC_CLIP
+	FF_BUG_MS               = C.FF_BUG_MS ///< Work around various bugs in Microsoft's broken decoders.
+	FF_BUG_TRUNCATED        = C.FF_BUG_TRUNCATED
+	FF_BUG_IEDGE            = C.FF_BUG_IEDGE
+)
+
+/**
+ * strictly follow the standard (MPEG-4, ...).
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ * Setting this to STRICT or higher means the encoder and decoder will
+ * generally do stupid things, whereas setting it to unofficial or lower
+ * will mean the encoder might produce output that is not supported by all
+ * spec-compliant decoders. Decoders don't differentiate between normal,
+ * unofficial and experimental (that is, they always try to decode things
+ * when they can) unless they are explicitly asked to behave stupidly
+ * (=strictly conform to the specs)
+ * This may only be set to one of the FF_COMPLIANCE_* values in defs.h.
+ */
+func (codecCtx *CAVCodecContext) GetStrictStdCompliance() int {
+	return int(codecCtx.strict_std_compliance)
+}
+
+/**
+ * strictly follow the standard (MPEG-4, ...).
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ * Setting this to STRICT or higher means the encoder and decoder will
+ * generally do stupid things, whereas setting it to unofficial or lower
+ * will mean the encoder might produce output that is not supported by all
+ * spec-compliant decoders. Decoders don't differentiate between normal,
+ * unofficial and experimental (that is, they always try to decode things
+ * when they can) unless they are explicitly asked to behave stupidly
+ * (=strictly conform to the specs)
+ * This may only be set to one of the FF_COMPLIANCE_* values in defs.h.
+ */
+func (codecCtx *CAVCodecContext) SetStrictStdCompliance(strictStdCompliance int) {
+	codecCtx.strict_std_compliance = C.int(strictStdCompliance)
+}
+
+/**
+ * error concealment flags
+ * - encoding: unused
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetErrorConcealment() int {
+	return int(codecCtx.error_concealment)
+}
+
+/**
+ * error concealment flags
+ * - encoding: unused
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetErrorConcealment(errorConcealment int) {
+	codecCtx.error_concealment = C.int(errorConcealment)
+}
+
+const (
+	FF_EC_GUESS_MVS   = C.FF_EC_GUESS_MVS
+	FF_EC_DEBLOCK     = C.FF_EC_DEBLOCK
+	FF_EC_FAVOR_INTER = C.FF_EC_FAVOR_INTER
+)
+
+/**
+ * debug
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetDebug() int {
+	return int(codecCtx.debug)
+}
+
+/**
+ * debug
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetDebug(debug int) {
+	codecCtx.debug = C.int(debug)
+}
+
+const (
+	FF_DEBUG_PICT_INFO = C.FF_DEBUG_PICT_INFO
+	FF_DEBUG_RC        = C.FF_DEBUG_RC
+	FF_DEBUG_BITSTREAM = C.FF_DEBUG_BITSTREAM
+	FF_DEBUG_MB_TYPE   = C.FF_DEBUG_MB_TYPE
+	FF_DEBUG_QP        = C.FF_DEBUG_QP
+	FF_DEBUG_DCT_COEFF = C.FF_DEBUG_DCT_COEFF
+	FF_DEBUG_SKIP      = C.FF_DEBUG_SKIP
+	FF_DEBUG_STARTCODE = C.FF_DEBUG_STARTCODE
+	FF_DEBUG_ER        = C.FF_DEBUG_ER
+	FF_DEBUG_MMCO      = C.FF_DEBUG_MMCO
+	FF_DEBUG_BUGS      = C.FF_DEBUG_BUGS
+	FF_DEBUG_BUFFERS   = C.FF_DEBUG_BUFFERS
+	FF_DEBUG_THREADS   = C.FF_DEBUG_THREADS
+	FF_DEBUG_GREEN_MD  = C.FF_DEBUG_GREEN_MD
+	FF_DEBUG_NOMC      = C.FF_DEBUG_NOMC
+)
+
+/**
+ * Error recognition; may misdetect some more or less valid parts as errors.
+ * This is a bitfield of the AV_EF_* values defined in defs.h.
+ *
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetErrRecognition() int {
+	return int(codecCtx.err_recognition)
+}
+
+/**
+ * Error recognition; may misdetect some more or less valid parts as errors.
+ * This is a bitfield of the AV_EF_* values defined in defs.h.
+ *
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetErrRecognition(errRecognition int) {
+	codecCtx.err_recognition = C.int(errRecognition)
+}
 
 // #if FF_API_REORDERED_OPAQUE
 //     /**
@@ -1772,173 +2807,392 @@ func (codecCtx *CAVCodecContext) GetFrameSize() int {
 //     int64_t reordered_opaque;
 // #endif
 
-//     /**
-//      * Hardware accelerator in use
-//      * - encoding: unused.
-//      * - decoding: Set by libavcodec
-//      */
-//     const struct AVHWAccel *hwaccel;
+/**
+ * Hardware accelerator in use
+ * - encoding: unused.
+ * - decoding: Set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) GetHwaccel() *CAVHWAccel {
+	return (*CAVHWAccel)(codecCtx.hwaccel)
+}
 
-//     /**
-//      * Legacy hardware accelerator context.
-//      *
-//      * For some hardware acceleration methods, the caller may use this field to
-//      * signal hwaccel-specific data to the codec. The struct pointed to by this
-//      * pointer is hwaccel-dependent and defined in the respective header. Please
-//      * refer to the FFmpeg HW accelerator documentation to know how to fill
-//      * this.
-//      *
-//      * In most cases this field is optional - the necessary information may also
-//      * be provided to libavcodec through @ref hw_frames_ctx or @ref
-//      * hw_device_ctx (see avcodec_get_hw_config()). However, in some cases it
-//      * may be the only method of signalling some (optional) information.
-//      *
-//      * The struct and its contents are owned by the caller.
-//      *
-//      * - encoding: May be set by the caller before avcodec_open2(). Must remain
-//      *             valid until avcodec_free_context().
-//      * - decoding: May be set by the caller in the get_format() callback.
-//      *             Must remain valid until the next get_format() call,
-//      *             or avcodec_free_context() (whichever comes first).
-//      */
-//     void *hwaccel_context;
+/**
+ * Hardware accelerator in use
+ * - encoding: unused.
+ * - decoding: Set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) SetHwaccel(hwaccel *CAVHWAccel) {
+	codecCtx.hwaccel = (*C.AVHWAccel)(hwaccel)
+}
 
-//     /**
-//      * error
-//      * - encoding: Set by libavcodec if flags & AV_CODEC_FLAG_PSNR.
-//      * - decoding: unused
-//      */
-//     uint64_t error[AV_NUM_DATA_POINTERS];
+/**
+ * Legacy hardware accelerator context.
+ *
+ * For some hardware acceleration methods, the caller may use this field to
+ * signal hwaccel-specific data to the codec. The struct pointed to by this
+ * pointer is hwaccel-dependent and defined in the respective header. Please
+ * refer to the FFmpeg HW accelerator documentation to know how to fill
+ * this.
+ *
+ * In most cases this field is optional - the necessary information may also
+ * be provided to libavcodec through @ref hw_frames_ctx or @ref
+ * hw_device_ctx (see avcodec_get_hw_config()). However, in some cases it
+ * may be the only method of signalling some (optional) information.
+ *
+ * The struct and its contents are owned by the caller.
+ *
+ * - encoding: May be set by the caller before avcodec_open2(). Must remain
+ *             valid until avcodec_free_context().
+ * - decoding: May be set by the caller in the get_format() callback.
+ *             Must remain valid until the next get_format() call,
+ *             or avcodec_free_context() (whichever comes first).
+ */
+func (codecCtx *CAVCodecContext) GetHwaccelContext() unsafe.Pointer {
+	return codecCtx.hwaccel_context
+}
 
-//     /**
-//      * DCT algorithm, see FF_DCT_* below
-//      * - encoding: Set by user.
-//      * - decoding: unused
-//      */
-//     int dct_algo;
-// #define FF_DCT_AUTO    0
-// #define FF_DCT_FASTINT 1
-// #define FF_DCT_INT     2
-// #define FF_DCT_MMX     3
-// #define FF_DCT_ALTIVEC 5
-// #define FF_DCT_FAAN    6
+/**
+ * Legacy hardware accelerator context.
+ *
+ * For some hardware acceleration methods, the caller may use this field to
+ * signal hwaccel-specific data to the codec. The struct pointed to by this
+ * pointer is hwaccel-dependent and defined in the respective header. Please
+ * refer to the FFmpeg HW accelerator documentation to know how to fill
+ * this.
+ *
+ * In most cases this field is optional - the necessary information may also
+ * be provided to libavcodec through @ref hw_frames_ctx or @ref
+ * hw_device_ctx (see avcodec_get_hw_config()). However, in some cases it
+ * may be the only method of signalling some (optional) information.
+ *
+ * The struct and its contents are owned by the caller.
+ *
+ * - encoding: May be set by the caller before avcodec_open2(). Must remain
+ *             valid until avcodec_free_context().
+ * - decoding: May be set by the caller in the get_format() callback.
+ *             Must remain valid until the next get_format() call,
+ *             or avcodec_free_context() (whichever comes first).
+ */
+func (codecCtx *CAVCodecContext) SetHwaccelContext(hwaccelContext unsafe.Pointer) {
+	codecCtx.hwaccel_context = hwaccelContext
+}
 
-//     /**
-//      * IDCT algorithm, see FF_IDCT_* below.
-//      * - encoding: Set by user.
-//      * - decoding: Set by user.
-//      */
-//     int idct_algo;
-// #define FF_IDCT_AUTO          0
-// #define FF_IDCT_INT           1
-// #define FF_IDCT_SIMPLE        2
-// #define FF_IDCT_SIMPLEMMX     3
-// #define FF_IDCT_ARM           7
-// #define FF_IDCT_ALTIVEC       8
-// #define FF_IDCT_SIMPLEARM     10
-// #define FF_IDCT_XVID          14
-// #define FF_IDCT_SIMPLEARMV5TE 16
-// #define FF_IDCT_SIMPLEARMV6   17
-// #define FF_IDCT_FAAN          20
-// #define FF_IDCT_SIMPLENEON    22
-// #if FF_API_IDCT_NONE
-// // formerly used by xvmc
-// #define FF_IDCT_NONE          24
-// #endif
-// #define FF_IDCT_SIMPLEAUTO    128
+/**
+ * error
+ * - encoding: Set by libavcodec if flags & AV_CODEC_FLAG_PSNR.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetError() [avutil.AV_NUM_DATA_POINTERS]ctypes.UInt64 {
+	cArr := (*ctypes.UInt64)(unsafe.Pointer(unsafe.SliceData(codecCtx.error[:])))
+	return ([avutil.AV_NUM_DATA_POINTERS]ctypes.UInt64)(unsafe.Slice(cArr, avutil.AV_NUM_DATA_POINTERS))
+}
 
-//     /**
-//      * bits per sample/pixel from the demuxer (needed for huffyuv).
-//      * - encoding: Set by libavcodec.
-//      * - decoding: Set by user.
-//      */
-//      int bits_per_coded_sample;
+/**
+ * error
+ * - encoding: Set by libavcodec if flags & AV_CODEC_FLAG_PSNR.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetError(_error [avutil.AV_NUM_DATA_POINTERS]ctypes.UInt64) {
+	cArr := (*C.uint64_t)(unsafe.Pointer(unsafe.SliceData(_error[:])))
+	codecCtx.error = ([avutil.AV_NUM_DATA_POINTERS]C.uint64_t)(unsafe.Slice(cArr, avutil.AV_NUM_DATA_POINTERS))
+}
 
-//     /**
-//      * Bits per sample/pixel of internal libavcodec pixel/sample format.
-//      * - encoding: set by user.
-//      * - decoding: set by libavcodec.
-//      */
-//     int bits_per_raw_sample;
+/**
+ * DCT algorithm, see FF_DCT_* below
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetDctAlgo() int {
+	return int(codecCtx.dct_algo)
+}
 
-//     /**
-//      * low resolution decoding, 1-> 1/2 size, 2->1/4 size
-//      * - encoding: unused
-//      * - decoding: Set by user.
-//      */
-//      int lowres;
+/**
+ * DCT algorithm, see FF_DCT_* below
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetDctAlgo(dctAlgo int) {
+	codecCtx.dct_algo = C.int(dctAlgo)
+}
 
-//     /**
-//      * thread count
-//      * is used to decide how many independent tasks should be passed to execute()
-//      * - encoding: Set by user.
-//      * - decoding: Set by user.
-//      */
-//     int thread_count;
+const (
+	FF_DCT_AUTO    = C.FF_DCT_AUTO
+	FF_DCT_FASTINT = C.FF_DCT_FASTINT
+	FF_DCT_INT     = C.FF_DCT_INT
+	FF_DCT_MMX     = C.FF_DCT_MMX
+	FF_DCT_ALTIVEC = C.FF_DCT_ALTIVEC
+	FF_DCT_FAAN    = C.FF_DCT_FAAN
+)
 
-//     /**
-//      * Which multithreading methods to use.
-//      * Use of FF_THREAD_FRAME will increase decoding delay by one frame per thread,
-//      * so clients which cannot provide future frames should not use it.
-//      *
-//      * - encoding: Set by user, otherwise the default is used.
-//      * - decoding: Set by user, otherwise the default is used.
-//      */
-//     int thread_type;
-// #define FF_THREAD_FRAME   1 ///< Decode more than one frame at once
-// #define FF_THREAD_SLICE   2 ///< Decode more than one part of a single frame at once
+/**
+ * IDCT algorithm, see FF_IDCT_* below.
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetIdctAlgo() int {
+	return int(codecCtx.idct_algo)
+}
 
-//     /**
-//      * Which multithreading methods are in use by the codec.
-//      * - encoding: Set by libavcodec.
-//      * - decoding: Set by libavcodec.
-//      */
-//     int active_thread_type;
+/**
+ * IDCT algorithm, see FF_IDCT_* below.
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetIdctAlgo(idctAlgo int) {
+	codecCtx.idct_algo = C.int(idctAlgo)
+}
 
-//     /**
-//      * The codec may call this to execute several independent things.
-//      * It will return only after finishing all tasks.
-//      * The user may replace this with some multithreaded implementation,
-//      * the default implementation will execute the parts serially.
-//      * @param count the number of things to execute
-//      * - encoding: Set by libavcodec, user can override.
-//      * - decoding: Set by libavcodec, user can override.
-//      */
-//     int (*execute)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg), void *arg2, int *ret, int count, int size);
+const (
+	FF_IDCT_AUTO          = C.FF_IDCT_AUTO
+	FF_IDCT_INT           = C.FF_IDCT_INT
+	FF_IDCT_SIMPLE        = C.FF_IDCT_SIMPLE
+	FF_IDCT_SIMPLEMMX     = C.FF_IDCT_SIMPLEMMX
+	FF_IDCT_ARM           = C.FF_IDCT_ARM
+	FF_IDCT_ALTIVEC       = C.FF_IDCT_ALTIVEC
+	FF_IDCT_SIMPLEARM     = C.FF_IDCT_SIMPLEARM
+	FF_IDCT_XVID          = C.FF_IDCT_XVID
+	FF_IDCT_SIMPLEARMV5TE = C.FF_IDCT_SIMPLEARMV5TE
+	FF_IDCT_SIMPLEARMV6   = C.FF_IDCT_SIMPLEARMV6
+	FF_IDCT_FAAN          = C.FF_IDCT_FAAN
+	FF_IDCT_SIMPLENEON    = C.FF_IDCT_SIMPLENEON
+	// #if FF_API_IDCT_NONE
+	// // formerly used by xvmc
+	FF_IDCT_NONE = C.FF_IDCT_NONE
+	// #endif
+	FF_IDCT_SIMPLEAUTO = C.FF_IDCT_SIMPLEAUTO
+)
 
-//     /**
-//      * The codec may call this to execute several independent things.
-//      * It will return only after finishing all tasks.
-//      * The user may replace this with some multithreaded implementation,
-//      * the default implementation will execute the parts serially.
-//      * @param c context passed also to func
-//      * @param count the number of things to execute
-//      * @param arg2 argument passed unchanged to func
-//      * @param ret return values of executed functions, must have space for "count" values. May be NULL.
-//      * @param func function that will be called count times, with jobnr from 0 to count-1.
-//      *             threadnr will be in the range 0 to c->thread_count-1 < MAX_THREADS and so that no
-//      *             two instances of func executing at the same time will have the same threadnr.
-//      * @return always 0 currently, but code should handle a future improvement where when any call to func
-//      *         returns < 0 no further calls to func may be done and < 0 is returned.
-//      * - encoding: Set by libavcodec, user can override.
-//      * - decoding: Set by libavcodec, user can override.
-//      */
-//     int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
+/**
+ * bits per sample/pixel from the demuxer (needed for huffyuv).
+ * - encoding: Set by libavcodec.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetBitsPerCodedSample() int {
+	return int(codecCtx.bits_per_coded_sample)
+}
 
-//     /**
-//      * noise vs. sse weight for the nsse comparison function
-//      * - encoding: Set by user.
-//      * - decoding: unused
-//      */
-//      int nsse_weight;
+/**
+ * bits per sample/pixel from the demuxer (needed for huffyuv).
+ * - encoding: Set by libavcodec.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetBitsPerCodedSample(bitsPerCodedSample int) {
+	codecCtx.bits_per_coded_sample = C.int(bitsPerCodedSample)
+}
 
-//     /**
-//      * profile
-//      * - encoding: Set by user.
-//      * - decoding: Set by libavcodec.
-//      * See the AV_PROFILE_* defines in defs.h.
-//      */
-//      int profile;
+/**
+ * Bits per sample/pixel of internal libavcodec pixel/sample format.
+ * - encoding: set by user.
+ * - decoding: set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) GetBitsPerRawSample() int {
+	return int(codecCtx.bits_per_raw_sample)
+}
+
+/**
+ * Bits per sample/pixel of internal libavcodec pixel/sample format.
+ * - encoding: set by user.
+ * - decoding: set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) SetBitsPerRawSample(bitsPerRawSample int) {
+	codecCtx.bits_per_raw_sample = C.int(bitsPerRawSample)
+}
+
+/**
+ * low resolution decoding, 1-> 1/2 size, 2->1/4 size
+ * - encoding: unused
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetLowres() int {
+	return int(codecCtx.lowres)
+}
+
+/**
+ * low resolution decoding, 1-> 1/2 size, 2->1/4 size
+ * - encoding: unused
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetLowres(lowres int) {
+	codecCtx.lowres = C.int(lowres)
+}
+
+/**
+ * thread count
+ * is used to decide how many independent tasks should be passed to execute()
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetThreadCount() int {
+	return int(codecCtx.thread_count)
+}
+
+/**
+ * thread count
+ * is used to decide how many independent tasks should be passed to execute()
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetThreadCount(threadCount int) {
+	codecCtx.thread_count = C.int(threadCount)
+}
+
+/**
+ * Which multithreading methods to use.
+ * Use of FF_THREAD_FRAME will increase decoding delay by one frame per thread,
+ * so clients which cannot provide future frames should not use it.
+ *
+ * - encoding: Set by user, otherwise the default is used.
+ * - decoding: Set by user, otherwise the default is used.
+ */
+func (codecCtx *CAVCodecContext) GetThreadType() int {
+	return int(codecCtx.thread_type)
+}
+
+/**
+ * Which multithreading methods to use.
+ * Use of FF_THREAD_FRAME will increase decoding delay by one frame per thread,
+ * so clients which cannot provide future frames should not use it.
+ *
+ * - encoding: Set by user, otherwise the default is used.
+ * - decoding: Set by user, otherwise the default is used.
+ */
+func (codecCtx *CAVCodecContext) SetThreadType(threadType int) {
+	codecCtx.thread_type = C.int(threadType)
+}
+
+const (
+	FF_THREAD_FRAME = C.FF_THREAD_FRAME ///< Decode more than one frame at once
+	FF_THREAD_SLICE = C.FF_THREAD_SLICE ///< Decode more than one part of a single frame at once
+)
+
+/**
+ * Which multithreading methods are in use by the codec.
+ * - encoding: Set by libavcodec.
+ * - decoding: Set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) Getactive_thread_type() int {
+	return int(codecCtx.active_thread_type)
+}
+
+/**
+ * Which multithreading methods are in use by the codec.
+ * - encoding: Set by libavcodec.
+ * - decoding: Set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) SetActiveThreadType(activeThreadType int) {
+	codecCtx.active_thread_type = C.int(activeThreadType)
+}
+
+/**
+ * The codec may call this to execute several independent things.
+ * It will return only after finishing all tasks.
+ * The user may replace this with some multithreaded implementation,
+ * the default implementation will execute the parts serially.
+ * @param count the number of things to execute
+ * - encoding: Set by libavcodec, user can override.
+ * - decoding: Set by libavcodec, user can override.
+ */
+// int (*execute)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg), void *arg2, int *ret, int count, int size);
+func (codecCtx *CAVCodecContext) GetExecute() ctypes.CFunc {
+	return ctypes.CFunc(codecCtx.execute)
+}
+
+/**
+ * The codec may call this to execute several independent things.
+ * It will return only after finishing all tasks.
+ * The user may replace this with some multithreaded implementation,
+ * the default implementation will execute the parts serially.
+ * @param count the number of things to execute
+ * - encoding: Set by libavcodec, user can override.
+ * - decoding: Set by libavcodec, user can override.
+ */
+// int (*execute)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg), void *arg2, int *ret, int count, int size);
+func (codecCtx *CAVCodecContext) SetExecute(execute ctypes.CFunc) {
+	codecCtx.execute = (*[0]byte)(execute)
+}
+
+/**
+ * The codec may call this to execute several independent things.
+ * It will return only after finishing all tasks.
+ * The user may replace this with some multithreaded implementation,
+ * the default implementation will execute the parts serially.
+ * @param c context passed also to func
+ * @param count the number of things to execute
+ * @param arg2 argument passed unchanged to func
+ * @param ret return values of executed functions, must have space for "count" values. May be NULL.
+ * @param func function that will be called count times, with jobnr from 0 to count-1.
+ *             threadnr will be in the range 0 to c->thread_count-1 < MAX_THREADS and so that no
+ *             two instances of func executing at the same time will have the same threadnr.
+ * @return always 0 currently, but code should handle a future improvement where when any call to func
+ *         returns < 0 no further calls to func may be done and < 0 is returned.
+ * - encoding: Set by libavcodec, user can override.
+ * - decoding: Set by libavcodec, user can override.
+ */
+// int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
+func (codecCtx *CAVCodecContext) GetExecute2() ctypes.CFunc {
+	return ctypes.CFunc(codecCtx.execute2)
+}
+
+/**
+ * The codec may call this to execute several independent things.
+ * It will return only after finishing all tasks.
+ * The user may replace this with some multithreaded implementation,
+ * the default implementation will execute the parts serially.
+ * @param c context passed also to func
+ * @param count the number of things to execute
+ * @param arg2 argument passed unchanged to func
+ * @param ret return values of executed functions, must have space for "count" values. May be NULL.
+ * @param func function that will be called count times, with jobnr from 0 to count-1.
+ *             threadnr will be in the range 0 to c->thread_count-1 < MAX_THREADS and so that no
+ *             two instances of func executing at the same time will have the same threadnr.
+ * @return always 0 currently, but code should handle a future improvement where when any call to func
+ *         returns < 0 no further calls to func may be done and < 0 is returned.
+ * - encoding: Set by libavcodec, user can override.
+ * - decoding: Set by libavcodec, user can override.
+ */
+// int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
+func (codecCtx *CAVCodecContext) SetExecute2(execute2 ctypes.CFunc) {
+	codecCtx.execute2 = (*[0]byte)(execute2)
+}
+
+/**
+ * noise vs. sse weight for the nsse comparison function
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetNsseWeight() int {
+	return int(codecCtx.nsse_weight)
+}
+
+/**
+ * noise vs. sse weight for the nsse comparison function
+ * - encoding: Set by user.
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetNsseWeight(nsseWeight int) {
+	codecCtx.nsse_weight = C.int(nsseWeight)
+}
+
+/**
+ * profile
+ * - encoding: Set by user.
+ * - decoding: Set by libavcodec.
+ * See the AV_PROFILE_* defines in defs.h.
+ */
+func (codecCtx *CAVCodecContext) GetProfile() int {
+	return int(codecCtx.profile)
+}
+
+/**
+ * profile
+ * - encoding: Set by user.
+ * - decoding: Set by libavcodec.
+ * See the AV_PROFILE_* defines in defs.h.
+ */
+func (codecCtx *CAVCodecContext) SetProfile(profile int) {
+	codecCtx.profile = C.int(profile)
+}
+
 // #if FF_API_FF_PROFILE_LEVEL
 //     /** @deprecated The following defines are deprecated; use AV_PROFILE_*
 //      * in defs.h instead. */
@@ -2073,332 +3327,819 @@ func (codecCtx *CAVCodecContext) GetFrameSize() int {
 // #define FF_PROFILE_EVC_MAIN                 1
 // #endif
 
-//     /**
-//      * Encoding level descriptor.
-//      * - encoding: Set by user, corresponds to a specific level defined by the
-//      *   codec, usually corresponding to the profile level, if not specified it
-//      *   is set to FF_LEVEL_UNKNOWN.
-//      * - decoding: Set by libavcodec.
-//      * See AV_LEVEL_* in defs.h.
-//      */
-//      int level;
+/**
+ * Encoding level descriptor.
+ * - encoding: Set by user, corresponds to a specific level defined by the
+ *   codec, usually corresponding to the profile level, if not specified it
+ *   is set to FF_LEVEL_UNKNOWN.
+ * - decoding: Set by libavcodec.
+ * See AV_LEVEL_* in defs.h.
+ */
+func (codecCtx *CAVCodecContext) GetLevel() int {
+	return int(codecCtx.level)
+}
+
+/**
+ * Encoding level descriptor.
+ * - encoding: Set by user, corresponds to a specific level defined by the
+ *   codec, usually corresponding to the profile level, if not specified it
+ *   is set to FF_LEVEL_UNKNOWN.
+ * - decoding: Set by libavcodec.
+ * See AV_LEVEL_* in defs.h.
+ */
+func (codecCtx *CAVCodecContext) SetLevel(level int) {
+	codecCtx.level = C.int(level)
+}
+
 // #if FF_API_FF_PROFILE_LEVEL
 //     /** @deprecated The following define is deprecated; use AV_LEVEL_UNKOWN
 //      * in defs.h instead. */
 // #define FF_LEVEL_UNKNOWN -99
 // #endif
 
-//     /**
-//      * Skip loop filtering for selected frames.
-//      * - encoding: unused
-//      * - decoding: Set by user.
-//      */
-//     enum AVDiscard skip_loop_filter;
+/**
+ * Skip loop filtering for selected frames.
+ * - encoding: unused
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetSkipLoopFilter() C.enum_AVDiscard {
+	return codecCtx.skip_loop_filter
+}
 
-//     /**
-//      * Skip IDCT/dequantization for selected frames.
-//      * - encoding: unused
-//      * - decoding: Set by user.
-//      */
-//     enum AVDiscard skip_idct;
+/**
+ * Skip loop filtering for selected frames.
+ * - encoding: unused
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetSkipLoopFilter(skipLoopFilter C.enum_AVDiscard) {
+	codecCtx.skip_loop_filter = skipLoopFilter
+}
 
-//     /**
-//      * Skip decoding for selected frames.
-//      * - encoding: unused
-//      * - decoding: Set by user.
-//      */
-//     enum AVDiscard skip_frame;
+/**
+ * Skip IDCT/dequantization for selected frames.
+ * - encoding: unused
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetSkipIdct() C.enum_AVDiscard {
+	return codecCtx.skip_idct
+}
 
-//     /**
-//      * Header containing style information for text subtitles.
-//      * For SUBTITLE_ASS subtitle type, it should contain the whole ASS
-//      * [Script Info] and [V4+ Styles] section, plus the [Events] line and
-//      * the Format line following. It shouldn't include any Dialogue line.
-//      * - encoding: Set/allocated/freed by user (before avcodec_open2())
-//      * - decoding: Set/allocated/freed by libavcodec (by avcodec_open2())
-//      */
-//     uint8_t *subtitle_header;
-//     int subtitle_header_size;
+/**
+ * Skip IDCT/dequantization for selected frames.
+ * - encoding: unused
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetSkipIdct(skipIdct C.enum_AVDiscard) {
+	codecCtx.skip_idct = skipIdct
+}
 
-//     /**
-//      * Audio only. The number of "priming" samples (padding) inserted by the
-//      * encoder at the beginning of the audio. I.e. this number of leading
-//      * decoded samples must be discarded by the caller to get the original audio
-//      * without leading padding.
-//      *
-//      * - decoding: unused
-//      * - encoding: Set by libavcodec. The timestamps on the output packets are
-//      *             adjusted by the encoder so that they always refer to the
-//      *             first sample of the data actually contained in the packet,
-//      *             including any added padding.  E.g. if the timebase is
-//      *             1/samplerate and the timestamp of the first input sample is
-//      *             0, the timestamp of the first output packet will be
-//      *             -initial_padding.
-//      */
-//     int initial_padding;
+/**
+ * Skip decoding for selected frames.
+ * - encoding: unused
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetSkipFrame() C.enum_AVDiscard {
+	return codecCtx.skip_frame
+}
 
-//     /**
-//      * - decoding: For codecs that store a framerate value in the compressed
-//      *             bitstream, the decoder may export it here. { 0, 1} when
-//      *             unknown.
-//      * - encoding: May be used to signal the framerate of CFR content to an
-//      *             encoder.
-//      */
-//     AVRational framerate;
+/**
+ * Skip decoding for selected frames.
+ * - encoding: unused
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetSkipFrame(skipFrame C.enum_AVDiscard) {
+	codecCtx.skip_frame = skipFrame
+}
 
-//     /**
-//      * Nominal unaccelerated pixel format, see AV_PIX_FMT_xxx.
-//      * - encoding: unused.
-//      * - decoding: Set by libavcodec before calling get_format()
-//      */
-//     enum AVPixelFormat sw_pix_fmt;
+/**
+ * Header containing style information for text subtitles.
+ * For SUBTITLE_ASS subtitle type, it should contain the whole ASS
+ * [Script Info] and [V4+ Styles] section, plus the [Events] line and
+ * the Format line following. It shouldn't include any Dialogue line.
+ * - encoding: Set/allocated/freed by user (before avcodec_open2())
+ * - decoding: Set/allocated/freed by libavcodec (by avcodec_open2())
+ */
+func (codecCtx *CAVCodecContext) GetSubtitleHeader() unsafe.Pointer {
+	return unsafe.Pointer(codecCtx.subtitle_header)
+}
 
-//     /**
-//      * Timebase in which pkt_dts/pts and AVPacket.dts/pts are expressed.
-//      * - encoding: unused.
-//      * - decoding: set by user.
-//      */
-//     AVRational pkt_timebase;
+/**
+ * Header containing style information for text subtitles.
+ * For SUBTITLE_ASS subtitle type, it should contain the whole ASS
+ * [Script Info] and [V4+ Styles] section, plus the [Events] line and
+ * the Format line following. It shouldn't include any Dialogue line.
+ * - encoding: Set/allocated/freed by user (before avcodec_open2())
+ * - decoding: Set/allocated/freed by libavcodec (by avcodec_open2())
+ */
+func (codecCtx *CAVCodecContext) SetSubtitleHeader(subtitleHeader unsafe.Pointer) {
+	codecCtx.subtitle_header = (*C.uint8_t)(subtitleHeader)
+}
 
-//     /**
-//      * AVCodecDescriptor
-//      * - encoding: unused.
-//      * - decoding: set by libavcodec.
-//      */
-//     const struct AVCodecDescriptor *codec_descriptor;
+func (codecCtx *CAVCodecContext) GetSubtitleHeaderSize() int {
+	return int(codecCtx.subtitle_header_size)
+}
+func (codecCtx *CAVCodecContext) SetSubtitleHeaderSize(subtitleHeaderSize int) {
+	codecCtx.subtitle_header_size = C.int(subtitleHeaderSize)
+}
 
-//     /**
-//      * Current statistics for PTS correction.
-//      * - decoding: maintained and used by libavcodec, not intended to be used by user apps
-//      * - encoding: unused
-//      */
-//     int64_t pts_correction_num_faulty_pts; /// Number of incorrect PTS values so far
-//     int64_t pts_correction_num_faulty_dts; /// Number of incorrect DTS values so far
-//     int64_t pts_correction_last_pts;       /// PTS of the last frame
-//     int64_t pts_correction_last_dts;       /// DTS of the last frame
+/**
+ * Audio only. The number of "priming" samples (padding) inserted by the
+ * encoder at the beginning of the audio. I.e. this number of leading
+ * decoded samples must be discarded by the caller to get the original audio
+ * without leading padding.
+ *
+ * - decoding: unused
+ * - encoding: Set by libavcodec. The timestamps on the output packets are
+ *             adjusted by the encoder so that they always refer to the
+ *             first sample of the data actually contained in the packet,
+ *             including any added padding.  E.g. if the timebase is
+ *             1/samplerate and the timestamp of the first input sample is
+ *             0, the timestamp of the first output packet will be
+ *             -initial_padding.
+ */
+func (codecCtx *CAVCodecContext) GetInitialPadding() int {
+	return int(codecCtx.initial_padding)
+}
 
-//     /**
-//      * Character encoding of the input subtitles file.
-//      * - decoding: set by user
-//      * - encoding: unused
-//      */
-//     char *sub_charenc;
+/**
+ * Audio only. The number of "priming" samples (padding) inserted by the
+ * encoder at the beginning of the audio. I.e. this number of leading
+ * decoded samples must be discarded by the caller to get the original audio
+ * without leading padding.
+ *
+ * - decoding: unused
+ * - encoding: Set by libavcodec. The timestamps on the output packets are
+ *             adjusted by the encoder so that they always refer to the
+ *             first sample of the data actually contained in the packet,
+ *             including any added padding.  E.g. if the timebase is
+ *             1/samplerate and the timestamp of the first input sample is
+ *             0, the timestamp of the first output packet will be
+ *             -initial_padding.
+ */
+func (codecCtx *CAVCodecContext) SetInitialPadding(initialPadding int) {
+	codecCtx.initial_padding = C.int(initialPadding)
+}
 
-//     /**
-//      * Subtitles character encoding mode. Formats or codecs might be adjusting
-//      * this setting (if they are doing the conversion themselves for instance).
-//      * - decoding: set by libavcodec
-//      * - encoding: unused
-//      */
-//     int sub_charenc_mode;
-// #define FF_SUB_CHARENC_MODE_DO_NOTHING  -1  ///< do nothing (demuxer outputs a stream supposed to be already in UTF-8, or the codec is bitmap for instance)
-// #define FF_SUB_CHARENC_MODE_AUTOMATIC    0  ///< libavcodec will select the mode itself
-// #define FF_SUB_CHARENC_MODE_PRE_DECODER  1  ///< the AVPacket data needs to be recoded to UTF-8 before being fed to the decoder, requires iconv
-// #define FF_SUB_CHARENC_MODE_IGNORE       2  ///< neither convert the subtitles, nor check them for valid UTF-8
+/**
+ * - decoding: For codecs that store a framerate value in the compressed
+ *             bitstream, the decoder may export it here. { 0, 1} when
+ *             unknown.
+ * - encoding: May be used to signal the framerate of CFR content to an
+ *             encoder.
+ */
+func (codecCtx *CAVCodecContext) GetFramerate() avutil.CAVRational {
+	return *(*avutil.CAVRational)(unsafe.Pointer(&codecCtx.framerate))
+}
 
-//     /**
-//      * Skip processing alpha if supported by codec.
-//      * Note that if the format uses pre-multiplied alpha (common with VP6,
-//      * and recommended due to better video quality/compression)
-//      * the image will look as if alpha-blended onto a black background.
-//      * However for formats that do not use pre-multiplied alpha
-//      * there might be serious artefacts (though e.g. libswscale currently
-//      * assumes pre-multiplied alpha anyway).
-//      *
-//      * - decoding: set by user
-//      * - encoding: unused
-//      */
-//     int skip_alpha;
+/**
+ * - decoding: For codecs that store a framerate value in the compressed
+ *             bitstream, the decoder may export it here. { 0, 1} when
+ *             unknown.
+ * - encoding: May be used to signal the framerate of CFR content to an
+ *             encoder.
+ */
+func (codecCtx *CAVCodecContext) SetFramerate(framerate avutil.CAVRational) {
+	codecCtx.framerate = *(*C.AVRational)(unsafe.Pointer(&framerate))
+}
 
-//     /**
-//      * Number of samples to skip after a discontinuity
-//      * - decoding: unused
-//      * - encoding: set by libavcodec
-//      */
-//     int seek_preroll;
+/**
+ * Nominal unaccelerated pixel format, see AV_PIX_FMT_xxx.
+ * - encoding: unused.
+ * - decoding: Set by libavcodec before calling get_format()
+ */
+func (codecCtx *CAVCodecContext) GetSwPixFmt() avutil.CAVPixelFormat {
+	return avutil.CAVPixelFormat(codecCtx.sw_pix_fmt)
+}
 
-//     /**
-//      * custom intra quantization matrix
-//      * - encoding: Set by user, can be NULL.
-//      * - decoding: unused.
-//      */
-//     uint16_t *chroma_intra_matrix;
+/**
+ * Nominal unaccelerated pixel format, see AV_PIX_FMT_xxx.
+ * - encoding: unused.
+ * - decoding: Set by libavcodec before calling get_format()
+ */
+func (codecCtx *CAVCodecContext) SetSwPixFmt(swPixFmt avutil.CAVPixelFormat) {
+	codecCtx.sw_pix_fmt = C.enum_AVPixelFormat(swPixFmt)
+}
 
-//     /**
-//      * dump format separator.
-//      * can be ", " or "\n      " or anything else
-//      * - encoding: Set by user.
-//      * - decoding: Set by user.
-//      */
-//     uint8_t *dump_separator;
+/**
+ * Timebase in which pkt_dts/pts and AVPacket.dts/pts are expressed.
+ * - encoding: unused.
+ * - decoding: set by user.
+ */
+func (codecCtx *CAVCodecContext) GetPktTimebase() avutil.CAVRational {
+	return *(*avutil.CAVRational)(unsafe.Pointer(&codecCtx.pkt_timebase))
+}
 
-//     /**
-//      * ',' separated list of allowed decoders.
-//      * If NULL then all are allowed
-//      * - encoding: unused
-//      * - decoding: set by user
-//      */
-//     char *codec_whitelist;
+/**
+ * Timebase in which pkt_dts/pts and AVPacket.dts/pts are expressed.
+ * - encoding: unused.
+ * - decoding: set by user.
+ */
+func (codecCtx *CAVCodecContext) SetPktTimebase(pktTimebase avutil.CAVRational) {
+	codecCtx.pkt_timebase = *(*C.AVRational)(unsafe.Pointer(&pktTimebase))
+}
 
-//     /**
-//      * Properties of the stream that gets decoded
-//      * - encoding: unused
-//      * - decoding: set by libavcodec
-//      */
-//     unsigned properties;
-// #define FF_CODEC_PROPERTY_LOSSLESS        0x00000001
-// #define FF_CODEC_PROPERTY_CLOSED_CAPTIONS 0x00000002
-// #define FF_CODEC_PROPERTY_FILM_GRAIN      0x00000004
+/**
+ * AVCodecDescriptor
+ * - encoding: unused.
+ * - decoding: set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) GetCodecDescriptor() *C.AVCodecDescriptor {
+	return codecCtx.codec_descriptor
+}
 
-//     /**
-//      * Additional data associated with the entire coded stream.
-//      *
-//      * - decoding: may be set by user before calling avcodec_open2().
-//      * - encoding: may be set by libavcodec after avcodec_open2().
-//      */
-//     AVPacketSideData *coded_side_data;
-//     int            nb_coded_side_data;
+/**
+ * AVCodecDescriptor
+ * - encoding: unused.
+ * - decoding: set by libavcodec.
+ */
+func (codecCtx *CAVCodecContext) SetCodecDescriptor(codecDescriptor *C.AVCodecDescriptor) {
+	codecCtx.codec_descriptor = codecDescriptor
+}
 
-//     /**
-//      * A reference to the AVHWFramesContext describing the input (for encoding)
-//      * or output (decoding) frames. The reference is set by the caller and
-//      * afterwards owned (and freed) by libavcodec - it should never be read by
-//      * the caller after being set.
-//      *
-//      * - decoding: This field should be set by the caller from the get_format()
-//      *             callback. The previous reference (if any) will always be
-//      *             unreffed by libavcodec before the get_format() call.
-//      *
-//      *             If the default get_buffer2() is used with a hwaccel pixel
-//      *             format, then this AVHWFramesContext will be used for
-//      *             allocating the frame buffers.
-//      *
-//      * - encoding: For hardware encoders configured to use a hwaccel pixel
-//      *             format, this field should be set by the caller to a reference
-//      *             to the AVHWFramesContext describing input frames.
-//      *             AVHWFramesContext.format must be equal to
-//      *             AVCodecContext.pix_fmt.
-//      *
-//      *             This field should be set before avcodec_open2() is called.
-//      */
-//     AVBufferRef *hw_frames_ctx;
+/**
+ * Current statistics for PTS correction.
+ * - decoding: maintained and used by libavcodec, not intended to be used by user apps
+ * - encoding: unused
+ */
 
-//     /**
-//      * Audio only. The amount of padding (in samples) appended by the encoder to
-//      * the end of the audio. I.e. this number of decoded samples must be
-//      * discarded by the caller from the end of the stream to get the original
-//      * audio without any trailing padding.
-//      *
-//      * - decoding: unused
-//      * - encoding: unused
-//      */
-//     int trailing_padding;
+// / Number of incorrect PTS values so far
+func (codecCtx *CAVCodecContext) GetPtsCorrectionNumFaultyPts() int64 {
+	return int64(codecCtx.pts_correction_num_faulty_pts)
+}
 
-//     /**
-//      * The number of pixels per image to maximally accept.
-//      *
-//      * - decoding: set by user
-//      * - encoding: set by user
-//      */
-//     int64_t max_pixels;
+// / Number of incorrect PTS values so far
+func (codecCtx *CAVCodecContext) SetPtsCorrectionNumFaultyPts(ptsCorrectionNumFaultyPts int64) {
+	codecCtx.pts_correction_num_faulty_pts = C.int64_t(ptsCorrectionNumFaultyPts)
+}
 
-//     /**
-//      * A reference to the AVHWDeviceContext describing the device which will
-//      * be used by a hardware encoder/decoder.  The reference is set by the
-//      * caller and afterwards owned (and freed) by libavcodec.
-//      *
-//      * This should be used if either the codec device does not require
-//      * hardware frames or any that are used are to be allocated internally by
-//      * libavcodec.  If the user wishes to supply any of the frames used as
-//      * encoder input or decoder output then hw_frames_ctx should be used
-//      * instead.  When hw_frames_ctx is set in get_format() for a decoder, this
-//      * field will be ignored while decoding the associated stream segment, but
-//      * may again be used on a following one after another get_format() call.
-//      *
-//      * For both encoders and decoders this field should be set before
-//      * avcodec_open2() is called and must not be written to thereafter.
-//      *
-//      * Note that some decoders may require this field to be set initially in
-//      * order to support hw_frames_ctx at all - in that case, all frames
-//      * contexts used must be created on the same device.
-//      */
-//     AVBufferRef *hw_device_ctx;
+// / Number of incorrect DTS values so far
+func (codecCtx *CAVCodecContext) GetPtsCorrectionNumFaultyDts() int64 {
+	return int64(codecCtx.pts_correction_num_faulty_dts)
+}
 
-//     /**
-//      * Bit set of AV_HWACCEL_FLAG_* flags, which affect hardware accelerated
-//      * decoding (if active).
-//      * - encoding: unused
-//      * - decoding: Set by user (either before avcodec_open2(), or in the
-//      *             AVCodecContext.get_format callback)
-//      */
-//     int hwaccel_flags;
+// / Number of incorrect DTS values so far
+func (codecCtx *CAVCodecContext) SetPtsCorrectionNumFaultyDts(ptsCorrectionNumFaultyDts int64) {
+	codecCtx.pts_correction_num_faulty_dts = C.int64_t(ptsCorrectionNumFaultyDts)
+}
 
-//     /**
-//      * Video decoding only. Certain video codecs support cropping, meaning that
-//      * only a sub-rectangle of the decoded frame is intended for display.  This
-//      * option controls how cropping is handled by libavcodec.
-//      *
-//      * When set to 1 (the default), libavcodec will apply cropping internally.
-//      * I.e. it will modify the output frame width/height fields and offset the
-//      * data pointers (only by as much as possible while preserving alignment, or
-//      * by the full amount if the AV_CODEC_FLAG_UNALIGNED flag is set) so that
-//      * the frames output by the decoder refer only to the cropped area. The
-//      * crop_* fields of the output frames will be zero.
-//      *
-//      * When set to 0, the width/height fields of the output frames will be set
-//      * to the coded dimensions and the crop_* fields will describe the cropping
-//      * rectangle. Applying the cropping is left to the caller.
-//      *
-//      * @warning When hardware acceleration with opaque output frames is used,
-//      * libavcodec is unable to apply cropping from the top/left border.
-//      *
-//      * @note when this option is set to zero, the width/height fields of the
-//      * AVCodecContext and output AVFrames have different meanings. The codec
-//      * context fields store display dimensions (with the coded dimensions in
-//      * coded_width/height), while the frame fields store the coded dimensions
-//      * (with the display dimensions being determined by the crop_* fields).
-//      */
-//     int apply_cropping;
+// / PTS of the last frame
+func (codecCtx *CAVCodecContext) GetPtsCorrectionLastPts() int64 {
+	return int64(codecCtx.pts_correction_last_pts)
+}
 
-//     /*
-//      * Video decoding only.  Sets the number of extra hardware frames which
-//      * the decoder will allocate for use by the caller.  This must be set
-//      * before avcodec_open2() is called.
-//      *
-//      * Some hardware decoders require all frames that they will use for
-//      * output to be defined in advance before decoding starts.  For such
-//      * decoders, the hardware frame pool must therefore be of a fixed size.
-//      * The extra frames set here are on top of any number that the decoder
-//      * needs internally in order to operate normally (for example, frames
-//      * used as reference pictures).
-//      */
-//     int extra_hw_frames;
+// / PTS of the last frame
+func (codecCtx *CAVCodecContext) SetPtsCorrectionLastPts(ptsCorrectionLastPts int64) {
+	codecCtx.pts_correction_last_pts = C.int64_t(ptsCorrectionLastPts)
+}
 
-//     /**
-//      * The percentage of damaged samples to discard a frame.
-//      *
-//      * - decoding: set by user
-//      * - encoding: unused
-//      */
-//     int discard_damaged_percentage;
+// / DTS of the last frame
+func (codecCtx *CAVCodecContext) GetPtsCorrectionLastDts() int64 {
+	return int64(codecCtx.pts_correction_last_dts)
+}
 
-//     /**
-//      * The number of samples per frame to maximally accept.
-//      *
-//      * - decoding: set by user
-//      * - encoding: set by user
-//      */
-//     int64_t max_samples;
+// / DTS of the last frame
+func (codecCtx *CAVCodecContext) SetPtsCorrectionLastDts(ptsCorrectionLastDts int64) {
+	codecCtx.pts_correction_last_dts = C.int64_t(ptsCorrectionLastDts)
+}
 
-//     /**
-//      * Bit set of AV_CODEC_EXPORT_DATA_* flags, which affects the kind of
-//      * metadata exported in frame, packet, or coded stream side data by
-//      * decoders and encoders.
-//      *
-//      * - decoding: set by user
-//      * - encoding: set by user
-//      */
-//     int export_side_data;
+/**
+ * Character encoding of the input subtitles file.
+ * - decoding: set by user
+ * - encoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetSubCharenc() string {
+	return C.GoString(codecCtx.sub_charenc)
+}
+
+/**
+ * Character encoding of the input subtitles file.
+ * - decoding: set by user
+ * - encoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetSubCharenc(subCharenc string) {
+	var cSubCharenc *C.char = nil
+	if len(subCharenc) > 0 {
+		cSubCharenc = C.CString(subCharenc)
+	}
+
+	codecCtx.sub_charenc = cSubCharenc
+}
+
+/**
+ * Subtitles character encoding mode. Formats or codecs might be adjusting
+ * this setting (if they are doing the conversion themselves for instance).
+ * - decoding: set by libavcodec
+ * - encoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetSubCharencMode() int {
+	return int(codecCtx.sub_charenc_mode)
+}
+
+/**
+ * Subtitles character encoding mode. Formats or codecs might be adjusting
+ * this setting (if they are doing the conversion themselves for instance).
+ * - decoding: set by libavcodec
+ * - encoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetSubCharencMode(subCharencMode int) {
+	codecCtx.sub_charenc_mode = C.int(subCharencMode)
+}
+
+const (
+	FF_SUB_CHARENC_MODE_DO_NOTHING  = C.FF_SUB_CHARENC_MODE_DO_NOTHING  ///< do nothing (demuxer outputs a stream supposed to be already in UTF-8, or the codec is bitmap for instance)
+	FF_SUB_CHARENC_MODE_AUTOMATIC   = C.FF_SUB_CHARENC_MODE_AUTOMATIC   ///< libavcodec will select the mode itself
+	FF_SUB_CHARENC_MODE_PRE_DECODER = C.FF_SUB_CHARENC_MODE_PRE_DECODER ///< the AVPacket data needs to be recoded to UTF-8 before being fed to the decoder, requires iconv
+	FF_SUB_CHARENC_MODE_IGNORE      = C.FF_SUB_CHARENC_MODE_IGNORE      ///< neither convert the subtitles, nor check them for valid UTF-8
+)
+
+/**
+ * Skip processing alpha if supported by codec.
+ * Note that if the format uses pre-multiplied alpha (common with VP6,
+ * and recommended due to better video quality/compression)
+ * the image will look as if alpha-blended onto a black background.
+ * However for formats that do not use pre-multiplied alpha
+ * there might be serious artefacts (though e.g. libswscale currently
+ * assumes pre-multiplied alpha anyway).
+ *
+ * - decoding: set by user
+ * - encoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetSkipAlpha() int {
+	return int(codecCtx.skip_alpha)
+}
+
+/**
+ * Skip processing alpha if supported by codec.
+ * Note that if the format uses pre-multiplied alpha (common with VP6,
+ * and recommended due to better video quality/compression)
+ * the image will look as if alpha-blended onto a black background.
+ * However for formats that do not use pre-multiplied alpha
+ * there might be serious artefacts (though e.g. libswscale currently
+ * assumes pre-multiplied alpha anyway).
+ *
+ * - decoding: set by user
+ * - encoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetSkipAlpha(skipAlpha int) {
+	codecCtx.skip_alpha = C.int(skipAlpha)
+}
+
+/**
+ * Number of samples to skip after a discontinuity
+ * - decoding: unused
+ * - encoding: set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) GetSeekPreroll() int {
+	return int(codecCtx.seek_preroll)
+}
+
+/**
+ * Number of samples to skip after a discontinuity
+ * - decoding: unused
+ * - encoding: set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) SetSeekPreroll(seekPreroll int) {
+	codecCtx.seek_preroll = C.int(seekPreroll)
+}
+
+/**
+ * custom intra quantization matrix
+ * - encoding: Set by user, can be NULL.
+ * - decoding: unused.
+ */
+func (codecCtx *CAVCodecContext) GetChromaIntraMatrix() *ctypes.UInt16 {
+	return (*ctypes.UInt16)(codecCtx.chroma_intra_matrix)
+}
+
+/**
+ * custom intra quantization matrix
+ * - encoding: Set by user, can be NULL.
+ * - decoding: unused.
+ */
+func (codecCtx *CAVCodecContext) SetChromaIntraMatrix(chromaIntraMatrix *ctypes.UInt16) {
+	codecCtx.chroma_intra_matrix = (*C.uint16_t)(chromaIntraMatrix)
+}
+
+/**
+ * dump format separator.
+ * can be ", " or "\n      " or anything else
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) GetDumpSeparator() string {
+	return C.GoString((*C.char)(unsafe.Pointer(codecCtx.dump_separator)))
+}
+
+/**
+ * dump format separator.
+ * can be ", " or "\n      " or anything else
+ * - encoding: Set by user.
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetDumpSeparator(dumpSeparator string) {
+	var cDumpSeparator *C.char = nil
+	if len(dumpSeparator) > 0 {
+		cDumpSeparator = C.CString(dumpSeparator)
+	}
+	codecCtx.dump_separator = (*C.uchar)(unsafe.Pointer(cDumpSeparator))
+}
+
+/**
+ * ',' separated list of allowed decoders.
+ * If NULL then all are allowed
+ * - encoding: unused
+ * - decoding: set by user
+ */
+func (codecCtx *CAVCodecContext) GetCodecWhitelist() string {
+	return C.GoString(codecCtx.codec_whitelist)
+}
+
+/**
+ * ',' separated list of allowed decoders.
+ * If NULL then all are allowed
+ * - encoding: unused
+ * - decoding: set by user
+ */
+func (codecCtx *CAVCodecContext) SetCodecWhitelist(codecWhitelist string) {
+	var cCodecWhitelist *C.char = nil
+	if len(codecWhitelist) > 0 {
+		cCodecWhitelist = C.CString(codecWhitelist)
+	}
+	codecCtx.codec_whitelist = cCodecWhitelist
+}
+
+/**
+ * Properties of the stream that gets decoded
+ * - encoding: unused
+ * - decoding: set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) GetProperties() uint {
+	return uint(codecCtx.properties)
+}
+
+/**
+ * Properties of the stream that gets decoded
+ * - encoding: unused
+ * - decoding: set by libavcodec
+ */
+func (codecCtx *CAVCodecContext) SetProperties(properties uint) {
+	codecCtx.properties = C.uint(properties)
+}
+
+const (
+	FF_CODEC_PROPERTY_LOSSLESS        = C.FF_CODEC_PROPERTY_LOSSLESS
+	FF_CODEC_PROPERTY_CLOSED_CAPTIONS = C.FF_CODEC_PROPERTY_CLOSED_CAPTIONS
+	FF_CODEC_PROPERTY_FILM_GRAIN      = C.FF_CODEC_PROPERTY_FILM_GRAIN
+)
+
+/**
+ * Additional data associated with the entire coded stream.
+ *
+ * - decoding: may be set by user before calling avcodec_open2().
+ * - encoding: may be set by libavcodec after avcodec_open2().
+ */
+func (codecCtx *CAVCodecContext) GetCodedSideData() *CAVPacketSideData {
+	return (*CAVPacketSideData)(codecCtx.coded_side_data)
+}
+
+/**
+ * Additional data associated with the entire coded stream.
+ *
+ * - decoding: may be set by user before calling avcodec_open2().
+ * - encoding: may be set by libavcodec after avcodec_open2().
+ */
+func (codecCtx *CAVCodecContext) SetCodedSideData(codedSideData *CAVPacketSideData) {
+	codecCtx.coded_side_data = (*C.AVPacketSideData)(codedSideData)
+}
+
+func (codecCtx *CAVCodecContext) GetNbCodedSideData() int {
+	return int(codecCtx.nb_coded_side_data)
+}
+func (codecCtx *CAVCodecContext) SetNbCodedSideData(nbCodedSideData int) {
+	codecCtx.nb_coded_side_data = C.int(nbCodedSideData)
+}
+
+/**
+ * A reference to the AVHWFramesContext describing the input (for encoding)
+ * or output (decoding) frames. The reference is set by the caller and
+ * afterwards owned (and freed) by libavcodec - it should never be read by
+ * the caller after being set.
+ *
+ * - decoding: This field should be set by the caller from the get_format()
+ *             callback. The previous reference (if any) will always be
+ *             unreffed by libavcodec before the get_format() call.
+ *
+ *             If the default get_buffer2() is used with a hwaccel pixel
+ *             format, then this AVHWFramesContext will be used for
+ *             allocating the frame buffers.
+ *
+ * - encoding: For hardware encoders configured to use a hwaccel pixel
+ *             format, this field should be set by the caller to a reference
+ *             to the AVHWFramesContext describing input frames.
+ *             AVHWFramesContext.format must be equal to
+ *             AVCodecContext.pix_fmt.
+ *
+ *             This field should be set before avcodec_open2() is called.
+ */
+func (codecCtx *CAVCodecContext) GetHwFramesCtx() *avutil.CAVBufferRef {
+	return (*avutil.CAVBufferRef)(unsafe.Pointer(codecCtx.hw_frames_ctx))
+}
+
+/**
+ * A reference to the AVHWFramesContext describing the input (for encoding)
+ * or output (decoding) frames. The reference is set by the caller and
+ * afterwards owned (and freed) by libavcodec - it should never be read by
+ * the caller after being set.
+ *
+ * - decoding: This field should be set by the caller from the get_format()
+ *             callback. The previous reference (if any) will always be
+ *             unreffed by libavcodec before the get_format() call.
+ *
+ *             If the default get_buffer2() is used with a hwaccel pixel
+ *             format, then this AVHWFramesContext will be used for
+ *             allocating the frame buffers.
+ *
+ * - encoding: For hardware encoders configured to use a hwaccel pixel
+ *             format, this field should be set by the caller to a reference
+ *             to the AVHWFramesContext describing input frames.
+ *             AVHWFramesContext.format must be equal to
+ *             AVCodecContext.pix_fmt.
+ *
+ *             This field should be set before avcodec_open2() is called.
+ */
+func (codecCtx *CAVCodecContext) SetHwFramesCtx(hwFramesCtx *avutil.CAVBufferRef) {
+	codecCtx.hw_frames_ctx = (*C.AVBufferRef)(unsafe.Pointer(hwFramesCtx))
+}
+
+/**
+ * Audio only. The amount of padding (in samples) appended by the encoder to
+ * the end of the audio. I.e. this number of decoded samples must be
+ * discarded by the caller from the end of the stream to get the original
+ * audio without any trailing padding.
+ *
+ * - decoding: unused
+ * - encoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetTrailingPadding() int {
+	return int(codecCtx.trailing_padding)
+}
+
+/**
+ * Audio only. The amount of padding (in samples) appended by the encoder to
+ * the end of the audio. I.e. this number of decoded samples must be
+ * discarded by the caller from the end of the stream to get the original
+ * audio without any trailing padding.
+ *
+ * - decoding: unused
+ * - encoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetTrailingPadding(trailingPadding int) {
+	codecCtx.trailing_padding = C.int(trailingPadding)
+}
+
+/**
+ * The number of pixels per image to maximally accept.
+ *
+ * - decoding: set by user
+ * - encoding: set by user
+ */
+func (codecCtx *CAVCodecContext) GetMaxPixels() int64 {
+	return int64(codecCtx.max_pixels)
+}
+
+/**
+ * The number of pixels per image to maximally accept.
+ *
+ * - decoding: set by user
+ * - encoding: set by user
+ */
+func (codecCtx *CAVCodecContext) SetMaxPixels(maxPixels int64) {
+	codecCtx.max_pixels = C.int64_t(maxPixels)
+}
+
+/**
+ * A reference to the AVHWDeviceContext describing the device which will
+ * be used by a hardware encoder/decoder.  The reference is set by the
+ * caller and afterwards owned (and freed) by libavcodec.
+ *
+ * This should be used if either the codec device does not require
+ * hardware frames or any that are used are to be allocated internally by
+ * libavcodec.  If the user wishes to supply any of the frames used as
+ * encoder input or decoder output then hw_frames_ctx should be used
+ * instead.  When hw_frames_ctx is set in get_format() for a decoder, this
+ * field will be ignored while decoding the associated stream segment, but
+ * may again be used on a following one after another get_format() call.
+ *
+ * For both encoders and decoders this field should be set before
+ * avcodec_open2() is called and must not be written to thereafter.
+ *
+ * Note that some decoders may require this field to be set initially in
+ * order to support hw_frames_ctx at all - in that case, all frames
+ * contexts used must be created on the same device.
+ */
+func (codecCtx *CAVCodecContext) GetHwDeviceCtx() *avutil.CAVBufferRef {
+	return (*avutil.CAVBufferRef)(unsafe.Pointer(codecCtx.hw_device_ctx))
+}
+
+/**
+ * A reference to the AVHWDeviceContext describing the device which will
+ * be used by a hardware encoder/decoder.  The reference is set by the
+ * caller and afterwards owned (and freed) by libavcodec.
+ *
+ * This should be used if either the codec device does not require
+ * hardware frames or any that are used are to be allocated internally by
+ * libavcodec.  If the user wishes to supply any of the frames used as
+ * encoder input or decoder output then hw_frames_ctx should be used
+ * instead.  When hw_frames_ctx is set in get_format() for a decoder, this
+ * field will be ignored while decoding the associated stream segment, but
+ * may again be used on a following one after another get_format() call.
+ *
+ * For both encoders and decoders this field should be set before
+ * avcodec_open2() is called and must not be written to thereafter.
+ *
+ * Note that some decoders may require this field to be set initially in
+ * order to support hw_frames_ctx at all - in that case, all frames
+ * contexts used must be created on the same device.
+ */
+func (codecCtx *CAVCodecContext) SetHwDeviceCtx(hwDeviceCtx *avutil.CAVBufferRef) {
+	codecCtx.hw_device_ctx = (*C.AVBufferRef)(unsafe.Pointer(hwDeviceCtx))
+}
+
+/**
+ * Bit set of AV_HWACCEL_FLAG_* flags, which affect hardware accelerated
+ * decoding (if active).
+ * - encoding: unused
+ * - decoding: Set by user (either before avcodec_open2(), or in the
+ *             AVCodecContext.get_format callback)
+ */
+func (codecCtx *CAVCodecContext) GetHwaccelFlags() int {
+	return int(codecCtx.hwaccel_flags)
+}
+
+/**
+ * Bit set of AV_HWACCEL_FLAG_* flags, which affect hardware accelerated
+ * decoding (if active).
+ * - encoding: unused
+ * - decoding: Set by user (either before avcodec_open2(), or in the
+ *             AVCodecContext.get_format callback)
+ */
+func (codecCtx *CAVCodecContext) SetHwaccelFlags(hwaccelFlags int) {
+	codecCtx.hwaccel_flags = C.int(hwaccelFlags)
+}
+
+/**
+ * Video decoding only. Certain video codecs support cropping, meaning that
+ * only a sub-rectangle of the decoded frame is intended for display.  This
+ * option controls how cropping is handled by libavcodec.
+ *
+ * When set to 1 (the default), libavcodec will apply cropping internally.
+ * I.e. it will modify the output frame width/height fields and offset the
+ * data pointers (only by as much as possible while preserving alignment, or
+ * by the full amount if the AV_CODEC_FLAG_UNALIGNED flag is set) so that
+ * the frames output by the decoder refer only to the cropped area. The
+ * crop_* fields of the output frames will be zero.
+ *
+ * When set to 0, the width/height fields of the output frames will be set
+ * to the coded dimensions and the crop_* fields will describe the cropping
+ * rectangle. Applying the cropping is left to the caller.
+ *
+ * @warning When hardware acceleration with opaque output frames is used,
+ * libavcodec is unable to apply cropping from the top/left border.
+ *
+ * @note when this option is set to zero, the width/height fields of the
+ * AVCodecContext and output AVFrames have different meanings. The codec
+ * context fields store display dimensions (with the coded dimensions in
+ * coded_width/height), while the frame fields store the coded dimensions
+ * (with the display dimensions being determined by the crop_* fields).
+ */
+func (codecCtx *CAVCodecContext) GetApplyCropping() int {
+	return int(codecCtx.apply_cropping)
+}
+
+/**
+ * Video decoding only. Certain video codecs support cropping, meaning that
+ * only a sub-rectangle of the decoded frame is intended for display.  This
+ * option controls how cropping is handled by libavcodec.
+ *
+ * When set to 1 (the default), libavcodec will apply cropping internally.
+ * I.e. it will modify the output frame width/height fields and offset the
+ * data pointers (only by as much as possible while preserving alignment, or
+ * by the full amount if the AV_CODEC_FLAG_UNALIGNED flag is set) so that
+ * the frames output by the decoder refer only to the cropped area. The
+ * crop_* fields of the output frames will be zero.
+ *
+ * When set to 0, the width/height fields of the output frames will be set
+ * to the coded dimensions and the crop_* fields will describe the cropping
+ * rectangle. Applying the cropping is left to the caller.
+ *
+ * @warning When hardware acceleration with opaque output frames is used,
+ * libavcodec is unable to apply cropping from the top/left border.
+ *
+ * @note when this option is set to zero, the width/height fields of the
+ * AVCodecContext and output AVFrames have different meanings. The codec
+ * context fields store display dimensions (with the coded dimensions in
+ * coded_width/height), while the frame fields store the coded dimensions
+ * (with the display dimensions being determined by the crop_* fields).
+ */
+func (codecCtx *CAVCodecContext) SetApplyCropping(applyCropping int) {
+	codecCtx.apply_cropping = C.int(applyCropping)
+}
+
+/*
+ * Video decoding only.  Sets the number of extra hardware frames which
+ * the decoder will allocate for use by the caller.  This must be set
+ * before avcodec_open2() is called.
+ *
+ * Some hardware decoders require all frames that they will use for
+ * output to be defined in advance before decoding starts.  For such
+ * decoders, the hardware frame pool must therefore be of a fixed size.
+ * The extra frames set here are on top of any number that the decoder
+ * needs internally in order to operate normally (for example, frames
+ * used as reference pictures).
+ */
+func (codecCtx *CAVCodecContext) GetExtraHwFrames() int {
+	return int(codecCtx.extra_hw_frames)
+}
+
+/*
+ * Video decoding only.  Sets the number of extra hardware frames which
+ * the decoder will allocate for use by the caller.  This must be set
+ * before avcodec_open2() is called.
+ *
+ * Some hardware decoders require all frames that they will use for
+ * output to be defined in advance before decoding starts.  For such
+ * decoders, the hardware frame pool must therefore be of a fixed size.
+ * The extra frames set here are on top of any number that the decoder
+ * needs internally in order to operate normally (for example, frames
+ * used as reference pictures).
+ */
+func (codecCtx *CAVCodecContext) SetExtraHwFrames(extraHwFrames int) {
+	codecCtx.extra_hw_frames = C.int(extraHwFrames)
+}
+
+/**
+ * The percentage of damaged samples to discard a frame.
+ *
+ * - decoding: set by user
+ * - encoding: unused
+ */
+func (codecCtx *CAVCodecContext) GetDiscardDamagedPercentage() int {
+	return int(codecCtx.discard_damaged_percentage)
+}
+
+/**
+ * The percentage of damaged samples to discard a frame.
+ *
+ * - decoding: set by user
+ * - encoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetDiscardDamagedPercentage(discardDamagedPercentage int) {
+	codecCtx.discard_damaged_percentage = C.int(discardDamagedPercentage)
+}
+
+/**
+ * The number of samples per frame to maximally accept.
+ *
+ * - decoding: set by user
+ * - encoding: set by user
+ */
+func (codecCtx *CAVCodecContext) GetMaxSamples() int64 {
+	return int64(codecCtx.max_samples)
+}
+
+/**
+ * The number of samples per frame to maximally accept.
+ *
+ * - decoding: set by user
+ * - encoding: set by user
+ */
+func (codecCtx *CAVCodecContext) SetMaxSamples(maxSamples int64) {
+	codecCtx.max_samples = C.int64_t(maxSamples)
+}
+
+/**
+ * Bit set of AV_CODEC_EXPORT_DATA_* flags, which affects the kind of
+ * metadata exported in frame, packet, or coded stream side data by
+ * decoders and encoders.
+ *
+ * - decoding: set by user
+ * - encoding: set by user
+ */
+func (codecCtx *CAVCodecContext) GetExportSideData() int {
+	return int(codecCtx.export_side_data)
+}
+
+/**
+ * Bit set of AV_CODEC_EXPORT_DATA_* flags, which affects the kind of
+ * metadata exported in frame, packet, or coded stream side data by
+ * decoders and encoders.
+ *
+ * - decoding: set by user
+ * - encoding: set by user
+ */
+func (codecCtx *CAVCodecContext) SetExportSideData(exportSideData int) {
+	codecCtx.export_side_data = C.int(exportSideData)
+}
 
 /**
  * This callback is called at the beginning of each packet to get a data
@@ -2440,7 +4181,55 @@ func (codecCtx *CAVCodecContext) GetFrameSize() int {
  * - encoding: Set by libavcodec, user can override.
  * - decoding: unused
  */
-//     int (*get_encode_buffer)(struct AVCodecContext *s, AVPacket *pkt, int flags);
+// int (*get_encode_buffer)(struct AVCodecContext *s, AVPacket *pkt, int flags);
+func (codecCtx *CAVCodecContext) GetGetEncodeBuffer() ctypes.CFunc {
+	return ctypes.CFunc(codecCtx.get_encode_buffer)
+}
+
+/**
+ * This callback is called at the beginning of each packet to get a data
+ * buffer for it.
+ *
+ * The following field will be set in the packet before this callback is
+ * called:
+ * - size
+ * This callback must use the above value to calculate the required buffer size,
+ * which must padded by at least AV_INPUT_BUFFER_PADDING_SIZE bytes.
+ *
+ * In some specific cases, the encoder may not use the entire buffer allocated by this
+ * callback. This will be reflected in the size value in the packet once returned by
+ * avcodec_receive_packet().
+ *
+ * This callback must fill the following fields in the packet:
+ * - data: alignment requirements for AVPacket apply, if any. Some architectures and
+ *   encoders may benefit from having aligned data.
+ * - buf: must contain a pointer to an AVBufferRef structure. The packet's
+ *   data pointer must be contained in it. See: av_buffer_create(), av_buffer_alloc(),
+ *   and av_buffer_ref().
+ *
+ * If AV_CODEC_CAP_DR1 is not set then get_encode_buffer() must call
+ * avcodec_default_get_encode_buffer() instead of providing a buffer allocated by
+ * some other means.
+ *
+ * The flags field may contain a combination of AV_GET_ENCODE_BUFFER_FLAG_ flags.
+ * They may be used for example to hint what use the buffer may get after being
+ * created.
+ * Implementations of this callback may ignore flags they don't understand.
+ * If AV_GET_ENCODE_BUFFER_FLAG_REF is set in flags then the packet may be reused
+ * (read and/or written to if it is writable) later by libavcodec.
+ *
+ * This callback must be thread-safe, as when frame threading is used, it may
+ * be called from multiple threads simultaneously.
+ *
+ * @see avcodec_default_get_encode_buffer()
+ *
+ * - encoding: Set by libavcodec, user can override.
+ * - decoding: unused
+ */
+// int (*get_encode_buffer)(struct AVCodecContext *s, AVPacket *pkt, int flags);
+func (codecCtx *CAVCodecContext) SetGetEncodeBuffer(getEncodeBuffer ctypes.CFunc) {
+	codecCtx.get_encode_buffer = (*[0]byte)(getEncodeBuffer)
+}
 
 /**
  * Audio channel layout.
@@ -2485,6 +4274,19 @@ func (codecCtx *CAVCodecContext) GetFrameNum() int64 {
 	return int64(codecCtx.frame_num)
 }
 
+/**
+ * Frame counter, set by libavcodec.
+ *
+ * - decoding: total number of frames returned from the decoder so far.
+ * - encoding: total number of frames passed to the encoder so far.
+ *
+ *   @note the counter is not incremented if encoding/decoding resulted in
+ *   an error.
+ */
+func (codecCtx *CAVCodecContext) SetFrameNum(frameNum int64) {
+	codecCtx.frame_num = C.int64_t(frameNum)
+}
+
 //#endregion CAVCodecContext
 
 /**
@@ -2495,169 +4297,389 @@ func (codecCtx *CAVCodecContext) GetFrameNum() int64 {
  *
  * @{
  */
-//  typedef struct AVHWAccel {
-// 	 /**
-// 	  * Name of the hardware accelerated codec.
-// 	  * The name is globally unique among encoders and among decoders (but an
-// 	  * encoder and a decoder can share the same name).
-// 	  */
-// 	 const char *name;
+type CAVHWAccel C.AVHWAccel
 
-// 	 /**
-// 	  * Type of codec implemented by the hardware accelerator.
-// 	  *
-// 	  * See AVMEDIA_TYPE_xxx
-// 	  */
-// 	 enum AVMediaType type;
+//#region CAVHWAccel
 
-// 	 /**
-// 	  * Codec implemented by the hardware accelerator.
-// 	  *
-// 	  * See AV_CODEC_ID_xxx
-// 	  */
-// 	 enum AVCodecID id;
+/**
+ * Name of the hardware accelerated codec.
+ * The name is globally unique among encoders and among decoders (but an
+ * encoder and a decoder can share the same name).
+ */
+func (hwaccl *CAVHWAccel) GetName() string {
+	return C.GoString(hwaccl.name)
+}
 
-// 	 /**
-// 	  * Supported pixel format.
-// 	  *
-// 	  * Only hardware accelerated formats are supported here.
-// 	  */
-// 	 enum AVPixelFormat pix_fmt;
+/**
+ * Name of the hardware accelerated codec.
+ * The name is globally unique among encoders and among decoders (but an
+ * encoder and a decoder can share the same name).
+ */
+func (hwaccl *CAVHWAccel) SetName(name string) {
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+	}
 
-// 	 /**
-// 	  * Hardware accelerated codec capabilities.
-// 	  * see AV_HWACCEL_CODEC_CAP_*
-// 	  */
-// 	 int capabilities;
-//  } AVHWAccel;
+	hwaccl.name = cName
+}
 
-//  /**
-//   * HWAccel is experimental and is thus avoided in favor of non experimental
-//   * codecs
-//   */
-//  #define AV_HWACCEL_CODEC_CAP_EXPERIMENTAL 0x0200
+/**
+ * Type of codec implemented by the hardware accelerator.
+ *
+ * See AVMEDIA_TYPE_xxx
+ */
+func (hwaccl *CAVHWAccel) GetType() avutil.CAVMediaType {
+	return avutil.CAVMediaType(hwaccl._type)
+}
 
-//  /**
-//   * Hardware acceleration should be used for decoding even if the codec level
-//   * used is unknown or higher than the maximum supported level reported by the
-//   * hardware driver.
-//   *
-//   * It's generally a good idea to pass this flag unless you have a specific
-//   * reason not to, as hardware tends to under-report supported levels.
-//   */
-//  #define AV_HWACCEL_FLAG_IGNORE_LEVEL (1 << 0)
+/**
+ * Type of codec implemented by the hardware accelerator.
+ *
+ * See AVMEDIA_TYPE_xxx
+ */
+func (hwaccl *CAVHWAccel) SetType(_type avutil.CAVMediaType) {
+	hwaccl._type = C.enum_AVMediaType(_type)
+}
 
-//  /**
-//   * Hardware acceleration can output YUV pixel formats with a different chroma
-//   * sampling than 4:2:0 and/or other than 8 bits per component.
-//   */
-//  #define AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH (1 << 1)
+/**
+ * Codec implemented by the hardware accelerator.
+ *
+ * See AV_CODEC_ID_xxx
+ */
+func (hwaccl *CAVHWAccel) GetId() CAVCodecID {
+	return CAVCodecID(hwaccl.id)
+}
 
-//  /**
-//   * Hardware acceleration should still be attempted for decoding when the
-//   * codec profile does not match the reported capabilities of the hardware.
-//   *
-//   * For example, this can be used to try to decode baseline profile H.264
-//   * streams in hardware - it will often succeed, because many streams marked
-//   * as baseline profile actually conform to constrained baseline profile.
-//   *
-//   * @warning If the stream is actually not supported then the behaviour is
-//   *          undefined, and may include returning entirely incorrect output
-//   *          while indicating success.
-//   */
-//  #define AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH (1 << 2)
+/**
+ * Codec implemented by the hardware accelerator.
+ *
+ * See AV_CODEC_ID_xxx
+ */
+func (hwaccl *CAVHWAccel) SetId(id CAVCodecID) {
+	hwaccl.id = C.enum_AVCodecID(id)
+}
 
-//  /**
-//   * Some hardware decoders (namely nvdec) can either output direct decoder
-//   * surfaces, or make an on-device copy and return said copy.
-//   * There is a hard limit on how many decoder surfaces there can be, and it
-//   * cannot be accurately guessed ahead of time.
-//   * For some processing chains, this can be okay, but others will run into the
-//   * limit and in turn produce very confusing errors that require fine tuning of
-//   * more or less obscure options by the user, or in extreme cases cannot be
-//   * resolved at all without inserting an avfilter that forces a copy.
-//   *
-//   * Thus, the hwaccel will by default make a copy for safety and resilience.
-//   * If a users really wants to minimize the amount of copies, they can set this
-//   * flag and ensure their processing chain does not exhaust the surface pool.
-//   */
-//  #define AV_HWACCEL_FLAG_UNSAFE_OUTPUT (1 << 3)
+/**
+ * Supported pixel format.
+ *
+ * Only hardware accelerated formats are supported here.
+ */
+func (hwaccl *CAVHWAccel) GetPixFmt() avutil.CAVPixelFormat {
+	return avutil.CAVPixelFormat(hwaccl.pix_fmt)
+}
 
-//  /**
-//   * @}
-//   */
+/**
+ * Supported pixel format.
+ *
+ * Only hardware accelerated formats are supported here.
+ */
+func (hwaccl *CAVHWAccel) SetPixFmt(pixFmt avutil.CAVPixelFormat) {
+	hwaccl.pix_fmt = C.enum_AVPixelFormat(pixFmt)
+}
 
-//  enum AVSubtitleType {
-// 	 SUBTITLE_NONE,
+/**
+ * Hardware accelerated codec capabilities.
+ * see AV_HWACCEL_CODEC_CAP_*
+ */
+func (hwaccl *CAVHWAccel) GetCapabilities() int {
+	return int(hwaccl.capabilities)
+}
+func (hwaccl *CAVHWAccel) SetCapabilities(capabilities int) {
+	hwaccl.capabilities = C.int(capabilities)
+}
 
-// 	 SUBTITLE_BITMAP,                ///< A bitmap, pict will be set
+//#endregion CAVHWAccel
 
-// 	 /**
-// 	  * Plain text, the text field must be set by the decoder and is
-// 	  * authoritative. ass and pict fields may contain approximations.
-// 	  */
-// 	 SUBTITLE_TEXT,
+/**
+ * HWAccel is experimental and is thus avoided in favor of non experimental
+ * codecs
+ */
+const AV_HWACCEL_CODEC_CAP_EXPERIMENTAL = C.AV_HWACCEL_CODEC_CAP_EXPERIMENTAL
 
-// 	 /**
-// 	  * Formatted text, the ass field must be set by the decoder and is
-// 	  * authoritative. pict and text fields may contain approximations.
-// 	  */
-// 	 SUBTITLE_ASS,
-//  };
+/**
+ * Hardware acceleration should be used for decoding even if the codec level
+ * used is unknown or higher than the maximum supported level reported by the
+ * hardware driver.
+ *
+ * It's generally a good idea to pass this flag unless you have a specific
+ * reason not to, as hardware tends to under-report supported levels.
+ */
+const AV_HWACCEL_FLAG_IGNORE_LEVEL = C.AV_HWACCEL_FLAG_IGNORE_LEVEL
 
-//  #define AV_SUBTITLE_FLAG_FORCED 0x00000001
+/**
+ * Hardware acceleration can output YUV pixel formats with a different chroma
+ * sampling than 4:2:0 and/or other than 8 bits per component.
+ */
+const AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH = C.AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH
 
-//  typedef struct AVSubtitleRect {
-// 	 int x;         ///< top left corner  of pict, undefined when pict is not set
-// 	 int y;         ///< top left corner  of pict, undefined when pict is not set
-// 	 int w;         ///< width            of pict, undefined when pict is not set
-// 	 int h;         ///< height           of pict, undefined when pict is not set
-// 	 int nb_colors; ///< number of colors in pict, undefined when pict is not set
+/**
+ * Hardware acceleration should still be attempted for decoding when the
+ * codec profile does not match the reported capabilities of the hardware.
+ *
+ * For example, this can be used to try to decode baseline profile H.264
+ * streams in hardware - it will often succeed, because many streams marked
+ * as baseline profile actually conform to constrained baseline profile.
+ *
+ * @warning If the stream is actually not supported then the behaviour is
+ *          undefined, and may include returning entirely incorrect output
+ *          while indicating success.
+ */
+const AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH = C.AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH
 
-// 	 /**
-// 	  * data+linesize for the bitmap of this subtitle.
-// 	  * Can be set for text/ass as well once they are rendered.
-// 	  */
-// 	 uint8_t *data[4];
-// 	 int linesize[4];
+/**
+ * Some hardware decoders (namely nvdec) can either output direct decoder
+ * surfaces, or make an on-device copy and return said copy.
+ * There is a hard limit on how many decoder surfaces there can be, and it
+ * cannot be accurately guessed ahead of time.
+ * For some processing chains, this can be okay, but others will run into the
+ * limit and in turn produce very confusing errors that require fine tuning of
+ * more or less obscure options by the user, or in extreme cases cannot be
+ * resolved at all without inserting an avfilter that forces a copy.
+ *
+ * Thus, the hwaccel will by default make a copy for safety and resilience.
+ * If a users really wants to minimize the amount of copies, they can set this
+ * flag and ensure their processing chain does not exhaust the surface pool.
+ */
+const AV_HWACCEL_FLAG_UNSAFE_OUTPUT = C.AV_HWACCEL_FLAG_UNSAFE_OUTPUT
 
-// 	 enum AVSubtitleType type;
+/**
+ * @}
+ */
 
-// 	 char *text;                     ///< 0 terminated plain UTF-8 text
+type CAVSubtitleType C.enum_AVSubtitleType
 
-// 	 /**
-// 	  * 0 terminated ASS/SSA compatible event line.
-// 	  * The presentation of this is unaffected by the other values in this
-// 	  * struct.
-// 	  */
-// 	 char *ass;
+const (
+	SUBTITLE_NONE CAVSubtitleType = C.SUBTITLE_NONE
 
-// 	 int flags;
-//  } AVSubtitleRect;
+	SUBTITLE_BITMAP CAVSubtitleType = C.SUBTITLE_BITMAP ///< A bitmap, pict will be set
 
-//  typedef struct AVSubtitle {
-// 	 uint16_t format; /* 0 = graphics */
-// 	 uint32_t start_display_time; /* relative to packet pts, in ms */
-// 	 uint32_t end_display_time; /* relative to packet pts, in ms */
-// 	 unsigned num_rects;
-// 	 AVSubtitleRect **rects;
-// 	 int64_t pts;    ///< Same as packet pts, in AV_TIME_BASE
-//  } AVSubtitle;
+	/**
+	 * Plain text, the text field must be set by the decoder and is
+	 * authoritative. ass and pict fields may contain approximations.
+	 */
+	SUBTITLE_TEXT CAVSubtitleType = C.SUBTITLE_TEXT
 
-//  /**
-//   * Return the LIBAVCODEC_VERSION_INT constant.
-//   */
-//  unsigned avcodec_version(void);
+	/**
+	 * Formatted text, the ass field must be set by the decoder and is
+	 * authoritative. pict and text fields may contain approximations.
+	 */
+	SUBTITLE_ASS CAVSubtitleType = C.SUBTITLE_ASS
+)
 
-//  /**
-//   * Return the libavcodec build-time configuration.
-//   */
-//  const char *avcodec_configuration(void);
+const AV_SUBTITLE_FLAG_FORCED = C.AV_SUBTITLE_FLAG_FORCED
 
-//  /**
-//   * Return the libavcodec license.
-//   */
-//  const char *avcodec_license(void);
+type CAVSubtitleRect C.AVSubtitleRect
+
+//#region CAVSubtitleRect
+
+// /< top left corner  of pict, undefined when pict is not set
+func (sr *CAVSubtitleRect) GetX() int {
+	return int(sr.x)
+}
+
+// /< top left corner  of pict, undefined when pict is not set
+func (sr *CAVSubtitleRect) SetX(x int) {
+	sr.x = C.int(x)
+}
+
+// /< top left corner  of pict, undefined when pict is not set
+func (sr *CAVSubtitleRect) GetY() int {
+	return int(sr.y)
+}
+
+// /< top left corner  of pict, undefined when pict is not set
+func (sr *CAVSubtitleRect) SetY(y int) {
+	sr.y = C.int(y)
+}
+
+// /< width            of pict, undefined when pict is not set
+func (sr *CAVSubtitleRect) GetW() int {
+	return int(sr.w)
+}
+
+// /< width            of pict, undefined when pict is not set
+func (sr *CAVSubtitleRect) SetW(w int) {
+	sr.w = C.int(w)
+}
+
+// /< height           of pict, undefined when pict is not set
+func (sr *CAVSubtitleRect) GetH() int {
+	return int(sr.h)
+}
+
+// /< height           of pict, undefined when pict is not set
+func (sr *CAVSubtitleRect) SetH(h int) {
+	sr.h = C.int(h)
+}
+
+// /< number of colors in pict, undefined when pict is not set
+func (sr *CAVSubtitleRect) GetNbColors() int {
+	return int(sr.nb_colors)
+}
+
+// /< number of colors in pict, undefined when pict is not set
+func (sr *CAVSubtitleRect) SetNbColors(nbColors int) {
+	sr.nb_colors = C.int(nbColors)
+}
+
+/**
+ * data+linesize for the bitmap of this subtitle.
+ * Can be set for text/ass as well once they are rendered.
+ */
+
+func (sr *CAVSubtitleRect) GetData() [4]unsafe.Pointer {
+	cArr := (*unsafe.Pointer)(unsafe.Pointer(unsafe.SliceData(sr.data[:])))
+	return ([4]unsafe.Pointer)(unsafe.Slice(cArr, 4))
+}
+func (sr *CAVSubtitleRect) SetData(data [4]unsafe.Pointer) {
+	cArr := (**C.uchar)(unsafe.Pointer(unsafe.SliceData(data[:])))
+	sr.data = ([4]*C.uint8_t)(unsafe.Slice(cArr, 4))
+}
+
+func (sr *CAVSubtitleRect) GetLinesize() [4]ctypes.Int {
+	cArr := (*ctypes.Int)(unsafe.Pointer(unsafe.SliceData(sr.linesize[:])))
+	return ([4]ctypes.Int)(unsafe.Slice(cArr, 4))
+}
+func (sr *CAVSubtitleRect) SetLinesize(linesize [4]ctypes.Int) {
+	cArr := (*C.int)(unsafe.Pointer(unsafe.SliceData(linesize[:])))
+	sr.linesize = ([4]C.int)(unsafe.Slice(cArr, 4))
+}
+
+func (sr *CAVSubtitleRect) GetType() CAVSubtitleType {
+	return (CAVSubtitleType)(sr._type)
+}
+func (sr *CAVSubtitleRect) SetType(_type CAVSubtitleType) {
+	sr._type = C.enum_AVSubtitleType(_type)
+}
+
+// /< 0 terminated plain UTF-8 text
+func (sr *CAVSubtitleRect) GetText() string {
+	return C.GoString(sr.text)
+}
+
+// /< 0 terminated plain UTF-8 text
+func (sr *CAVSubtitleRect) SetText(text string) {
+	var cText *C.char = nil
+	if len(text) > 0 {
+		cText = C.CString(text)
+	}
+
+	sr.text = cText
+}
+
+/**
+ * 0 terminated ASS/SSA compatible event line.
+ * The presentation of this is unaffected by the other values in this
+ * struct.
+ */
+func (sr *CAVSubtitleRect) GetAss() string {
+	return C.GoString(sr.ass)
+}
+
+/**
+ * 0 terminated ASS/SSA compatible event line.
+ * The presentation of this is unaffected by the other values in this
+ * struct.
+ */
+func (sr *CAVSubtitleRect) SetAss(ass string) {
+	var cAss *C.char = nil
+	if len(ass) > 0 {
+		cAss = C.CString(ass)
+	}
+
+	sr.ass = cAss
+}
+
+func (sr *CAVSubtitleRect) GetFlags() int {
+	return int(sr.flags)
+}
+func (sr *CAVSubtitleRect) SetFlags(flags int) {
+	sr.flags = C.int(flags)
+}
+
+//#endregion CAVSubtitleRect
+
+type CAVSubtitle C.AVSubtitle
+
+//region CAVSubtitle
+
+/* 0 = graphics */
+func (s *CAVSubtitle) GetFormat() ctypes.UInt16 {
+	return ctypes.UInt16(s.format)
+}
+
+/* 0 = graphics */
+func (s *CAVSubtitle) SetFormat(format ctypes.UInt16) {
+	s.format = C.uint16_t(format)
+}
+
+/* relative to packet pts, in ms */
+func (s *CAVSubtitle) GetStartDisplayTime() ctypes.UInt32 {
+	return ctypes.UInt32(s.start_display_time)
+}
+
+/* relative to packet pts, in ms */
+func (s *CAVSubtitle) SetStartDisplayTime(startDisplayTime ctypes.UInt32) {
+	s.start_display_time = C.uint32_t(startDisplayTime)
+}
+
+/* relative to packet pts, in ms */
+func (s *CAVSubtitle) GetEndDisplayTime() ctypes.UInt32 {
+	return ctypes.UInt32(s.end_display_time)
+}
+
+/* relative to packet pts, in ms */
+func (s *CAVSubtitle) SetEndDisplayTime(endDisplayTime ctypes.UInt32) {
+	s.end_display_time = C.uint32_t(endDisplayTime)
+}
+
+func (s *CAVSubtitle) GetNumRects() uint {
+	return uint(s.num_rects)
+}
+func (s *CAVSubtitle) SetNumRects(numRects uint) {
+	s.num_rects = C.uint(numRects)
+}
+
+func (s *CAVSubtitle) GetRects() **CAVSubtitleRect {
+	return (**CAVSubtitleRect)(unsafe.Pointer(s.rects))
+}
+func (s *CAVSubtitle) SetRects(rects **CAVSubtitleRect) {
+	s.rects = (**C.AVSubtitleRect)(unsafe.Pointer(rects))
+}
+
+// /< Same as packet pts, in AV_TIME_BASE
+func (s *CAVSubtitle) GetPts() ctypes.Int64 {
+	return ctypes.Int64(s.pts)
+}
+
+// /< Same as packet pts, in AV_TIME_BASE
+func (s *CAVSubtitle) SetPts(pts ctypes.Int64) {
+	s.pts = C.int64_t(pts)
+}
+
+//endregion CAVSubtitle
+
+/**
+ * Return the LIBAVCODEC_VERSION_INT constant.
+ */
+func AvcodecVersion() uint {
+	return uint(C.avcodec_version())
+}
+
+/**
+ * Return the libavcodec build-time configuration.
+ */
+func AvcodecConfiguration() string {
+	return C.GoString(C.avcodec_configuration())
+}
+
+/**
+ * Return the libavcodec license.
+ */
+func AvcodecLicense() string {
+	return C.GoString(C.avcodec_license())
+}
 
 /**
  * Allocate an AVCodecContext and set its fields to default values. The
@@ -2684,21 +4706,25 @@ func AvcodecFreeContext(avctx **CAVCodecContext) {
 	C.avcodec_free_context((**C.AVCodecContext)(unsafe.Pointer(avctx)))
 }
 
-//  /**
-//   * Get the AVClass for AVCodecContext. It can be used in combination with
-//   * AV_OPT_SEARCH_FAKE_OBJ for examining options.
-//   *
-//   * @see av_opt_find().
-//   */
-//  const AVClass *avcodec_get_class(void);
+/**
+ * Get the AVClass for AVCodecContext. It can be used in combination with
+ * AV_OPT_SEARCH_FAKE_OBJ for examining options.
+ *
+ * @see av_opt_find().
+ */
+func AvcodecGetClass() *avutil.CAVClass {
+	return (*avutil.CAVClass)(unsafe.Pointer(C.avcodec_get_class()))
+}
 
-//  /**
-//   * Get the AVClass for AVSubtitleRect. It can be used in combination with
-//   * AV_OPT_SEARCH_FAKE_OBJ for examining options.
-//   *
-//   * @see av_opt_find().
-//   */
-//  const AVClass *avcodec_get_subtitle_rect_class(void);
+/**
+ * Get the AVClass for AVSubtitleRect. It can be used in combination with
+ * AV_OPT_SEARCH_FAKE_OBJ for examining options.
+ *
+ * @see av_opt_find().
+ */
+func AvcodecGetSubtitleRectClass() *avutil.CAVClass {
+	return (*avutil.CAVClass)(unsafe.Pointer(C.avcodec_get_subtitle_rect_class()))
+}
 
 /**
  * Fill the parameters struct based on the values from the supplied codec
@@ -2805,12 +4831,14 @@ func AvcodecClose(avctx *CAVCodecContext) int {
 	return int(C.avcodec_close((*C.AVCodecContext)(avctx)))
 }
 
-//  /**
-//   * Free all allocated data in the given subtitle struct.
-//   *
-//   * @param sub AVSubtitle to free.
-//   */
-//  void avsubtitle_free(AVSubtitle *sub);
+/**
+ * Free all allocated data in the given subtitle struct.
+ *
+ * @param sub AVSubtitle to free.
+ */
+func AvsubtitleFree(sub *CAVSubtitle) {
+	C.avsubtitle_free((*C.AVSubtitle)(sub))
+}
 
 /**
  * @}
@@ -2821,38 +4849,45 @@ func AvcodecClose(avctx *CAVCodecContext) int {
  * @{
  */
 
-//  /**
-//   * The default callback for AVCodecContext.get_buffer2(). It is made public so
-//   * it can be called by custom get_buffer2() implementations for decoders without
-//   * AV_CODEC_CAP_DR1 set.
-//   */
-//  int avcodec_default_get_buffer2(AVCodecContext *s, AVFrame *frame, int flags);
+/**
+ * The default callback for AVCodecContext.get_buffer2(). It is made public so
+ * it can be called by custom get_buffer2() implementations for decoders without
+ * AV_CODEC_CAP_DR1 set.
+ */
+func AvcodecDefaultGetBuffer2(s *CAVCodecContext, frame *avutil.CAVFrame, flags int) int {
+	return int(C.avcodec_default_get_buffer2((*C.AVCodecContext)(s), (*C.AVFrame)(unsafe.Pointer(frame)), C.int(flags)))
+}
 
-//  /**
-//   * The default callback for AVCodecContext.get_encode_buffer(). It is made public so
-//   * it can be called by custom get_encode_buffer() implementations for encoders without
-//   * AV_CODEC_CAP_DR1 set.
-//   */
-//  int avcodec_default_get_encode_buffer(AVCodecContext *s, AVPacket *pkt, int flags);
+/**
+ * The default callback for AVCodecContext.get_encode_buffer(). It is made public so
+ * it can be called by custom get_encode_buffer() implementations for encoders without
+ * AV_CODEC_CAP_DR1 set.
+ */
+func AvcodecDefaultGetEncodeBuffer(s *CAVCodecContext, pkt *CAVPacket, flags int) int {
+	return int(C.avcodec_default_get_encode_buffer((*C.AVCodecContext)(s), (*C.AVPacket)(pkt), C.int(flags)))
+}
 
-//  /**
-//   * Modify width and height values so that they will result in a memory
-//   * buffer that is acceptable for the codec if you do not use any horizontal
-//   * padding.
-//   *
-//   * May only be used if a codec with AV_CODEC_CAP_DR1 has been opened.
-//   */
-//  void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height);
+/**
+ * Modify width and height values so that they will result in a memory
+ * buffer that is acceptable for the codec if you do not use any horizontal
+ * padding.
+ *
+ * May only be used if a codec with AV_CODEC_CAP_DR1 has been opened.
+ */
+func AvcodecAlignDimensions(s *CAVCodecContext, width *ctypes.Int, height *ctypes.Int) {
+	C.avcodec_align_dimensions((*C.AVCodecContext)(s), (*C.int)(width), (*C.int)(height))
+}
 
-//  /**
-//   * Modify width and height values so that they will result in a memory
-//   * buffer that is acceptable for the codec if you also ensure that all
-//   * line sizes are a multiple of the respective linesize_align[i].
-//   *
-//   * May only be used if a codec with AV_CODEC_CAP_DR1 has been opened.
-//   */
-//  void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
-// 								int linesize_align[AV_NUM_DATA_POINTERS]);
+/**
+ * Modify width and height values so that they will result in a memory
+ * buffer that is acceptable for the codec if you also ensure that all
+ * line sizes are a multiple of the respective linesize_align[i].
+ *
+ * May only be used if a codec with AV_CODEC_CAP_DR1 has been opened.
+ */
+func AvcodecAlignDimensions2(s *CAVCodecContext, width *ctypes.Int, height *ctypes.Int, linesize_align [avutil.AV_NUM_DATA_POINTERS]ctypes.Int) {
+	C.avcodec_align_dimensions2((*C.AVCodecContext)(s), (*C.int)(width), (*C.int)(height), (*C.int)(unsafe.SliceData(linesize_align[:])))
+}
 
 //  #ifdef FF_API_AVCODEC_CHROMA_POS
 //  /**
@@ -2882,35 +4917,38 @@ func AvcodecClose(avctx *CAVCodecContext) int {
 //  enum AVChromaLocation avcodec_chroma_pos_to_enum(int xpos, int ypos);
 //  #endif
 
-//  /**
-//   * Decode a subtitle message.
-//   * Return a negative value on error, otherwise return the number of bytes used.
-//   * If no subtitle could be decompressed, got_sub_ptr is zero.
-//   * Otherwise, the subtitle is stored in *sub.
-//   * Note that AV_CODEC_CAP_DR1 is not available for subtitle codecs. This is for
-//   * simplicity, because the performance difference is expected to be negligible
-//   * and reusing a get_buffer written for video codecs would probably perform badly
-//   * due to a potentially very different allocation pattern.
-//   *
-//   * Some decoders (those marked with AV_CODEC_CAP_DELAY) have a delay between input
-//   * and output. This means that for some packets they will not immediately
-//   * produce decoded output and need to be flushed at the end of decoding to get
-//   * all the decoded data. Flushing is done by calling this function with packets
-//   * with avpkt->data set to NULL and avpkt->size set to 0 until it stops
-//   * returning subtitles. It is safe to flush even those decoders that are not
-//   * marked with AV_CODEC_CAP_DELAY, then no subtitles will be returned.
-//   *
-//   * @note The AVCodecContext MUST have been opened with @ref avcodec_open2()
-//   * before packets may be fed to the decoder.
-//   *
-//   * @param avctx the codec context
-//   * @param[out] sub The preallocated AVSubtitle in which the decoded subtitle will be stored,
-//   *                 must be freed with avsubtitle_free if *got_sub_ptr is set.
-//   * @param[in,out] got_sub_ptr Zero if no subtitle could be decompressed, otherwise, it is nonzero.
-//   * @param[in] avpkt The input AVPacket containing the input buffer.
-//   */
-//  int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
-// 							  int *got_sub_ptr, const AVPacket *avpkt);
+/**
+ * Decode a subtitle message.
+ * Return a negative value on error, otherwise return the number of bytes used.
+ * If no subtitle could be decompressed, got_sub_ptr is zero.
+ * Otherwise, the subtitle is stored in *sub.
+ * Note that AV_CODEC_CAP_DR1 is not available for subtitle codecs. This is for
+ * simplicity, because the performance difference is expected to be negligible
+ * and reusing a get_buffer written for video codecs would probably perform badly
+ * due to a potentially very different allocation pattern.
+ *
+ * Some decoders (those marked with AV_CODEC_CAP_DELAY) have a delay between input
+ * and output. This means that for some packets they will not immediately
+ * produce decoded output and need to be flushed at the end of decoding to get
+ * all the decoded data. Flushing is done by calling this function with packets
+ * with avpkt->data set to NULL and avpkt->size set to 0 until it stops
+ * returning subtitles. It is safe to flush even those decoders that are not
+ * marked with AV_CODEC_CAP_DELAY, then no subtitles will be returned.
+ *
+ * @note The AVCodecContext MUST have been opened with @ref avcodec_open2()
+ * before packets may be fed to the decoder.
+ *
+ * @param avctx the codec context
+ * @param[out] sub The preallocated AVSubtitle in which the decoded subtitle will be stored,
+ *                 must be freed with avsubtitle_free if *got_sub_ptr is set.
+ * @param[in,out] got_sub_ptr Zero if no subtitle could be decompressed, otherwise, it is nonzero.
+ * @param[in] avpkt The input AVPacket containing the input buffer.
+ */
+func AvcodecDecodeSubtitle2(s *CAVCodecContext, sub *CAVSubtitle,
+	gotSubPtr *ctypes.Int, avpkt *CAVPacket) int {
+	return int(C.avcodec_decode_subtitle2((*C.AVCodecContext)(s), (*C.AVSubtitle)(sub),
+		(*C.int)(gotSubPtr), (*C.AVPacket)(avpkt)))
+}
 
 /**
  * Supply raw packet data as input to a decoder.
@@ -3042,349 +5080,751 @@ func AvcodecReceivePacket(avctx *CAVCodecContext, avpkt *CAVPacket) int {
 	return int(C.avcodec_receive_packet((*C.AVCodecContext)(avctx), (*C.AVPacket)(avpkt)))
 }
 
-//  /**
-//   * Create and return a AVHWFramesContext with values adequate for hardware
-//   * decoding. This is meant to get called from the get_format callback, and is
-//   * a helper for preparing a AVHWFramesContext for AVCodecContext.hw_frames_ctx.
-//   * This API is for decoding with certain hardware acceleration modes/APIs only.
-//   *
-//   * The returned AVHWFramesContext is not initialized. The caller must do this
-//   * with av_hwframe_ctx_init().
-//   *
-//   * Calling this function is not a requirement, but makes it simpler to avoid
-//   * codec or hardware API specific details when manually allocating frames.
-//   *
-//   * Alternatively to this, an API user can set AVCodecContext.hw_device_ctx,
-//   * which sets up AVCodecContext.hw_frames_ctx fully automatically, and makes
-//   * it unnecessary to call this function or having to care about
-//   * AVHWFramesContext initialization at all.
-//   *
-//   * There are a number of requirements for calling this function:
-//   *
-//   * - It must be called from get_format with the same avctx parameter that was
-//   *   passed to get_format. Calling it outside of get_format is not allowed, and
-//   *   can trigger undefined behavior.
-//   * - The function is not always supported (see description of return values).
-//   *   Even if this function returns successfully, hwaccel initialization could
-//   *   fail later. (The degree to which implementations check whether the stream
-//   *   is actually supported varies. Some do this check only after the user's
-//   *   get_format callback returns.)
-//   * - The hw_pix_fmt must be one of the choices suggested by get_format. If the
-//   *   user decides to use a AVHWFramesContext prepared with this API function,
-//   *   the user must return the same hw_pix_fmt from get_format.
-//   * - The device_ref passed to this function must support the given hw_pix_fmt.
-//   * - After calling this API function, it is the user's responsibility to
-//   *   initialize the AVHWFramesContext (returned by the out_frames_ref parameter),
-//   *   and to set AVCodecContext.hw_frames_ctx to it. If done, this must be done
-//   *   before returning from get_format (this is implied by the normal
-//   *   AVCodecContext.hw_frames_ctx API rules).
-//   * - The AVHWFramesContext parameters may change every time time get_format is
-//   *   called. Also, AVCodecContext.hw_frames_ctx is reset before get_format. So
-//   *   you are inherently required to go through this process again on every
-//   *   get_format call.
-//   * - It is perfectly possible to call this function without actually using
-//   *   the resulting AVHWFramesContext. One use-case might be trying to reuse a
-//   *   previously initialized AVHWFramesContext, and calling this API function
-//   *   only to test whether the required frame parameters have changed.
-//   * - Fields that use dynamically allocated values of any kind must not be set
-//   *   by the user unless setting them is explicitly allowed by the documentation.
-//   *   If the user sets AVHWFramesContext.free and AVHWFramesContext.user_opaque,
-//   *   the new free callback must call the potentially set previous free callback.
-//   *   This API call may set any dynamically allocated fields, including the free
-//   *   callback.
-//   *
-//   * The function will set at least the following fields on AVHWFramesContext
-//   * (potentially more, depending on hwaccel API):
-//   *
-//   * - All fields set by av_hwframe_ctx_alloc().
-//   * - Set the format field to hw_pix_fmt.
-//   * - Set the sw_format field to the most suited and most versatile format. (An
-//   *   implication is that this will prefer generic formats over opaque formats
-//   *   with arbitrary restrictions, if possible.)
-//   * - Set the width/height fields to the coded frame size, rounded up to the
-//   *   API-specific minimum alignment.
-//   * - Only _if_ the hwaccel requires a pre-allocated pool: set the initial_pool_size
-//   *   field to the number of maximum reference surfaces possible with the codec,
-//   *   plus 1 surface for the user to work (meaning the user can safely reference
-//   *   at most 1 decoded surface at a time), plus additional buffering introduced
-//   *   by frame threading. If the hwaccel does not require pre-allocation, the
-//   *   field is left to 0, and the decoder will allocate new surfaces on demand
-//   *   during decoding.
-//   * - Possibly AVHWFramesContext.hwctx fields, depending on the underlying
-//   *   hardware API.
-//   *
-//   * Essentially, out_frames_ref returns the same as av_hwframe_ctx_alloc(), but
-//   * with basic frame parameters set.
-//   *
-//   * The function is stateless, and does not change the AVCodecContext or the
-//   * device_ref AVHWDeviceContext.
-//   *
-//   * @param avctx The context which is currently calling get_format, and which
-//   *              implicitly contains all state needed for filling the returned
-//   *              AVHWFramesContext properly.
-//   * @param device_ref A reference to the AVHWDeviceContext describing the device
-//   *                   which will be used by the hardware decoder.
-//   * @param hw_pix_fmt The hwaccel format you are going to return from get_format.
-//   * @param out_frames_ref On success, set to a reference to an _uninitialized_
-//   *                       AVHWFramesContext, created from the given device_ref.
-//   *                       Fields will be set to values required for decoding.
-//   *                       Not changed if an error is returned.
-//   * @return zero on success, a negative value on error. The following error codes
-//   *         have special semantics:
-//   *      AVERROR(ENOENT): the decoder does not support this functionality. Setup
-//   *                       is always manual, or it is a decoder which does not
-//   *                       support setting AVCodecContext.hw_frames_ctx at all,
-//   *                       or it is a software format.
-//   *      AVERROR(EINVAL): it is known that hardware decoding is not supported for
-//   *                       this configuration, or the device_ref is not supported
-//   *                       for the hwaccel referenced by hw_pix_fmt.
-//   */
-//  int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
-// 									  AVBufferRef *device_ref,
-// 									  enum AVPixelFormat hw_pix_fmt,
-// 									  AVBufferRef **out_frames_ref);
+/**
+ * Create and return a AVHWFramesContext with values adequate for hardware
+ * decoding. This is meant to get called from the get_format callback, and is
+ * a helper for preparing a AVHWFramesContext for AVCodecContext.hw_frames_ctx.
+ * This API is for decoding with certain hardware acceleration modes/APIs only.
+ *
+ * The returned AVHWFramesContext is not initialized. The caller must do this
+ * with av_hwframe_ctx_init().
+ *
+ * Calling this function is not a requirement, but makes it simpler to avoid
+ * codec or hardware API specific details when manually allocating frames.
+ *
+ * Alternatively to this, an API user can set AVCodecContext.hw_device_ctx,
+ * which sets up AVCodecContext.hw_frames_ctx fully automatically, and makes
+ * it unnecessary to call this function or having to care about
+ * AVHWFramesContext initialization at all.
+ *
+ * There are a number of requirements for calling this function:
+ *
+ * - It must be called from get_format with the same avctx parameter that was
+ *   passed to get_format. Calling it outside of get_format is not allowed, and
+ *   can trigger undefined behavior.
+ * - The function is not always supported (see description of return values).
+ *   Even if this function returns successfully, hwaccel initialization could
+ *   fail later. (The degree to which implementations check whether the stream
+ *   is actually supported varies. Some do this check only after the user's
+ *   get_format callback returns.)
+ * - The hw_pix_fmt must be one of the choices suggested by get_format. If the
+ *   user decides to use a AVHWFramesContext prepared with this API function,
+ *   the user must return the same hw_pix_fmt from get_format.
+ * - The device_ref passed to this function must support the given hw_pix_fmt.
+ * - After calling this API function, it is the user's responsibility to
+ *   initialize the AVHWFramesContext (returned by the out_frames_ref parameter),
+ *   and to set AVCodecContext.hw_frames_ctx to it. If done, this must be done
+ *   before returning from get_format (this is implied by the normal
+ *   AVCodecContext.hw_frames_ctx API rules).
+ * - The AVHWFramesContext parameters may change every time time get_format is
+ *   called. Also, AVCodecContext.hw_frames_ctx is reset before get_format. So
+ *   you are inherently required to go through this process again on every
+ *   get_format call.
+ * - It is perfectly possible to call this function without actually using
+ *   the resulting AVHWFramesContext. One use-case might be trying to reuse a
+ *   previously initialized AVHWFramesContext, and calling this API function
+ *   only to test whether the required frame parameters have changed.
+ * - Fields that use dynamically allocated values of any kind must not be set
+ *   by the user unless setting them is explicitly allowed by the documentation.
+ *   If the user sets AVHWFramesContext.free and AVHWFramesContext.user_opaque,
+ *   the new free callback must call the potentially set previous free callback.
+ *   This API call may set any dynamically allocated fields, including the free
+ *   callback.
+ *
+ * The function will set at least the following fields on AVHWFramesContext
+ * (potentially more, depending on hwaccel API):
+ *
+ * - All fields set by av_hwframe_ctx_alloc().
+ * - Set the format field to hw_pix_fmt.
+ * - Set the sw_format field to the most suited and most versatile format. (An
+ *   implication is that this will prefer generic formats over opaque formats
+ *   with arbitrary restrictions, if possible.)
+ * - Set the width/height fields to the coded frame size, rounded up to the
+ *   API-specific minimum alignment.
+ * - Only _if_ the hwaccel requires a pre-allocated pool: set the initial_pool_size
+ *   field to the number of maximum reference surfaces possible with the codec,
+ *   plus 1 surface for the user to work (meaning the user can safely reference
+ *   at most 1 decoded surface at a time), plus additional buffering introduced
+ *   by frame threading. If the hwaccel does not require pre-allocation, the
+ *   field is left to 0, and the decoder will allocate new surfaces on demand
+ *   during decoding.
+ * - Possibly AVHWFramesContext.hwctx fields, depending on the underlying
+ *   hardware API.
+ *
+ * Essentially, out_frames_ref returns the same as av_hwframe_ctx_alloc(), but
+ * with basic frame parameters set.
+ *
+ * The function is stateless, and does not change the AVCodecContext or the
+ * device_ref AVHWDeviceContext.
+ *
+ * @param avctx The context which is currently calling get_format, and which
+ *              implicitly contains all state needed for filling the returned
+ *              AVHWFramesContext properly.
+ * @param device_ref A reference to the AVHWDeviceContext describing the device
+ *                   which will be used by the hardware decoder.
+ * @param hw_pix_fmt The hwaccel format you are going to return from get_format.
+ * @param out_frames_ref On success, set to a reference to an _uninitialized_
+ *                       AVHWFramesContext, created from the given device_ref.
+ *                       Fields will be set to values required for decoding.
+ *                       Not changed if an error is returned.
+ * @return zero on success, a negative value on error. The following error codes
+ *         have special semantics:
+ *      AVERROR(ENOENT): the decoder does not support this functionality. Setup
+ *                       is always manual, or it is a decoder which does not
+ *                       support setting AVCodecContext.hw_frames_ctx at all,
+ *                       or it is a software format.
+ *      AVERROR(EINVAL): it is known that hardware decoding is not supported for
+ *                       this configuration, or the device_ref is not supported
+ *                       for the hwaccel referenced by hw_pix_fmt.
+ */
+func AvcodecGetHwFramesParameters(avctx *CAVCodecContext,
+	deviceRef *avutil.CAVBufferRef,
+	hwPixFmt avutil.CAVPixelFormat,
+	outFramesRef **avutil.CAVBufferRef) int {
+	return int(C.avcodec_get_hw_frames_parameters((*C.AVCodecContext)(avctx),
+		(*C.AVBufferRef)(unsafe.Pointer(deviceRef)),
+		C.enum_AVPixelFormat(hwPixFmt),
+		(**C.AVBufferRef)(unsafe.Pointer(outFramesRef)),
+	))
+}
 
 /**
  * @defgroup lavc_parsing Frame parsing
  * @{
  */
 
-//  enum AVPictureStructure {
-// 	 AV_PICTURE_STRUCTURE_UNKNOWN,      ///< unknown
-// 	 AV_PICTURE_STRUCTURE_TOP_FIELD,    ///< coded as top field
-// 	 AV_PICTURE_STRUCTURE_BOTTOM_FIELD, ///< coded as bottom field
-// 	 AV_PICTURE_STRUCTURE_FRAME,        ///< coded as frame
-//  };
+type CAVPictureStructure = C.enum_AVPictureStructure
+
+const (
+	AV_PICTURE_STRUCTURE_UNKNOWN      CAVPictureStructure = C.AV_PICTURE_STRUCTURE_UNKNOWN      ///< unknown
+	AV_PICTURE_STRUCTURE_TOP_FIELD    CAVPictureStructure = C.AV_PICTURE_STRUCTURE_TOP_FIELD    ///< coded as top field
+	AV_PICTURE_STRUCTURE_BOTTOM_FIELD CAVPictureStructure = C.AV_PICTURE_STRUCTURE_BOTTOM_FIELD ///< coded as bottom field
+	AV_PICTURE_STRUCTURE_FRAME        CAVPictureStructure = C.AV_PICTURE_STRUCTURE_FRAME        ///< coded as frame
+)
 
 type CAVCodecParserContext C.AVCodecParserContext
 
-//  typedef struct AVCodecParserContext {
-// 	 void *priv_data;
-// 	 const struct AVCodecParser *parser;
-// 	 int64_t frame_offset; /* offset of the current frame */
-// 	 int64_t cur_offset; /* current offset
-// 							(incremented by each av_parser_parse()) */
-// 	 int64_t next_frame_offset; /* offset of the next frame */
-// 	 /* video info */
-// 	 int pict_type; /* XXX: Put it back in AVCodecContext. */
-// 	 /**
-// 	  * This field is used for proper frame duration computation in lavf.
-// 	  * It signals, how much longer the frame duration of the current frame
-// 	  * is compared to normal frame duration.
-// 	  *
-// 	  * frame_duration = (1 + repeat_pict) * time_base
-// 	  *
-// 	  * It is used by codecs like H.264 to display telecined material.
-// 	  */
-// 	 int repeat_pict; /* XXX: Put it back in AVCodecContext. */
-// 	 int64_t pts;     /* pts of the current frame */
-// 	 int64_t dts;     /* dts of the current frame */
+//#region CAVCodecParserContext
 
-// 	 /* private data */
-// 	 int64_t last_pts;
-// 	 int64_t last_dts;
-// 	 int fetch_timestamp;
+func (parserCtx *CAVCodecParserContext) GetPrivData() unsafe.Pointer {
+	return parserCtx.priv_data
+}
+func (parserCtx *CAVCodecParserContext) SetPrivData(privData unsafe.Pointer) {
+	parserCtx.priv_data = privData
+}
 
-//  #define AV_PARSER_PTS_NB 4
-// 	 int cur_frame_start_index;
-// 	 int64_t cur_frame_offset[AV_PARSER_PTS_NB];
-// 	 int64_t cur_frame_pts[AV_PARSER_PTS_NB];
-// 	 int64_t cur_frame_dts[AV_PARSER_PTS_NB];
+func (parserCtx *CAVCodecParserContext) GetParser() *CAVCodecParser {
+	return (*CAVCodecParser)(parserCtx.parser)
+}
+func (parserCtx *CAVCodecParserContext) SetParser(parser *CAVCodecParser) {
+	parserCtx.parser = (*C.AVCodecParser)(parser)
+}
 
-// 	 int flags;
-//  #define PARSER_FLAG_COMPLETE_FRAMES           0x0001
-//  #define PARSER_FLAG_ONCE                      0x0002
-//  /// Set if the parser has a valid file offset
-//  #define PARSER_FLAG_FETCHED_OFFSET            0x0004
-//  #define PARSER_FLAG_USE_CODEC_TS              0x1000
+/* offset of the current frame */
+func (parserCtx *CAVCodecParserContext) GetFrameOffset() int64 {
+	return int64(parserCtx.frame_offset)
+}
 
-// 	 int64_t offset;      ///< byte offset from starting packet start
-// 	 int64_t cur_frame_end[AV_PARSER_PTS_NB];
+/* offset of the current frame */
+func (parserCtx *CAVCodecParserContext) SetFrameOffset(frameOffset int64) {
+	parserCtx.frame_offset = C.int64_t(frameOffset)
+}
 
-// 	 /**
-// 	  * Set by parser to 1 for key frames and 0 for non-key frames.
-// 	  * It is initialized to -1, so if the parser doesn't set this flag,
-// 	  * old-style fallback using AV_PICTURE_TYPE_I picture type as key frames
-// 	  * will be used.
-// 	  */
-// 	 int key_frame;
+/* current offset (incremented by each av_parser_parse()) */
+func (parserCtx *CAVCodecParserContext) GetCurOffset() int64 {
+	return int64(parserCtx.cur_offset)
+}
 
-// 	 // Timestamp generation support:
-// 	 /**
-// 	  * Synchronization point for start of timestamp generation.
-// 	  *
-// 	  * Set to >0 for sync point, 0 for no sync point and <0 for undefined
-// 	  * (default).
-// 	  *
-// 	  * For example, this corresponds to presence of H.264 buffering period
-// 	  * SEI message.
-// 	  */
-// 	 int dts_sync_point;
+/* current offset (incremented by each av_parser_parse()) */
+func (parserCtx *CAVCodecParserContext) SetCurOffset(curOffset int64) {
+	parserCtx.cur_offset = C.int64_t(curOffset)
+}
 
-// 	 /**
-// 	  * Offset of the current timestamp against last timestamp sync point in
-// 	  * units of AVCodecContext.time_base.
-// 	  *
-// 	  * Set to INT_MIN when dts_sync_point unused. Otherwise, it must
-// 	  * contain a valid timestamp offset.
-// 	  *
-// 	  * Note that the timestamp of sync point has usually a nonzero
-// 	  * dts_ref_dts_delta, which refers to the previous sync point. Offset of
-// 	  * the next frame after timestamp sync point will be usually 1.
-// 	  *
-// 	  * For example, this corresponds to H.264 cpb_removal_delay.
-// 	  */
-// 	 int dts_ref_dts_delta;
+/* offset of the next frame */
+func (parserCtx *CAVCodecParserContext) GetNextFrameOffset() int64 {
+	return int64(parserCtx.next_frame_offset)
+}
 
-// 	 /**
-// 	  * Presentation delay of current frame in units of AVCodecContext.time_base.
-// 	  *
-// 	  * Set to INT_MIN when dts_sync_point unused. Otherwise, it must
-// 	  * contain valid non-negative timestamp delta (presentation time of a frame
-// 	  * must not lie in the past).
-// 	  *
-// 	  * This delay represents the difference between decoding and presentation
-// 	  * time of the frame.
-// 	  *
-// 	  * For example, this corresponds to H.264 dpb_output_delay.
-// 	  */
-// 	 int pts_dts_delta;
+/* offset of the next frame */
+func (parserCtx *CAVCodecParserContext) SetNextFrameOffset(nextFrameOffset int64) {
+	parserCtx.next_frame_offset = C.int64_t(nextFrameOffset)
+}
 
-// 	 /**
-// 	  * Position of the packet in file.
-// 	  *
-// 	  * Analogous to cur_frame_pts/dts
-// 	  */
-// 	 int64_t cur_frame_pos[AV_PARSER_PTS_NB];
+/* video info */
 
-// 	 /**
-// 	  * Byte position of currently parsed frame in stream.
-// 	  */
-// 	 int64_t pos;
+/* XXX: Put it back in AVCodecContext. */
+func (parserCtx *CAVCodecParserContext) GetPictType() int {
+	return int(parserCtx.pict_type)
+}
 
-// 	 /**
-// 	  * Previous frame byte position.
-// 	  */
-// 	 int64_t last_pos;
+/* XXX: Put it back in AVCodecContext. */
+func (parserCtx *CAVCodecParserContext) SetPictType(pictType int) {
+	parserCtx.pict_type = C.int(pictType)
+}
 
-// 	 /**
-// 	  * Duration of the current frame.
-// 	  * For audio, this is in units of 1 / AVCodecContext.sample_rate.
-// 	  * For all other types, this is in units of AVCodecContext.time_base.
-// 	  */
-// 	 int duration;
+/**
+ * This field is used for proper frame duration computation in lavf.
+ * It signals, how much longer the frame duration of the current frame
+ * is compared to normal frame duration.
+ *
+ * frame_duration = (1 + repeat_pict) * time_base
+ *
+ * It is used by codecs like H.264 to display telecined material.
+ */
+/* XXX: Put it back in AVCodecContext. */
+func (parserCtx *CAVCodecParserContext) GetRepeatPict() int {
+	return int(parserCtx.repeat_pict)
+}
 
-// 	 enum AVFieldOrder field_order;
+/**
+ * This field is used for proper frame duration computation in lavf.
+ * It signals, how much longer the frame duration of the current frame
+ * is compared to normal frame duration.
+ *
+ * frame_duration = (1 + repeat_pict) * time_base
+ *
+ * It is used by codecs like H.264 to display telecined material.
+ */
+/* XXX: Put it back in AVCodecContext. */
+func (parserCtx *CAVCodecParserContext) SetRepeatPict(repeatPict int) {
+	parserCtx.repeat_pict = C.int(repeatPict)
+}
 
-// 	 /**
-// 	  * Indicate whether a picture is coded as a frame, top field or bottom field.
-// 	  *
-// 	  * For example, H.264 field_pic_flag equal to 0 corresponds to
-// 	  * AV_PICTURE_STRUCTURE_FRAME. An H.264 picture with field_pic_flag
-// 	  * equal to 1 and bottom_field_flag equal to 0 corresponds to
-// 	  * AV_PICTURE_STRUCTURE_TOP_FIELD.
-// 	  */
-// 	 enum AVPictureStructure picture_structure;
+/* pts of the current frame */
+func (parserCtx *CAVCodecParserContext) GetPts() int64 {
+	return int64(parserCtx.pts)
+}
 
-// 	 /**
-// 	  * Picture number incremented in presentation or output order.
-// 	  * This field may be reinitialized at the first picture of a new sequence.
-// 	  *
-// 	  * For example, this corresponds to H.264 PicOrderCnt.
-// 	  */
-// 	 int output_picture_number;
+/* pts of the current frame */
+func (parserCtx *CAVCodecParserContext) SetPts(pts int64) {
+	parserCtx.pts = C.int64_t(pts)
+}
 
-// 	 /**
-// 	  * Dimensions of the decoded video intended for presentation.
-// 	  */
-// 	 int width;
-// 	 int height;
+/* dts of the current frame */
+func (parserCtx *CAVCodecParserContext) GetDts() int64 {
+	return int64(parserCtx.dts)
+}
 
-// 	 /**
-// 	  * Dimensions of the coded video.
-// 	  */
-// 	 int coded_width;
-// 	 int coded_height;
+/* dts of the current frame */
+func (parserCtx *CAVCodecParserContext) SetDts(dts int64) {
+	parserCtx.dts = C.int64_t(dts)
+}
 
-// 	 /**
-// 	  * The format of the coded data, corresponds to enum AVPixelFormat for video
-// 	  * and for enum AVSampleFormat for audio.
-// 	  *
-// 	  * Note that a decoder can have considerable freedom in how exactly it
-// 	  * decodes the data, so the format reported here might be different from the
-// 	  * one returned by a decoder.
-// 	  */
-// 	 int format;
-//  } AVCodecParserContext;
+/* private data */
 
-//  typedef struct AVCodecParser {
-// 	 int codec_ids[7]; /* several codec IDs are permitted */
-// 	 int priv_data_size;
-// 	 int (*parser_init)(AVCodecParserContext *s);
-// 	 /* This callback never returns an error, a negative value means that
-// 	  * the frame start was in a previous packet. */
+func (parserCtx *CAVCodecParserContext) GetLastPts() int64 {
+	return int64(parserCtx.last_pts)
+}
+func (parserCtx *CAVCodecParserContext) SetLastPts(lastPts int64) {
+	parserCtx.last_pts = C.int64_t(lastPts)
+}
+
+func (parserCtx *CAVCodecParserContext) GetLastDts() int64 {
+	return int64(parserCtx.last_dts)
+}
+func (parserCtx *CAVCodecParserContext) SetLastDts(lastDts int64) {
+	parserCtx.last_dts = C.int64_t(lastDts)
+}
+
+func (parserCtx *CAVCodecParserContext) GetFetchTimestamp() int {
+	return int(parserCtx.fetch_timestamp)
+}
+func (parserCtx *CAVCodecParserContext) SetFetchTimestamp(fetchTimestamp int) {
+	parserCtx.fetch_timestamp = C.int(fetchTimestamp)
+}
+
+const AV_PARSER_PTS_NB = C.AV_PARSER_PTS_NB
+
+func (parserCtx *CAVCodecParserContext) GetCurFrameStartIndex() int {
+	return int(parserCtx.cur_frame_start_index)
+}
+func (parserCtx *CAVCodecParserContext) SetCurFrameStartIndex(curFrameStartIndex int) {
+	parserCtx.cur_frame_start_index = C.int(curFrameStartIndex)
+}
+
+func (parserCtx *CAVCodecParserContext) GetCurFrameOffset() [AV_PARSER_PTS_NB]ctypes.Int64 {
+	cArr := (*ctypes.Int64)(unsafe.Pointer(unsafe.SliceData(parserCtx.cur_frame_offset[:])))
+	return ([AV_PARSER_PTS_NB]ctypes.Int64)(unsafe.Slice(cArr, AV_PARSER_PTS_NB))
+}
+func (parserCtx *CAVCodecParserContext) SetCurFrameOffset(curFrameOffset [AV_PARSER_PTS_NB]ctypes.Int64) {
+	cArr := (*C.int64_t)(unsafe.Pointer(unsafe.SliceData(curFrameOffset[:])))
+	parserCtx.cur_frame_offset = ([AV_PARSER_PTS_NB]C.int64_t)(unsafe.Slice(cArr, AV_PARSER_PTS_NB))
+}
+
+func (parserCtx *CAVCodecParserContext) GetCurFramePts() [AV_PARSER_PTS_NB]ctypes.Int64 {
+	cArr := (*ctypes.Int64)(unsafe.Pointer(unsafe.SliceData(parserCtx.cur_frame_pts[:])))
+	return ([AV_PARSER_PTS_NB]ctypes.Int64)(unsafe.Slice(cArr, AV_PARSER_PTS_NB))
+}
+func (parserCtx *CAVCodecParserContext) SetCurFramePts(curFramePts [AV_PARSER_PTS_NB]ctypes.Int64) {
+	cArr := (*C.int64_t)(unsafe.Pointer(unsafe.SliceData(curFramePts[:])))
+	parserCtx.cur_frame_pts = ([AV_PARSER_PTS_NB]C.int64_t)(unsafe.Slice(cArr, AV_PARSER_PTS_NB))
+}
+
+func (parserCtx *CAVCodecParserContext) GetCurFrameDts() [AV_PARSER_PTS_NB]ctypes.Int64 {
+	cArr := (*ctypes.Int64)(unsafe.Pointer(unsafe.SliceData(parserCtx.cur_frame_dts[:])))
+	return ([AV_PARSER_PTS_NB]ctypes.Int64)(unsafe.Slice(cArr, AV_PARSER_PTS_NB))
+}
+func (parserCtx *CAVCodecParserContext) SetCurFrameDts(curFrameDts [AV_PARSER_PTS_NB]ctypes.Int64) {
+	cArr := (*C.int64_t)(unsafe.Pointer(unsafe.SliceData(curFrameDts[:])))
+	parserCtx.cur_frame_dts = ([AV_PARSER_PTS_NB]C.int64_t)(unsafe.Slice(cArr, AV_PARSER_PTS_NB))
+}
+
+func (parserCtx *CAVCodecParserContext) GetFlags() int {
+	return int(parserCtx.flags)
+}
+func (parserCtx *CAVCodecParserContext) SetFlags(flags int) {
+	parserCtx.flags = C.int(flags)
+}
+
+const PARSER_FLAG_COMPLETE_FRAMES = C.PARSER_FLAG_COMPLETE_FRAMES
+const PARSER_FLAG_ONCE = C.PARSER_FLAG_ONCE
+
+// / Set if the parser has a valid file offset
+const PARSER_FLAG_FETCHED_OFFSET = C.PARSER_FLAG_FETCHED_OFFSET
+const PARSER_FLAG_USE_CODEC_TS = C.PARSER_FLAG_USE_CODEC_TS
+
+// /< byte offset from starting packet start
+func (parserCtx *CAVCodecParserContext) GetOffset() int64 {
+	return int64(parserCtx.offset)
+}
+
+// /< byte offset from starting packet start
+func (parserCtx *CAVCodecParserContext) SetOffset(offset int64) {
+	parserCtx.offset = C.int64_t(offset)
+}
+
+func (parserCtx *CAVCodecParserContext) GetCurFrameEnd() [AV_PARSER_PTS_NB]ctypes.Int64 {
+	cArr := (*ctypes.Int64)(unsafe.Pointer(unsafe.SliceData(parserCtx.cur_frame_end[:])))
+	return ([AV_PARSER_PTS_NB]ctypes.Int64)(unsafe.Slice(cArr, AV_PARSER_PTS_NB))
+}
+func (parserCtx *CAVCodecParserContext) SetCurFrameEnd(curFrameEnd [AV_PARSER_PTS_NB]ctypes.Int64) {
+	cArr := (*C.int64_t)(unsafe.Pointer(unsafe.SliceData(curFrameEnd[:])))
+	parserCtx.cur_frame_end = ([AV_PARSER_PTS_NB]C.int64_t)(unsafe.Slice(cArr, AV_PARSER_PTS_NB))
+}
+
+/**
+ * Set by parser to 1 for key frames and 0 for non-key frames.
+ * It is initialized to -1, so if the parser doesn't set this flag,
+ * old-style fallback using AV_PICTURE_TYPE_I picture type as key frames
+ * will be used.
+ */
+func (parserCtx *CAVCodecParserContext) GetKeyFrame() int {
+	return int(parserCtx.key_frame)
+}
+
+/**
+ * Set by parser to 1 for key frames and 0 for non-key frames.
+ * It is initialized to -1, so if the parser doesn't set this flag,
+ * old-style fallback using AV_PICTURE_TYPE_I picture type as key frames
+ * will be used.
+ */
+func (parserCtx *CAVCodecParserContext) SetKeyFrame(keyFrame int) {
+	parserCtx.key_frame = C.int(keyFrame)
+}
+
+// Timestamp generation support:
+
+/**
+ * Synchronization point for start of timestamp generation.
+ *
+ * Set to >0 for sync point, 0 for no sync point and <0 for undefined
+ * (default).
+ *
+ * For example, this corresponds to presence of H.264 buffering period
+ * SEI message.
+ */
+func (parserCtx *CAVCodecParserContext) GetDtsSyncPoint() int {
+	return int(parserCtx.dts_sync_point)
+}
+
+/**
+ * Synchronization point for start of timestamp generation.
+ *
+ * Set to >0 for sync point, 0 for no sync point and <0 for undefined
+ * (default).
+ *
+ * For example, this corresponds to presence of H.264 buffering period
+ * SEI message.
+ */
+func (parserCtx *CAVCodecParserContext) SetDtsSyncPoint(dtsSyncPoint int) {
+	parserCtx.dts_sync_point = C.int(dtsSyncPoint)
+}
+
+/**
+ * Offset of the current timestamp against last timestamp sync point in
+ * units of AVCodecContext.time_base.
+ *
+ * Set to INT_MIN when dts_sync_point unused. Otherwise, it must
+ * contain a valid timestamp offset.
+ *
+ * Note that the timestamp of sync point has usually a nonzero
+ * dts_ref_dts_delta, which refers to the previous sync point. Offset of
+ * the next frame after timestamp sync point will be usually 1.
+ *
+ * For example, this corresponds to H.264 cpb_removal_delay.
+ */
+func (parserCtx *CAVCodecParserContext) GetDtsRefDtsDelta() int {
+	return int(parserCtx.dts_ref_dts_delta)
+}
+
+/**
+ * Offset of the current timestamp against last timestamp sync point in
+ * units of AVCodecContext.time_base.
+ *
+ * Set to INT_MIN when dts_sync_point unused. Otherwise, it must
+ * contain a valid timestamp offset.
+ *
+ * Note that the timestamp of sync point has usually a nonzero
+ * dts_ref_dts_delta, which refers to the previous sync point. Offset of
+ * the next frame after timestamp sync point will be usually 1.
+ *
+ * For example, this corresponds to H.264 cpb_removal_delay.
+ */
+func (parserCtx *CAVCodecParserContext) SetDtsRefDtsDelta(dtsRefDtsDelta int) {
+	parserCtx.dts_ref_dts_delta = C.int(dtsRefDtsDelta)
+}
+
+/**
+ * Presentation delay of current frame in units of AVCodecContext.time_base.
+ *
+ * Set to INT_MIN when dts_sync_point unused. Otherwise, it must
+ * contain valid non-negative timestamp delta (presentation time of a frame
+ * must not lie in the past).
+ *
+ * This delay represents the difference between decoding and presentation
+ * time of the frame.
+ *
+ * For example, this corresponds to H.264 dpb_output_delay.
+ */
+func (parserCtx *CAVCodecParserContext) GetPtsDtsDelta() int {
+	return int(parserCtx.pts_dts_delta)
+}
+
+/**
+ * Presentation delay of current frame in units of AVCodecContext.time_base.
+ *
+ * Set to INT_MIN when dts_sync_point unused. Otherwise, it must
+ * contain valid non-negative timestamp delta (presentation time of a frame
+ * must not lie in the past).
+ *
+ * This delay represents the difference between decoding and presentation
+ * time of the frame.
+ *
+ * For example, this corresponds to H.264 dpb_output_delay.
+ */
+func (parserCtx *CAVCodecParserContext) SetPtsDtsDelta(ptsDtsDelta int) {
+	parserCtx.pts_dts_delta = C.int(ptsDtsDelta)
+}
+
+/**
+ * Position of the packet in file.
+ *
+ * Analogous to cur_frame_pts/dts
+ */
+func (parserCtx *CAVCodecParserContext) GetCurFramePos() [AV_PARSER_PTS_NB]ctypes.Int64 {
+	cArr := (*ctypes.Int64)(unsafe.Pointer(unsafe.SliceData(parserCtx.cur_frame_pos[:])))
+	return ([AV_PARSER_PTS_NB]ctypes.Int64)(unsafe.Slice(cArr, AV_PARSER_PTS_NB))
+}
+
+/**
+ * Position of the packet in file.
+ *
+ * Analogous to cur_frame_pts/dts
+ */
+func (parserCtx *CAVCodecParserContext) SetCurFramePos(curFramePos [AV_PARSER_PTS_NB]ctypes.Int64) {
+	cArr := (*C.int64_t)(unsafe.Pointer(unsafe.SliceData(curFramePos[:])))
+	parserCtx.cur_frame_pos = ([AV_PARSER_PTS_NB]C.int64_t)(unsafe.Slice(cArr, AV_PARSER_PTS_NB))
+}
+
+/**
+ * Byte position of currently parsed frame in stream.
+ */
+func (parserCtx *CAVCodecParserContext) GetPos() int64 {
+	return int64(parserCtx.pos)
+}
+
+/**
+ * Byte position of currently parsed frame in stream.
+ */
+func (parserCtx *CAVCodecParserContext) SetPos(pos int64) {
+	parserCtx.pos = C.int64_t(pos)
+}
+
+/**
+ * Previous frame byte position.
+ */
+func (parserCtx *CAVCodecParserContext) GetLastPos() int64 {
+	return int64(parserCtx.last_pos)
+}
+
+/**
+ * Previous frame byte position.
+ */
+func (parserCtx *CAVCodecParserContext) SetLastPos(lastPos int64) {
+	parserCtx.last_pos = C.int64_t(lastPos)
+}
+
+/**
+ * Duration of the current frame.
+ * For audio, this is in units of 1 / AVCodecContext.sample_rate.
+ * For all other types, this is in units of AVCodecContext.time_base.
+ */
+func (parserCtx *CAVCodecParserContext) GetDuration() int {
+	return int(parserCtx.duration)
+}
+
+/**
+ * Duration of the current frame.
+ * For audio, this is in units of 1 / AVCodecContext.sample_rate.
+ * For all other types, this is in units of AVCodecContext.time_base.
+ */
+func (parserCtx *CAVCodecParserContext) SetDuration(duration int) {
+	parserCtx.duration = C.int(duration)
+}
+
+func (parserCtx *CAVCodecParserContext) GetFieldOrder() C.enum_AVFieldOrder {
+	return C.enum_AVFieldOrder(parserCtx.field_order)
+}
+func (parserCtx *CAVCodecParserContext) SetFieldOrder(field_order C.enum_AVFieldOrder) {
+	parserCtx.field_order = C.enum_AVFieldOrder(field_order)
+}
+
+/**
+ * Indicate whether a picture is coded as a frame, top field or bottom field.
+ *
+ * For example, H.264 field_pic_flag equal to 0 corresponds to
+ * AV_PICTURE_STRUCTURE_FRAME. An H.264 picture with field_pic_flag
+ * equal to 1 and bottom_field_flag equal to 0 corresponds to
+ * AV_PICTURE_STRUCTURE_TOP_FIELD.
+ */
+func (parserCtx *CAVCodecParserContext) GetPictureStructure() C.enum_AVPictureStructure {
+	return C.enum_AVPictureStructure(parserCtx.picture_structure)
+}
+
+/**
+ * Indicate whether a picture is coded as a frame, top field or bottom field.
+ *
+ * For example, H.264 field_pic_flag equal to 0 corresponds to
+ * AV_PICTURE_STRUCTURE_FRAME. An H.264 picture with field_pic_flag
+ * equal to 1 and bottom_field_flag equal to 0 corresponds to
+ * AV_PICTURE_STRUCTURE_TOP_FIELD.
+ */
+func (parserCtx *CAVCodecParserContext) SetPictureStructure(picture_structure C.enum_AVPictureStructure) {
+	parserCtx.picture_structure = C.enum_AVPictureStructure(picture_structure)
+}
+
+/**
+ * Picture number incremented in presentation or output order.
+ * This field may be reinitialized at the first picture of a new sequence.
+ *
+ * For example, this corresponds to H.264 PicOrderCnt.
+ */
+func (parserCtx *CAVCodecParserContext) GetOutputPictureNumber() int {
+	return int(parserCtx.output_picture_number)
+}
+
+/**
+ * Picture number incremented in presentation or output order.
+ * This field may be reinitialized at the first picture of a new sequence.
+ *
+ * For example, this corresponds to H.264 PicOrderCnt.
+ */
+func (parserCtx *CAVCodecParserContext) SetOutputPictureNumber(outputPictureNumber int) {
+	parserCtx.output_picture_number = C.int(outputPictureNumber)
+}
+
+/**
+ * Dimensions of the decoded video intended for presentation.
+ */
+
+func (parserCtx *CAVCodecParserContext) GetWidth() int {
+	return int(parserCtx.width)
+}
+func (parserCtx *CAVCodecParserContext) SetWidth(width int) {
+	parserCtx.width = C.int(width)
+}
+
+func (parserCtx *CAVCodecParserContext) GetHeight() int {
+	return int(parserCtx.height)
+}
+func (parserCtx *CAVCodecParserContext) SetHeight(height int) {
+	parserCtx.height = C.int(height)
+}
+
+/**
+ * Dimensions of the coded video.
+ */
+
+func (parserCtx *CAVCodecParserContext) GetCodedWidth() int {
+	return int(parserCtx.coded_width)
+}
+func (parserCtx *CAVCodecParserContext) SetCodedWidth(codedWidth int) {
+	parserCtx.coded_width = C.int(codedWidth)
+}
+
+func (parserCtx *CAVCodecParserContext) GetCodedHeight() int {
+	return int(parserCtx.coded_height)
+}
+func (parserCtx *CAVCodecParserContext) SetCodedHeight(codecHeight int) {
+	parserCtx.coded_height = C.int(codecHeight)
+}
+
+/**
+ * The format of the coded data, corresponds to enum AVPixelFormat for video
+ * and for enum AVSampleFormat for audio.
+ *
+ * Note that a decoder can have considerable freedom in how exactly it
+ * decodes the data, so the format reported here might be different from the
+ * one returned by a decoder.
+ */
+func (parserCtx *CAVCodecParserContext) Getformat() int {
+	return int(parserCtx.format)
+}
+
+/**
+ * The format of the coded data, corresponds to enum AVPixelFormat for video
+ * and for enum AVSampleFormat for audio.
+ *
+ * Note that a decoder can have considerable freedom in how exactly it
+ * decodes the data, so the format reported here might be different from the
+ * one returned by a decoder.
+ */
+func (parserCtx *CAVCodecParserContext) SetFormat(format int) {
+	parserCtx.format = C.int(format)
+}
+
+//#endregion CAVCodecParserContext
+
+type CAVCodecParser C.AVCodecParser
+
+//#region CAVCodecParser
+
+/* several codec IDs are permitted */
+func (parser *CAVCodecParser) GetCodecIds() [7]ctypes.Int {
+	cArr := (*ctypes.Int)(unsafe.Pointer(unsafe.SliceData(parser.codec_ids[:])))
+	return ([7]ctypes.Int)(unsafe.Slice(cArr, 7))
+}
+
+/* several codec IDs are permitted */
+func (parser *CAVCodecParser) SetCodecIds(codecIds [7]ctypes.Int) {
+	cArr := (*C.int)(unsafe.Pointer(unsafe.SliceData(codecIds[:])))
+	parser.codec_ids = ([7]C.int)(unsafe.Slice(cArr, 7))
+}
+
+func (parser *CAVCodecParser) GetPrivDataSize() int {
+	return int(parser.priv_data_size)
+}
+func (parser *CAVCodecParser) SetPrivDataSize(privDataSize int) {
+	parser.priv_data_size = C.int(privDataSize)
+}
+
+// int (*parser_init)(AVCodecParserContext *s);
+func (parser *CAVCodecParser) GetParserInit() ctypes.CFunc {
+	return ctypes.CFunc(parser.parser_init)
+}
+
+// int (*parser_init)(AVCodecParserContext *s);
+func (parser *CAVCodecParser) SetParserInit(parserInit ctypes.CFunc) {
+	parser.parser_init = (*[0]byte)(parserInit)
+}
+
+/* This callback never returns an error, a negative value means that
+ * the frame start was in a previous packet. */
 // 	 int (*parser_parse)(AVCodecParserContext *s,
 // 						 AVCodecContext *avctx,
 // 						 const uint8_t **poutbuf, int *poutbuf_size,
 // 						 const uint8_t *buf, int buf_size);
-// 	 void (*parser_close)(AVCodecParserContext *s);
-// 	 int (*split)(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
-//  } AVCodecParser;
+func (parser *CAVCodecParser) GetParserParse() ctypes.CFunc {
+	return ctypes.CFunc(parser.parser_parse)
+}
 
-//  /**
-//   * Iterate over all registered codec parsers.
-//   *
-//   * @param opaque a pointer where libavcodec will store the iteration state. Must
-//   *               point to NULL to start the iteration.
-//   *
-//   * @return the next registered codec parser or NULL when the iteration is
-//   *         finished
-//   */
-//  const AVCodecParser *av_parser_iterate(void **opaque);
+/* This callback never returns an error, a negative value means that
+ * the frame start was in a previous packet. */
+// 	 int (*parser_parse)(AVCodecParserContext *s,
+// 						 AVCodecContext *avctx,
+// 						 const uint8_t **poutbuf, int *poutbuf_size,
+// 						 const uint8_t *buf, int buf_size);
+func (parser *CAVCodecParser) SetParserParse(parserParse ctypes.CFunc) {
+	parser.parser_parse = (*[0]byte)(parserParse)
+}
+
+// void (*parser_close)(AVCodecParserContext *s);
+func (parser *CAVCodecParser) GetParserClose() ctypes.CFunc {
+	return ctypes.CFunc(parser.parser_close)
+}
+
+// void (*parser_close)(AVCodecParserContext *s);
+func (parser *CAVCodecParser) SetParserClose(parserClose ctypes.CFunc) {
+	parser.parser_close = (*[0]byte)(parserClose)
+}
+
+// int (*split)(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
+func (parser *CAVCodecParser) GetSplit() ctypes.CFunc {
+	return ctypes.CFunc(parser.split)
+}
+
+// int (*split)(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
+func (parser *CAVCodecParser) SetSplit(split ctypes.CFunc) {
+	parser.split = (*[0]byte)(split)
+}
+
+//#endregion CAVCodecParser
+
+/**
+ * Iterate over all registered codec parsers.
+ *
+ * @param opaque a pointer where libavcodec will store the iteration state. Must
+ *               point to NULL to start the iteration.
+ *
+ * @return the next registered codec parser or NULL when the iteration is
+ *         finished
+ */
+func AvParserIterate(opaque *unsafe.Pointer) *CAVCodecParser {
+	return (*CAVCodecParser)(C.av_parser_iterate(opaque))
+}
 
 func AvParserInit(codec_id int) *CAVCodecParserContext {
 	return (*CAVCodecParserContext)(C.av_parser_init(C.int(codec_id)))
 }
 
 /**
-  * Parse a packet.
-  *
-  * @param s             parser context.
-  * @param avctx         codec context.
-  * @param poutbuf       set to pointer to parsed buffer or NULL if not yet finished.
-  * @param poutbuf_size  set to size of parsed buffer or zero if not yet finished.
-  * @param buf           input buffer.
-  * @param buf_size      buffer size in bytes without the padding. I.e. the full buffer
-						 size is assumed to be buf_size + AV_INPUT_BUFFER_PADDING_SIZE.
-						 To signal EOF, this should be 0 (so that the last frame
-						 can be output).
-  * @param pts           input presentation timestamp.
-  * @param dts           input decoding timestamp.
-  * @param pos           input byte position in stream.
-  * @return the number of bytes of the input bitstream used.
-  *
-  * Example:
-  * @code
-  *   while(in_len){
-  *       len = av_parser_parse2(myparser, AVCodecContext, &data, &size,
-  *                                        in_data, in_len,
-  *                                        pts, dts, pos);
-  *       in_data += len;
-  *       in_len  -= len;
-  *
-  *       if(size)
-  *          decode_frame(data, size);
-  *   }
-  * @endcode
-*/
-
+ * Parse a packet.
+ *
+ * @param s             parser context.
+ * @param avctx         codec context.
+ * @param poutbuf       set to pointer to parsed buffer or NULL if not yet finished.
+ * @param poutbuf_size  set to size of parsed buffer or zero if not yet finished.
+ * @param buf           input buffer.
+ * @param buf_size      buffer size in bytes without the padding. I.e. the full buffer
+ *                       size is assumed to be buf_size + AV_INPUT_BUFFER_PADDING_SIZE.
+ *                       To signal EOF, this should be 0 (so that the last frame
+ *                       can be output).
+ * @param pts           input presentation timestamp.
+ * @param dts           input decoding timestamp.
+ * @param pos           input byte position in stream.
+ * @return the number of bytes of the input bitstream used.
+ *
+ * Example:
+ * @code
+ *   while(in_len){
+ *       len = av_parser_parse2(myparser, AVCodecContext, &data, &size,
+ *                                        in_data, in_len,
+ *                                        pts, dts, pos);
+ *       in_data += len;
+ *       in_len  -= len;
+ *
+ *       if(size)
+ *          decode_frame(data, size);
+ *   }
+ * @endcode
+ */
 func AvParserParse2(s *CAVCodecParserContext, avctx *CAVCodecContext,
-	poutbuf unsafe.Pointer, poutbuf_size *ctypes.Int,
+	poutbuf *unsafe.Pointer, poutbuf_size *ctypes.Int,
 	buf unsafe.Pointer, buf_size int,
 	pts int64, dts int64, pos int64) int {
 
 	return int(C.av_parser_parse2((*C.AVCodecParserContext)(s), (*C.AVCodecContext)(avctx),
-		(**C.uint8_t)(poutbuf), (*C.int)(poutbuf_size),
+		(**C.uint8_t)(unsafe.Pointer(poutbuf)), (*C.int)(poutbuf_size),
 		(*C.uint8_t)(buf), C.int(buf_size),
 		C.int64_t(pts), C.int64_t(dts), C.int64_t(pos)))
 }
@@ -3403,8 +5843,11 @@ func AvParserClose(s *CAVCodecParserContext) {
  * @{
  */
 
-//  int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
-// 							 const AVSubtitle *sub);
+func AvcodecEncodeSubtitle(avctx *CAVCodecContext, buf unsafe.Pointer, bufSize int,
+	sub *CAVSubtitle) int {
+	return int(C.avcodec_encode_subtitle((*C.AVCodecContext)(avctx), (*C.uint8_t)(buf), C.int(bufSize),
+		(*C.AVSubtitle)(sub)))
+}
 
 /**
  * @}
@@ -3426,121 +5869,147 @@ func AvParserClose(s *CAVCodecParserContext) {
  * @{
  */
 
-//  /**
-//   * Return a value representing the fourCC code associated to the
-//   * pixel format pix_fmt, or 0 if no associated fourCC code can be
-//   * found.
-//   */
-//  unsigned int avcodec_pix_fmt_to_codec_tag(enum AVPixelFormat pix_fmt);
+/**
+ * Return a value representing the fourCC code associated to the
+ * pixel format pix_fmt, or 0 if no associated fourCC code can be
+ * found.
+ */
+func AvcodecPixFmtToCodecTag(pixFmt avutil.CAVPixelFormat) int {
+	return int(C.avcodec_pix_fmt_to_codec_tag(C.enum_AVPixelFormat(pixFmt)))
+}
 
-//  /**
-//   * Find the best pixel format to convert to given a certain source pixel
-//   * format.  When converting from one pixel format to another, information loss
-//   * may occur.  For example, when converting from RGB24 to GRAY, the color
-//   * information will be lost. Similarly, other losses occur when converting from
-//   * some formats to other formats. avcodec_find_best_pix_fmt_of_2() searches which of
-//   * the given pixel formats should be used to suffer the least amount of loss.
-//   * The pixel formats from which it chooses one, are determined by the
-//   * pix_fmt_list parameter.
-//   *
-//   *
-//   * @param[in] pix_fmt_list AV_PIX_FMT_NONE terminated array of pixel formats to choose from
-//   * @param[in] src_pix_fmt source pixel format
-//   * @param[in] has_alpha Whether the source pixel format alpha channel is used.
-//   * @param[out] loss_ptr Combination of flags informing you what kind of losses will occur.
-//   * @return The best pixel format to convert to or -1 if none was found.
-//   */
-//  enum AVPixelFormat avcodec_find_best_pix_fmt_of_list(const enum AVPixelFormat *pix_fmt_list,
-// 											 enum AVPixelFormat src_pix_fmt,
-// 											 int has_alpha, int *loss_ptr);
+/**
+ * Find the best pixel format to convert to given a certain source pixel
+ * format.  When converting from one pixel format to another, information loss
+ * may occur.  For example, when converting from RGB24 to GRAY, the color
+ * information will be lost. Similarly, other losses occur when converting from
+ * some formats to other formats. avcodec_find_best_pix_fmt_of_2() searches which of
+ * the given pixel formats should be used to suffer the least amount of loss.
+ * The pixel formats from which it chooses one, are determined by the
+ * pix_fmt_list parameter.
+ *
+ *
+ * @param[in] pix_fmt_list AV_PIX_FMT_NONE terminated array of pixel formats to choose from
+ * @param[in] src_pix_fmt source pixel format
+ * @param[in] has_alpha Whether the source pixel format alpha channel is used.
+ * @param[out] loss_ptr Combination of flags informing you what kind of losses will occur.
+ * @return The best pixel format to convert to or -1 if none was found.
+ */
+func AvcodecFindBestPixFmtOfList(pixFmtList *avutil.CAVPixelFormat,
+	srcPixFmt avutil.CAVPixelFormat,
+	hasAlpha int, lossPtr *ctypes.Int) int {
+	return int(C.avcodec_find_best_pix_fmt_of_list((*C.enum_AVPixelFormat)(pixFmtList),
+		C.enum_AVPixelFormat(srcPixFmt),
+		C.int(hasAlpha), (*C.int)(lossPtr)))
+}
 
-//  enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
+func AvcodecDefaultGetFormat(s *CAVCodecContext, fmt *avutil.CAVPixelFormat) avutil.CAVPixelFormat {
+	return avutil.CAVPixelFormat(C.avcodec_default_get_format((*C.AVCodecContext)(s), (*C.enum_AVPixelFormat)(fmt)))
+}
 
 /**
  * @}
  */
 
-//  void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
+func AvcodecString(buf *ctypes.Char, bufSize int, enc *CAVCodecContext, encode int) {
+	C.avcodec_string((*C.char)(buf), C.int(bufSize), (*C.AVCodecContext)(enc), C.int(encode))
+}
 
+//TODO 懒得写了:( 参数看的头皮发麻 应该没人调用这个吧👇
 //  int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2),void *arg, int *ret, int count, int size);
 //  int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2, int, int),void *arg, int *ret, int count);
 //  //FIXME func typedef
 
-//  /**
-//   * Fill AVFrame audio data and linesize pointers.
-//   *
-//   * The buffer buf must be a preallocated buffer with a size big enough
-//   * to contain the specified samples amount. The filled AVFrame data
-//   * pointers will point to this buffer.
-//   *
-//   * AVFrame extended_data channel pointers are allocated if necessary for
-//   * planar audio.
-//   *
-//   * @param frame       the AVFrame
-//   *                    frame->nb_samples must be set prior to calling the
-//   *                    function. This function fills in frame->data,
-//   *                    frame->extended_data, frame->linesize[0].
-//   * @param nb_channels channel count
-//   * @param sample_fmt  sample format
-//   * @param buf         buffer to use for frame data
-//   * @param buf_size    size of buffer
-//   * @param align       plane size sample alignment (0 = default)
-//   * @return            >=0 on success, negative error code on failure
-//   * @todo return the size in bytes required to store the samples in
-//   * case of success, at the next libavutil bump
-//   */
-//  int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
-// 							  enum AVSampleFormat sample_fmt, const uint8_t *buf,
-// 							  int buf_size, int align);
+/**
+ * Fill AVFrame audio data and linesize pointers.
+ *
+ * The buffer buf must be a preallocated buffer with a size big enough
+ * to contain the specified samples amount. The filled AVFrame data
+ * pointers will point to this buffer.
+ *
+ * AVFrame extended_data channel pointers are allocated if necessary for
+ * planar audio.
+ *
+ * @param frame       the AVFrame
+ *                    frame->nb_samples must be set prior to calling the
+ *                    function. This function fills in frame->data,
+ *                    frame->extended_data, frame->linesize[0].
+ * @param nb_channels channel count
+ * @param sample_fmt  sample format
+ * @param buf         buffer to use for frame data
+ * @param buf_size    size of buffer
+ * @param align       plane size sample alignment (0 = default)
+ * @return            >=0 on success, negative error code on failure
+ * @todo return the size in bytes required to store the samples in
+ * case of success, at the next libavutil bump
+ */
+func AvcodecFillAudioFrame(frame *avutil.CAVFrame, nbChannels int,
+	sampleFmt avutil.CAVSampleFormat, buf unsafe.Pointer,
+	bufSize int, align int) int {
+	return int(C.avcodec_fill_audio_frame((*C.AVFrame)(unsafe.Pointer(frame)), C.int(nbChannels),
+		C.enum_AVSampleFormat(sampleFmt), (*C.uint8_t)(buf),
+		C.int(bufSize), C.int(align),
+	))
+}
 
-//  /**
-//   * Reset the internal codec state / flush internal buffers. Should be called
-//   * e.g. when seeking or when switching to a different stream.
-//   *
-//   * @note for decoders, this function just releases any references the decoder
-//   * might keep internally, but the caller's references remain valid.
-//   *
-//   * @note for encoders, this function will only do something if the encoder
-//   * declares support for AV_CODEC_CAP_ENCODER_FLUSH. When called, the encoder
-//   * will drain any remaining packets, and can then be re-used for a different
-//   * stream (as opposed to sending a null frame which will leave the encoder
-//   * in a permanent EOF state after draining). This can be desirable if the
-//   * cost of tearing down and replacing the encoder instance is high.
-//   */
-//  void avcodec_flush_buffers(AVCodecContext *avctx);
+/**
+ * Reset the internal codec state / flush internal buffers. Should be called
+ * e.g. when seeking or when switching to a different stream.
+ *
+ * @note for decoders, this function just releases any references the decoder
+ * might keep internally, but the caller's references remain valid.
+ *
+ * @note for encoders, this function will only do something if the encoder
+ * declares support for AV_CODEC_CAP_ENCODER_FLUSH. When called, the encoder
+ * will drain any remaining packets, and can then be re-used for a different
+ * stream (as opposed to sending a null frame which will leave the encoder
+ * in a permanent EOF state after draining). This can be desirable if the
+ * cost of tearing down and replacing the encoder instance is high.
+ */
+func AvcodecFlushBuffers(avctx *CAVCodecContext) {
+	C.avcodec_flush_buffers((*C.AVCodecContext)(avctx))
+}
 
-//  /**
-//   * Return audio frame duration.
-//   *
-//   * @param avctx        codec context
-//   * @param frame_bytes  size of the frame, or 0 if unknown
-//   * @return             frame duration, in samples, if known. 0 if not able to
-//   *                     determine.
-//   */
-//  int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes);
+/**
+ * Return audio frame duration.
+ *
+ * @param avctx        codec context
+ * @param frame_bytes  size of the frame, or 0 if unknown
+ * @return             frame duration, in samples, if known. 0 if not able to
+ *                     determine.
+ */
+func AvGetAudioFrameDuration(avctx *CAVCodecContext, frameBytes int) int {
+	return int(C.av_get_audio_frame_duration((*C.AVCodecContext)(avctx), C.int(frameBytes)))
+}
 
-//  /* memory */
+/* memory */
 
-//  /**
-//   * Same behaviour av_fast_malloc but the buffer has additional
-//   * AV_INPUT_BUFFER_PADDING_SIZE at the end which will always be 0.
-//   *
-//   * In addition the whole buffer will initially and after resizes
-//   * be 0-initialized so that no uninitialized data will ever appear.
-//   */
-//  void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size);
+/**
+ * Same behaviour av_fast_malloc but the buffer has additional
+ * AV_INPUT_BUFFER_PADDING_SIZE at the end which will always be 0.
+ *
+ * In addition the whole buffer will initially and after resizes
+ * be 0-initialized so that no uninitialized data will ever appear.
+ */
+func AvFastPaddedMalloc(ptr unsafe.Pointer, size *ctypes.UInt, minSize ctypes.SizeT) {
+	C.av_fast_padded_malloc(ptr, (*C.uint)(size), C.size_t(minSize))
+}
 
-//  /**
-//   * Same behaviour av_fast_padded_malloc except that buffer will always
-//   * be 0-initialized after call.
-//   */
-//  void av_fast_padded_mallocz(void *ptr, unsigned int *size, size_t min_size);
+/**
+ * Same behaviour av_fast_padded_malloc except that buffer will always
+ * be 0-initialized after call.
+ */
+func AvFastPaddedMallocz(ptr unsafe.Pointer, size *ctypes.UInt, minSize ctypes.SizeT) {
+	C.av_fast_padded_mallocz(ptr, (*C.uint)(size), C.size_t(minSize))
+}
 
-//  /**
-//   * @return a positive value if s is open (i.e. avcodec_open2() was called on it
-//   * with no corresponding avcodec_close()), 0 otherwise.
-//   */
-//  int avcodec_is_open(AVCodecContext *s);
+/**
+ * @return a positive value if s is open (i.e. avcodec_open2() was called on it
+ * with no corresponding avcodec_close()), 0 otherwise.
+ */
+func AvcodecIsOpen(s *CAVCodecContext) int {
+	return int(C.avcodec_is_open((*C.AVCodecContext)(s)))
+}
 
 /**
  * @}
