@@ -210,15 +210,6 @@ func (p *CAVProfile) GetName() string {
 	return C.GoString(p.name)
 }
 
-// /< short name for the profile
-func (p *CAVProfile) SetName(name string) {
-	var cName *C.char = nil
-	if len(name) > 0 {
-		cName = C.CString(name)
-	}
-	p.name = cName
-}
-
 //#endregion CAVProfile
 
 /**
@@ -239,37 +230,11 @@ func (c *CAVCodec) GetName() string {
 }
 
 /**
- * Name of the codec implementation.
- * The name is globally unique among encoders and among decoders (but an
- * encoder and a decoder can share the same name).
- * This is the primary way to find a codec from the user perspective.
- */
-func (c *CAVCodec) SetName(name string) {
-	var cName *C.char = nil
-	if len(name) > 0 {
-		cName = C.CString(name)
-	}
-	c.name = cName
-}
-
-/**
  * Descriptive name for the codec, meant to be more human readable than name.
  * You should use the NULL_IF_CONFIG_SMALL() macro to define it.
  */
 func (c *CAVCodec) GetLongName() string {
 	return C.GoString(c.long_name)
-}
-
-/**
- * Descriptive name for the codec, meant to be more human readable than name.
- * You should use the NULL_IF_CONFIG_SMALL() macro to define it.
- */
-func (c *CAVCodec) SetLongName(longName string) {
-	var cLongName *C.char = nil
-	if len(longName) > 0 {
-		cLongName = C.CString(longName)
-	}
-	c.long_name = cLongName
 }
 
 func (c *CAVCodec) GetType() avutil.CAVMediaType {
@@ -317,19 +282,9 @@ func (c *CAVCodec) GetSupportedFramerates() *avutil.CAVRational {
 	return (*avutil.CAVRational)(unsafe.Pointer(c.supported_framerates))
 }
 
-// /< array of supported framerates, or NULL if any, array is terminated by {0,0}
-func (c *CAVCodec) SetSupportedFramerates(supportedFramerates *avutil.CAVRational) {
-	c.supported_framerates = (*C.AVRational)(unsafe.Pointer(supportedFramerates))
-}
-
 // /< array of supported pixel formats, or NULL if unknown, array is terminated by -1
 func (c *CAVCodec) GetPixFmts() *avutil.CAVPixelFormat {
 	return (*avutil.CAVPixelFormat)(c.pix_fmts)
-}
-
-// /< array of supported pixel formats, or NULL if unknown, array is terminated by -1
-func (c *CAVCodec) SetPixFmts(pixFmts *avutil.CAVPixelFormat) {
-	c.pix_fmts = (*C.enum_AVPixelFormat)(pixFmts)
 }
 
 // /< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
@@ -337,19 +292,9 @@ func (c *CAVCodec) GetSupportedSamplerates() *ctypes.Int {
 	return (*ctypes.Int)(c.supported_samplerates)
 }
 
-// /< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
-func (c *CAVCodec) SetSupportedSamplerates(supportedSamplerates *ctypes.Int) {
-	c.supported_samplerates = (*C.int)(supportedSamplerates)
-}
-
 // /< array of supported sample formats, or NULL if unknown, array is terminated by -1
 func (c *CAVCodec) GetSampleFmts() *avutil.CAVSampleFormat {
 	return (*avutil.CAVSampleFormat)(c.sample_fmts)
-}
-
-// /< array of supported sample formats, or NULL if unknown, array is terminated by -1
-func (c *CAVCodec) SetSampleFmts(sampleFmts *avutil.CAVSampleFormat) {
-	c.sample_fmts = (*C.enum_AVSampleFormat)(sampleFmts)
 }
 
 //  #if FF_API_OLD_CHANNEL_LAYOUT
@@ -365,19 +310,9 @@ func (c *CAVCodec) GetPrivClass() *avutil.CAVClass {
 	return (*avutil.CAVClass)(unsafe.Pointer(c.priv_class))
 }
 
-// /< AVClass for the private context
-func (c *CAVCodec) SetPrivClass(privClass *avutil.CAVClass) {
-	c.priv_class = (*C.AVClass)(unsafe.Pointer(privClass))
-}
-
 // /< array of recognized profiles, or NULL if unknown, array is terminated by {AV_PROFILE_UNKNOWN}
 func (c *CAVCodec) GetProfiles() *CAVProfile {
 	return (*CAVProfile)(c.profiles)
-}
-
-// /< array of recognized profiles, or NULL if unknown, array is terminated by {AV_PROFILE_UNKNOWN}
-func (c *CAVCodec) SetProfiles(profiles *CAVProfile) {
-	c.profiles = (*C.AVProfile)(profiles)
 }
 
 /**
@@ -395,35 +330,10 @@ func (c *CAVCodec) GetWrapperName() string {
 }
 
 /**
- * Group name of the codec implementation.
- * This is a short symbolic name of the wrapper backing this codec. A
- * wrapper uses some kind of external implementation for the codec, such
- * as an external library, or a codec implementation provided by the OS or
- * the hardware.
- * If this field is NULL, this is a builtin, libavcodec native codec.
- * If non-NULL, this will be the suffix in AVCodec.name in most cases
- * (usually AVCodec.name will be of the form "<codec_name>_<wrapper_name>").
- */
-func (c *CAVCodec) SetWrapperName(wrapperName string) {
-	var cWrapperName *C.char = nil
-	if len(wrapperName) > 0 {
-		cWrapperName = C.CString(wrapperName)
-	}
-	c.wrapper_name = cWrapperName
-}
-
-/**
  * Array of supported channel layouts, terminated with a zeroed layout.
  */
 func (c *CAVCodec) GetChLayouts() *avutil.CAVChannelLayout {
 	return (*avutil.CAVChannelLayout)(unsafe.Pointer(c.ch_layouts))
-}
-
-/**
- * Array of supported channel layouts, terminated with a zeroed layout.
- */
-func (c *CAVCodec) SetChLayouts(chLayouts *avutil.CAVChannelLayout) {
-	c.ch_layouts = (*C.AVChannelLayout)(unsafe.Pointer(chLayouts))
 }
 
 //#endregion CAVCodec

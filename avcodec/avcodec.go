@@ -501,14 +501,6 @@ func (codecCtx *CAVCodecContext) GetAvClass() *avutil.CAVClass {
 	return (*avutil.CAVClass)(unsafe.Pointer(codecCtx.av_class))
 }
 
-/**
- * information on struct for av_log
- * - set by avcodec_alloc_context3
- */
-func (codecCtx *CAVCodecContext) SetAvClass(avClass *avutil.CAVClass) {
-	codecCtx.av_class = (*C.AVClass)(unsafe.Pointer(avClass))
-}
-
 func (codecCtx *CAVCodecContext) GetLogLevelOffset() int {
 	return int(codecCtx.log_level_offset)
 }
@@ -528,9 +520,6 @@ func (codecCtx *CAVCodecContext) SetCodecType(codecType avutil.CAVMediaType) {
 
 func (codecCtx *CAVCodecContext) GetCodec() *CAVCodec {
 	return (*CAVCodec)(codecCtx.codec)
-}
-func (codecCtx *CAVCodecContext) SetCodec(codec *CAVCodec) {
-	codecCtx.codec = (*C.AVCodec)(codec)
 }
 
 /* see AV_CODEC_ID_xxx */
@@ -2836,15 +2825,6 @@ func (codecCtx *CAVCodecContext) GetHwaccel() *CAVHWAccel {
 }
 
 /**
- * Hardware accelerator in use
- * - encoding: unused.
- * - decoding: Set by libavcodec
- */
-func (codecCtx *CAVCodecContext) SetHwaccel(hwaccel *CAVHWAccel) {
-	codecCtx.hwaccel = (*C.AVHWAccel)(hwaccel)
-}
-
-/**
  * Legacy hardware accelerator context.
  *
  * For some hardware acceleration methods, the caller may use this field to
@@ -3564,15 +3544,6 @@ func (codecCtx *CAVCodecContext) SetPktTimebase(pktTimebase avutil.CAVRational) 
  */
 func (codecCtx *CAVCodecContext) GetCodecDescriptor() *CAVCodecDescriptor {
 	return (*CAVCodecDescriptor)(codecCtx.codec_descriptor)
-}
-
-/**
- * AVCodecDescriptor
- * - encoding: unused.
- * - decoding: set by libavcodec.
- */
-func (codecCtx *CAVCodecContext) SetCodecDescriptor(codecDescriptor *CAVCodecDescriptor) {
-	codecCtx.codec_descriptor = (*C.AVCodecDescriptor)(codecDescriptor)
 }
 
 /**
@@ -4327,20 +4298,6 @@ type CAVHWAccel C.AVHWAccel
  */
 func (hwaccl *CAVHWAccel) GetName() string {
 	return C.GoString(hwaccl.name)
-}
-
-/**
- * Name of the hardware accelerated codec.
- * The name is globally unique among encoders and among decoders (but an
- * encoder and a decoder can share the same name).
- */
-func (hwaccl *CAVHWAccel) SetName(name string) {
-	var cName *C.char = nil
-	if len(name) > 0 {
-		cName = C.CString(name)
-	}
-
-	hwaccl.name = cName
 }
 
 /**
