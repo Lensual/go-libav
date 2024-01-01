@@ -3562,8 +3562,8 @@ func (codecCtx *CAVCodecContext) SetPktTimebase(pktTimebase avutil.CAVRational) 
  * - encoding: unused.
  * - decoding: set by libavcodec.
  */
-func (codecCtx *CAVCodecContext) GetCodecDescriptor() *C.AVCodecDescriptor {
-	return codecCtx.codec_descriptor
+func (codecCtx *CAVCodecContext) GetCodecDescriptor() *CAVCodecDescriptor {
+	return (*CAVCodecDescriptor)(codecCtx.codec_descriptor)
 }
 
 /**
@@ -3571,8 +3571,8 @@ func (codecCtx *CAVCodecContext) GetCodecDescriptor() *C.AVCodecDescriptor {
  * - encoding: unused.
  * - decoding: set by libavcodec.
  */
-func (codecCtx *CAVCodecContext) SetCodecDescriptor(codecDescriptor *C.AVCodecDescriptor) {
-	codecCtx.codec_descriptor = codecDescriptor
+func (codecCtx *CAVCodecContext) SetCodecDescriptor(codecDescriptor *CAVCodecDescriptor) {
+	codecCtx.codec_descriptor = (*C.AVCodecDescriptor)(codecDescriptor)
 }
 
 /**
