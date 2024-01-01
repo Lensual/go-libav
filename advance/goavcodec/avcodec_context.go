@@ -293,3 +293,11 @@ func (avctx *AVCodecContext) ParametersTo(par *avcodec.CAVCodecParameters) int {
 func (avctx *AVCodecContext) Open(options **avutil.CAVDictionary) int {
 	return avcodec.AvcodecOpen2(avctx.CAVCodecContext, avctx.CAVCodecContext.GetCodec(), options)
 }
+
+func (avctx *AVCodecContext) Close() int {
+	return avcodec.AvcodecClose(avctx.CAVCodecContext)
+}
+
+func (avctx *AVCodecContext) IsOpen() bool {
+	return avcodec.AvcodecIsOpen(avctx.CAVCodecContext) > 0
+}
