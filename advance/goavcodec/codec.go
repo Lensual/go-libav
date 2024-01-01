@@ -4,6 +4,7 @@ import (
 	"unsafe"
 
 	"github.com/Lensual/go-libav/avcodec"
+	"github.com/Lensual/go-libav/avutil"
 	"github.com/Lensual/go-libav/ctypes"
 )
 
@@ -11,7 +12,7 @@ type AVCodec struct {
 	CAVCodec *avcodec.CAVCodec
 }
 
-//region member
+//#region member
 
 func (codec *AVCodec) GetSupportedSamplerates() []int {
 	cArr := codec.CAVCodec.GetSupportedSamplerates()
@@ -22,17 +23,37 @@ func (codec *AVCodec) GetSupportedSamplerates() []int {
 	valSize := int(unsafe.Sizeof(ctypes.Int(0)))
 	arr := []int{}
 	for {
-		p = unsafe.Add(p, valSize)
 		val := int(*(*ctypes.Int)(p))
 		if val == 0 {
 			break
 		}
 		arr = append(arr, val)
+		p = unsafe.Add(p, valSize)
 	}
 	return arr
 }
 
-//endregion member
+func (codec *AVCodec) GetSupportedSampleFmts() []avutil.CAVSampleFormat {
+	cArr := codec.CAVCodec.GetSampleFmts()
+	if cArr == nil {
+		return nil
+	}
+	p := unsafe.Pointer(cArr)
+	valSize := int(unsafe.Sizeof(avutil.CAVSampleFormat(0)))
+	arr := []avutil.CAVSampleFormat{}
+
+	for {
+		val := *(*avutil.CAVSampleFormat)(p)
+		if val == avutil.CAVSampleFormat(-1) {
+			break
+		}
+		arr = append(arr, val)
+		p = unsafe.Add(p, valSize)
+	}
+	return arr
+}
+
+//#endregion member
 
 func (codec *AVCodec) CreateContext() *AVCodecContext {
 	return NewAVCodecContext(codec)
