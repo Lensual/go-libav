@@ -1092,7 +1092,7 @@ func AvioOpenDynBuf(s **CAVIOContext) int {
  * @return the length of the byte buffer
  */
 func AvioGetDynBuf(s *CAVIOContext, pbuffer unsafe.Pointer) int {
-	return int(C.avio_get_dyn_buf((*C.AVIOContext)(s), (**C.uchar)(pbuffer)))
+	return int(C.avio_get_dyn_buf((*C.AVIOContext)(s), (**C.uint8_t)(pbuffer)))
 }
 
 /**
@@ -1105,7 +1105,7 @@ func AvioGetDynBuf(s *CAVIOContext, pbuffer unsafe.Pointer) int {
  * @return the length of the byte buffer
  */
 func AvioCloseDynBuf(s *CAVIOContext, pbuffer unsafe.Pointer) int {
-	return int(C.avio_close_dyn_buf((*C.AVIOContext)(s), (**C.uchar)(pbuffer)))
+	return int(C.avio_close_dyn_buf((*C.AVIOContext)(s), (**C.uint8_t)(pbuffer)))
 }
 
 /**

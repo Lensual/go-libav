@@ -164,7 +164,7 @@ func (sv CSwsVector) GetLength() int {
 // vectors can be shared
 type CSwsFilter C.SwsFilter
 
-//region CSwsFilter
+//#region CSwsFilter
 
 func (sf CSwsFilter) GetLumH() *CSwsVector {
 	return (*CSwsVector)(sf.lumH)
@@ -179,7 +179,7 @@ func (sf CSwsFilter) GetChrV() *CSwsVector {
 	return (*CSwsVector)(sf.chrV)
 }
 
-//endregion CSwsFilter
+//#endregion CSwsFilter
 
 type CSwsContext C.struct_SwsContext
 

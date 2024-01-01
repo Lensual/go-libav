@@ -1135,8 +1135,8 @@ func (st *CAVStream) GetDisposition() int {
 }
 
 // /< Selects which packets can be discarded at will and do not need to be demuxed.
-func (st *CAVStream) GetDiscard() C.enum_AVDiscard {
-	return st.discard
+func (st *CAVStream) GetDiscard() avcodec.CAVDiscard {
+	return avcodec.CAVDiscard(st.discard)
 }
 
 /**
@@ -1295,8 +1295,8 @@ func (p *CAVProgram) GetFlags() int {
 }
 
 // /< selects which program to discard and which to feed to the caller
-func (p *CAVProgram) GetDiscard() C.enum_AVDiscard {
-	return p.discard
+func (p *CAVProgram) GetDiscard() avcodec.CAVDiscard {
+	return avcodec.CAVDiscard(p.discard)
 }
 func (p *CAVProgram) GetStreamIndex() *ctypes.UInt {
 	return (*ctypes.UInt)(unsafe.Pointer(p.stream_index))
@@ -3147,7 +3147,7 @@ func AvGetOutputTimestamp(s *CAVFormatContext, stream int, dts *int64, wall *int
  * @see av_hex_dump_log, av_pkt_dump2, av_pkt_dump_log2
  */
 func AvHexDump(f *C.FILE, buf unsafe.Pointer, size int) {
-	C.av_hex_dump(f, (*C.uchar)(buf), C.int(size))
+	C.av_hex_dump(f, (*C.uint8_t)(buf), C.int(size))
 }
 
 /**
@@ -3163,7 +3163,7 @@ func AvHexDump(f *C.FILE, buf unsafe.Pointer, size int) {
  * @see av_hex_dump, av_pkt_dump2, av_pkt_dump_log2
  */
 func AvHexDumpLog(avcl unsafe.Pointer, level int, buf unsafe.Pointer, size int) {
-	C.av_hex_dump_log(avcl, C.int(level), (*C.uchar)(buf), C.int(size))
+	C.av_hex_dump_log(avcl, C.int(level), (*C.uint8_t)(buf), C.int(size))
 }
 
 /**

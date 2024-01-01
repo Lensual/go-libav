@@ -434,8 +434,8 @@ func (f *CAVFrame) GetData() [AV_NUM_DATA_POINTERS]unsafe.Pointer {
  * combination with negative values in the linesize[] array.
  */
 func (f *CAVFrame) SetData(data [AV_NUM_DATA_POINTERS]unsafe.Pointer) {
-	cArr := (**C.uchar)(unsafe.Pointer(unsafe.SliceData(data[:])))
-	f.data = ([AV_NUM_DATA_POINTERS]*C.uchar)(unsafe.Slice(cArr, AV_NUM_DATA_POINTERS))
+	cArr := (**C.uint8_t)(unsafe.Pointer(unsafe.SliceData(data[:])))
+	f.data = ([AV_NUM_DATA_POINTERS]*C.uint8_t)(unsafe.Slice(cArr, AV_NUM_DATA_POINTERS))
 }
 
 /**
@@ -525,7 +525,7 @@ func (f *CAVFrame) GetExtendedData() *unsafe.Pointer {
  * extended_data must be used in order to access all channels.
  */
 func (f *CAVFrame) SetExtendedData(extendedData *unsafe.Pointer) {
-	f.extended_data = (**C.uchar)(unsafe.Pointer(extendedData))
+	f.extended_data = (**C.uint8_t)(unsafe.Pointer(extendedData))
 }
 
 /**

@@ -858,7 +858,7 @@ func AvOptGet(obj unsafe.Pointer, name string, searchFlags int, outVal *unsafe.P
 		cName = C.CString(name)
 		defer C.free(unsafe.Pointer(cName))
 	}
-	return int(C.av_opt_get(obj, cName, C.int(searchFlags), (**C.uchar)(unsafe.Pointer(outVal))))
+	return int(C.av_opt_get(obj, cName, C.int(searchFlags), (**C.uint8_t)(unsafe.Pointer(outVal))))
 }
 func AvOptGetInt(obj unsafe.Pointer, name string, searchFlags int, outVal *int64) int {
 	var cName *C.char = nil

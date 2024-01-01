@@ -748,8 +748,8 @@ func (codecCtx *CAVCodecContext) SetFlags2(flags2 int) {
  * - encoding: Set/allocated/freed by libavcodec.
  * - decoding: Set/allocated/freed by user.
  */
-func (codecCtx *CAVCodecContext) GetExtradata() *C.uint8_t {
-	return codecCtx.extradata
+func (codecCtx *CAVCodecContext) GetExtradata() unsafe.Pointer {
+	return unsafe.Pointer(codecCtx.extradata)
 }
 
 /**
@@ -764,8 +764,8 @@ func (codecCtx *CAVCodecContext) GetExtradata() *C.uint8_t {
  * - encoding: Set/allocated/freed by libavcodec.
  * - decoding: Set/allocated/freed by user.
  */
-func (codecCtx *CAVCodecContext) SetExtradata(extradata *C.uint8_t) {
-	codecCtx.extradata = extradata
+func (codecCtx *CAVCodecContext) SetExtradata(extradata unsafe.Pointer) {
+	codecCtx.extradata = (*C.uint8_t)(extradata)
 }
 
 func (codecCtx *CAVCodecContext) GetExtradataSize() int {
@@ -1811,7 +1811,7 @@ func (codecCtx *CAVCodecContext) GetMbLmin() int {
 * - encoding: Set by user.
 * - decoding: unused
  */
-func (codecCtx *CAVCodecContext) SetmbLmin(mbLmin int) {
+func (codecCtx *CAVCodecContext) SetMbLmin(mbLmin int) {
 	codecCtx.mb_lmin = C.int(mbLmin)
 }
 
@@ -1863,7 +1863,7 @@ func (codecCtx *CAVCodecContext) GetKeyintMin() int {
 * - encoding: Set by user.
 * - decoding: unused
  */
-func (codecCtx *CAVCodecContext) SetMeyintMin(keyintMin int) {
+func (codecCtx *CAVCodecContext) SetKeyintMin(keyintMin int) {
 	codecCtx.keyint_min = C.int(keyintMin)
 }
 
@@ -2010,12 +2010,31 @@ func (codecCtx *CAVCodecContext) GetSlices() int {
 	return int(codecCtx.slices)
 }
 
+/**
+ * Number of slices.
+ * Indicates number of picture subdivisions. Used for parallelized
+ * decoding.
+ * - encoding: Set by user
+ * - decoding: unused
+ */
+func (codecCtx *CAVCodecContext) SetSlices(slices int) {
+	codecCtx.slices = C.int(slices)
+}
+
 /** Field order
  * - encoding: set by libavcodec
  * - decoding: Set by user.
  */
-func (codecCtx *CAVCodecContext) GetFieldOrder() C.enum_AVFieldOrder {
-	return codecCtx.field_order
+func (codecCtx *CAVCodecContext) GetFieldOrder() CAVFieldOrder {
+	return CAVFieldOrder(codecCtx.field_order)
+}
+
+/** Field order
+ * - encoding: set by libavcodec
+ * - decoding: Set by user.
+ */
+func (codecCtx *CAVCodecContext) SetFieldOrder(fieldOrder CAVFieldOrder) {
+	codecCtx.field_order = C.enum_AVFieldOrder(fieldOrder)
 }
 
 /* audio only */
@@ -2161,8 +2180,8 @@ func (codecCtx *CAVCodecContext) SetCutoff(cutoff int) {
  * - encoding: Set by user.
  * - decoding: Set by libavcodec.
  */
-func (codecCtx *CAVCodecContext) GetAudioServiceType() C.enum_AVAudioServiceType {
-	return C.enum_AVAudioServiceType(codecCtx.audio_service_type)
+func (codecCtx *CAVCodecContext) GetAudioServiceType() CAVAudioServiceType {
+	return CAVAudioServiceType(codecCtx.audio_service_type)
 }
 
 /**
@@ -2170,7 +2189,7 @@ func (codecCtx *CAVCodecContext) GetAudioServiceType() C.enum_AVAudioServiceType
  * - encoding: Set by user.
  * - decoding: Set by libavcodec.
  */
-func (codecCtx *CAVCodecContext) SetAudioServiceType(audioServiceType C.enum_AVAudioServiceType) {
+func (codecCtx *CAVCodecContext) SetAudioServiceType(audioServiceType CAVAudioServiceType) {
 	codecCtx.audio_service_type = C.enum_AVAudioServiceType(audioServiceType)
 }
 
@@ -3070,7 +3089,7 @@ const (
  * - encoding: Set by libavcodec.
  * - decoding: Set by libavcodec.
  */
-func (codecCtx *CAVCodecContext) Getactive_thread_type() int {
+func (codecCtx *CAVCodecContext) GetActiveThreadType() int {
 	return int(codecCtx.active_thread_type)
 }
 
@@ -3362,8 +3381,8 @@ func (codecCtx *CAVCodecContext) SetLevel(level int) {
  * - encoding: unused
  * - decoding: Set by user.
  */
-func (codecCtx *CAVCodecContext) GetSkipLoopFilter() C.enum_AVDiscard {
-	return codecCtx.skip_loop_filter
+func (codecCtx *CAVCodecContext) GetSkipLoopFilter() CAVDiscard {
+	return CAVDiscard(codecCtx.skip_loop_filter)
 }
 
 /**
@@ -3371,8 +3390,8 @@ func (codecCtx *CAVCodecContext) GetSkipLoopFilter() C.enum_AVDiscard {
  * - encoding: unused
  * - decoding: Set by user.
  */
-func (codecCtx *CAVCodecContext) SetSkipLoopFilter(skipLoopFilter C.enum_AVDiscard) {
-	codecCtx.skip_loop_filter = skipLoopFilter
+func (codecCtx *CAVCodecContext) SetSkipLoopFilter(skipLoopFilter CAVDiscard) {
+	codecCtx.skip_loop_filter = C.enum_AVDiscard(skipLoopFilter)
 }
 
 /**
@@ -3380,8 +3399,8 @@ func (codecCtx *CAVCodecContext) SetSkipLoopFilter(skipLoopFilter C.enum_AVDisca
  * - encoding: unused
  * - decoding: Set by user.
  */
-func (codecCtx *CAVCodecContext) GetSkipIdct() C.enum_AVDiscard {
-	return codecCtx.skip_idct
+func (codecCtx *CAVCodecContext) GetSkipIdct() CAVDiscard {
+	return CAVDiscard(codecCtx.skip_idct)
 }
 
 /**
@@ -3389,8 +3408,8 @@ func (codecCtx *CAVCodecContext) GetSkipIdct() C.enum_AVDiscard {
  * - encoding: unused
  * - decoding: Set by user.
  */
-func (codecCtx *CAVCodecContext) SetSkipIdct(skipIdct C.enum_AVDiscard) {
-	codecCtx.skip_idct = skipIdct
+func (codecCtx *CAVCodecContext) SetSkipIdct(skipIdct CAVDiscard) {
+	codecCtx.skip_idct = C.enum_AVDiscard(skipIdct)
 }
 
 /**
@@ -3398,8 +3417,8 @@ func (codecCtx *CAVCodecContext) SetSkipIdct(skipIdct C.enum_AVDiscard) {
  * - encoding: unused
  * - decoding: Set by user.
  */
-func (codecCtx *CAVCodecContext) GetSkipFrame() C.enum_AVDiscard {
-	return codecCtx.skip_frame
+func (codecCtx *CAVCodecContext) GetSkipFrame() CAVDiscard {
+	return CAVDiscard(codecCtx.skip_frame)
 }
 
 /**
@@ -3407,8 +3426,8 @@ func (codecCtx *CAVCodecContext) GetSkipFrame() C.enum_AVDiscard {
  * - encoding: unused
  * - decoding: Set by user.
  */
-func (codecCtx *CAVCodecContext) SetSkipFrame(skipFrame C.enum_AVDiscard) {
-	codecCtx.skip_frame = skipFrame
+func (codecCtx *CAVCodecContext) SetSkipFrame(skipFrame CAVDiscard) {
+	codecCtx.skip_frame = C.enum_AVDiscard(skipFrame)
 }
 
 /**
@@ -3741,7 +3760,7 @@ func (codecCtx *CAVCodecContext) SetDumpSeparator(dumpSeparator string) {
 	if len(dumpSeparator) > 0 {
 		cDumpSeparator = C.CString(dumpSeparator)
 	}
-	codecCtx.dump_separator = (*C.uchar)(unsafe.Pointer(cDumpSeparator))
+	codecCtx.dump_separator = (*C.uint8_t)(unsafe.Pointer(cDumpSeparator))
 }
 
 /**
@@ -4385,6 +4404,11 @@ func (hwaccl *CAVHWAccel) SetPixFmt(pixFmt avutil.CAVPixelFormat) {
 func (hwaccl *CAVHWAccel) GetCapabilities() int {
 	return int(hwaccl.capabilities)
 }
+
+/**
+ * Hardware accelerated codec capabilities.
+ * see AV_HWACCEL_CODEC_CAP_*
+ */
 func (hwaccl *CAVHWAccel) SetCapabilities(capabilities int) {
 	hwaccl.capabilities = C.int(capabilities)
 }
@@ -4533,7 +4557,7 @@ func (sr *CAVSubtitleRect) GetData() [4]unsafe.Pointer {
 	return ([4]unsafe.Pointer)(unsafe.Slice(cArr, 4))
 }
 func (sr *CAVSubtitleRect) SetData(data [4]unsafe.Pointer) {
-	cArr := (**C.uchar)(unsafe.Pointer(unsafe.SliceData(data[:])))
+	cArr := (**C.uint8_t)(unsafe.Pointer(unsafe.SliceData(data[:])))
 	sr.data = ([4]*C.uint8_t)(unsafe.Slice(cArr, 4))
 }
 
@@ -4602,7 +4626,7 @@ func (sr *CAVSubtitleRect) SetFlags(flags int) {
 
 type CAVSubtitle C.AVSubtitle
 
-//region CAVSubtitle
+//#region CAVSubtitle
 
 /* 0 = graphics */
 func (s *CAVSubtitle) GetFormat() ctypes.UInt16 {
@@ -4658,7 +4682,7 @@ func (s *CAVSubtitle) SetPts(pts ctypes.Int64) {
 	s.pts = C.int64_t(pts)
 }
 
-//endregion CAVSubtitle
+//#endregion CAVSubtitle
 
 /**
  * Return the LIBAVCODEC_VERSION_INT constant.
@@ -5582,10 +5606,10 @@ func (parserCtx *CAVCodecParserContext) SetDuration(duration int) {
 	parserCtx.duration = C.int(duration)
 }
 
-func (parserCtx *CAVCodecParserContext) GetFieldOrder() C.enum_AVFieldOrder {
-	return C.enum_AVFieldOrder(parserCtx.field_order)
+func (parserCtx *CAVCodecParserContext) GetFieldOrder() CAVFieldOrder {
+	return CAVFieldOrder(parserCtx.field_order)
 }
-func (parserCtx *CAVCodecParserContext) SetFieldOrder(field_order C.enum_AVFieldOrder) {
+func (parserCtx *CAVCodecParserContext) SetFieldOrder(field_order CAVFieldOrder) {
 	parserCtx.field_order = C.enum_AVFieldOrder(field_order)
 }
 

@@ -222,12 +222,12 @@ func AvSamplesGetBufferSize(linesize []ctypes.Int, nbChannels int, nbSamples int
  * @return                 minimum size in bytes required for the buffer on success,
  *                         or a negative error code on failure
  */
-func av_samples_fill_arrays(audioData *unsafe.Pointer, linesize *int,
+func AvSamplesFillArrays(audioData *unsafe.Pointer, linesize *int,
 	buf unsafe.Pointer,
 	nbChannels int, nbSamples int,
 	sampleFmt CAVSampleFormat, align int) int {
-	return int(C.av_samples_fill_arrays((**C.uchar)(unsafe.Pointer(audioData)), (*C.int)(unsafe.Pointer(linesize)),
-		(*C.uchar)(buf),
+	return int(C.av_samples_fill_arrays((**C.uint8_t)(unsafe.Pointer(audioData)), (*C.int)(unsafe.Pointer(linesize)),
+		(*C.uint8_t)(buf),
 		C.int(nbChannels), C.int(nbSamples),
 		C.enum_AVSampleFormat(sampleFmt), C.int(align)))
 }
@@ -254,7 +254,7 @@ func av_samples_fill_arrays(audioData *unsafe.Pointer, linesize *int,
  */
 func AvSamplesAlloc(audioData *unsafe.Pointer, linesize *int, nbChannels int,
 	nbSamples int, sampleFmt CAVSampleFormat, align int) int {
-	return int(C.av_samples_alloc((**C.uchar)(unsafe.Pointer(audioData)), (*C.int)(unsafe.Pointer(linesize)),
+	return int(C.av_samples_alloc((**C.uint8_t)(unsafe.Pointer(audioData)), (*C.int)(unsafe.Pointer(linesize)),
 		C.int(nbChannels), C.int(nbSamples), C.enum_AVSampleFormat(sampleFmt), C.int(align)))
 }
 
