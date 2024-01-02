@@ -2,6 +2,8 @@ package goswresample
 
 import (
 	"context"
+	"errors"
+	"math"
 	"unsafe"
 
 	"github.com/Lensual/go-libav/advance/goavutil"
@@ -39,6 +41,10 @@ func (swrCtx *SwrContext) Init() int {
 	return swresample.SwrInit(swrCtx.CSwrContext)
 }
 
+func (swrCtx *SwrContext) IsInitialized() bool {
+	return swresample.SwrIsInitialized(swrCtx.CSwrContext) > 0
+}
+
 func (swrCtx *SwrContext) Free() {
 	if swrCtx == nil || swrCtx.CSwrContext == nil {
 		return
@@ -46,19 +52,40 @@ func (swrCtx *SwrContext) Free() {
 	swresample.SwrFree(&swrCtx.CSwrContext)
 }
 
+func (swrCtx *SwrContext) Close() {
+	swresample.SwrClose(swrCtx.CSwrContext)
+}
+
+// Convert pointer to pointer.
 func (swrCtx *SwrContext) ConvertUnsafeToUnsafe(out *unsafe.Pointer, outCount int, in *unsafe.Pointer, inCount int) int {
 	return swresample.SwrConvert(swrCtx.CSwrContext, out, outCount, in, inCount)
 }
 
+// Convert slice to new slice.
 func (swrCtx *SwrContext) Convert(in []byte, inCount int) ([]byte, int) {
-	outCount := inCount
-	outSampleFmt, _ := swrCtx.GetOutSampleFmt()
-	outChLayout, _ := swrCtx.GetOutChLayout()
+	inSampleRate, code := swrCtx.GetInSampleRate()
+	if code < 0 {
+		return nil, code
+	}
+	outSampleRate, code := swrCtx.GetOutSampleRate()
+	if code < 0 {
+		return nil, code
+	}
+	outCount := int(avutil.AvRescaleRnd(swresample.SwrGetDelay(swrCtx.CSwrContext, inSampleRate)+
+		int64(inCount), outSampleRate, inSampleRate, avutil.AV_ROUND_UP))
+	outSampleFmt, code := swrCtx.GetOutSampleFmt()
+	if code < 0 {
+		return nil, code
+	}
+	outChLayout, code := swrCtx.GetOutChLayout()
+	if code < 0 {
+		return nil, code
+	}
 
 	outBufSize := avutil.AvSamplesGetBufferSize(nil, outChLayout.GetNbChannels(), outCount, outSampleFmt, 0)
 	cOut := avutil.AvMalloc(ctypes.SizeT(outBufSize))
 	defer avutil.AvFree(cOut)
-	//TODO wait ffmpeg av_samples_alloc return buffer size
+	//TODO wait ffmpeg implement av_samples_alloc return buffer size
 	//outBufSize := avutil.AvSamplesAlloc(&outPtr, nil, outChLayout.GetNbChannels(), int(outCount), outSampleFmt, 0)
 
 	inBufSize := len(in)
@@ -76,14 +103,153 @@ func (swrCtx *SwrContext) Convert(in []byte, inCount int) ([]byte, int) {
 	return out, ret
 }
 
+// Convert frame data from channel.
+//
+// Parameter:
+//
+//	ctx: The context.Context to cancel this goroutine.
+//	inChan: The []byte channel.
+//
+// Return:
+//
+//	context.Context: The context.Context to get the cause of this gorouine.
+//	<-chan []byte: The channel to read converted frame data.
+//
+// Example:
+//
+//	ctx, outDataCh = trans.swrCtx.ConvertChan(parentCtx, inDataCh)
+//	for {
+//		select {
+//		case <-ctx.Done():
+//			break loop
+//		case outData, ok := <-outDataCh:
+//			if !ok {
+//				break loop
+//			}
+//			// do something.
+//		}
+//	}
+//	err := context.Cause(ctx)
+//	if err != nil {
+//		panic(err)
+//	}
+func (swrCtx *SwrContext) ConvertChan(ctx context.Context, inChan <-chan []byte) (context.Context, chan<- []byte) {
+	ctx, cancel := context.WithCancelCause(ctx)
+	outChan := make(chan []byte)
+
+	go func() {
+		defer close(outChan)
+
+		inSampleFmt, code := swrCtx.GetOutSampleFmt()
+		if code < 0 {
+			cancel(goavutil.AvErr(code))
+		}
+		inChLayout, code := swrCtx.GetOutChLayout()
+		if code < 0 {
+			cancel(goavutil.AvErr(code))
+		}
+
+	loop:
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case in, ok := <-inChan:
+				if !ok {
+					break loop
+				}
+				// compute inCount by sampleFmt and channelNum
+				inCount := float64(len(in)) / float64(avutil.AvGetBytesPerSample(inSampleFmt)*inChLayout.GetNbChannels())
+				if math.Trunc(inCount) != inCount {
+					cancel(errors.New("not integer"))
+					return
+				}
+				out, code := swrCtx.Convert(in, int(inCount))
+				if out != nil {
+					outChan <- out
+				}
+				if code < 0 {
+					cancel(goavutil.AvErr(code))
+					return
+				}
+			}
+		}
+
+		//flush resample
+		out, code := swrCtx.Convert(nil, 0)
+		if out != nil {
+			select {
+			case <-ctx.Done():
+				return
+			case outChan <- out:
+			}
+		}
+		if code < 0 {
+			cancel(goavutil.AvErr(code))
+			return
+		}
+	}()
+
+	return ctx, outChan
+}
+
+func (swrCtx *SwrContext) NextPts(pts int64) int64 {
+	return swresample.SwrNextPts(swrCtx.CSwrContext, pts)
+}
+
+func (swrCtx *SwrContext) SetCompensation(pts int64, sampleDelta int, compensationDistance int) int {
+	return swresample.SwrSetCompensation(swrCtx.CSwrContext, sampleDelta, compensationDistance)
+}
+
+func (swrCtx *SwrContext) SetChannelMapping() int {
+	//TODO
+	panic("not implemented")
+}
+
+func (swrCtx *SwrContext) SetMatrix() int {
+	//TODO
+	panic("not implemented")
+}
+
+func (swrCtx *SwrContext) DropOutput(count int) int {
+	return swresample.SwrDropOutput(swrCtx.CSwrContext, count)
+}
+
+func (swrCtx *SwrContext) InjectSilence(count int) int {
+	return swresample.SwrInjectSilence(swrCtx.CSwrContext, count)
+}
+
 func (swrCtx *SwrContext) GetDelay(base int64) int64 {
 	return swresample.SwrGetDelay(swrCtx.CSwrContext, base)
 }
 
-func (swrCtx *SwrContext) ConvertFrameTo(output *goavutil.AVFrame, input *goavutil.AVFrame) int {
-	return swresample.SwrConvertFrame(swrCtx.CSwrContext, output.CAVFrame, input.CAVFrame)
+func (swrCtx *SwrContext) SwrGetOutSamples(inSamples int) int {
+	return swresample.SwrGetOutSamples(swrCtx.CSwrContext, inSamples)
 }
 
+// Convert AVFrame to existing AVFrame.
+//
+// Example:
+//
+//	output := goavutil.AllocAVFrame()
+//	output.SetChLayout(outChLayout)
+//	output.SetSampleRate(int(outSampleRate))
+//	output.SetFormat(int(outSampleFmt))
+//	code := swrCtx.ConvertFrameToFrame(output, input)
+func (swrCtx *SwrContext) ConvertFrameToFrame(output *goavutil.AVFrame, input *goavutil.AVFrame) int {
+	var cInput *avutil.CAVFrame
+	if input != nil {
+		cInput = input.CAVFrame
+	}
+
+	return swresample.SwrConvertFrame(swrCtx.CSwrContext, output.CAVFrame, cInput)
+}
+
+// Convert AVFrame to new AVFrame.
+//
+// Example:
+//
+//	outFrame, code := ConvertFrame(inFrame)
 func (swrCtx *SwrContext) ConvertFrame(input *goavutil.AVFrame) (*goavutil.AVFrame, int) {
 	output := goavutil.AllocAVFrame()
 
@@ -108,12 +274,7 @@ func (swrCtx *SwrContext) ConvertFrame(input *goavutil.AVFrame) (*goavutil.AVFra
 	}
 	output.SetFormat(int(outSampleFmt))
 
-	var cInput *avutil.CAVFrame
-	if input != nil {
-		cInput = input.CAVFrame
-	}
-
-	code = swresample.SwrConvertFrame(swrCtx.CSwrContext, output.CAVFrame, cInput)
+	code = swrCtx.ConvertFrameToFrame(output, nil)
 	if code != 0 {
 		output.Free()
 		return nil, code
@@ -121,10 +282,36 @@ func (swrCtx *SwrContext) ConvertFrame(input *goavutil.AVFrame) (*goavutil.AVFra
 	return output, code
 }
 
-func ConvertFrames() {
-	// TODO
-}
-
+// Convert AVFrame from channel.
+//
+// Parameter:
+//
+//	ctx: The context.Context to cancel this goroutine.
+//	inputChan: The AVFrame channel.
+//
+// Return:
+//
+//	context.Context: The context.Context to get the cause of this gorouine.
+//	<-chan *goavutil.AVFrame: The channel to read converted AVFrame.
+//
+// Example:
+//
+//	ctx, outFrameCh = trans.swrCtx.ConvertFrameChan(parentCtx, inFrameCh)
+//	for {
+//		select {
+//		case <-ctx.Done():
+//			break loop
+//		case frame, ok := <-outFrameCh:
+//			if !ok {
+//				break loop
+//			}
+//			// do something.
+//		}
+//	}
+//	err := context.Cause(ctx)
+//	if err != nil {
+//		panic(err)
+//	}
 func (swrCtx *SwrContext) ConvertFrameChan(ctx context.Context, inputChan <-chan *goavutil.AVFrame) (context.Context, <-chan *goavutil.AVFrame) {
 	ctx, cancel := context.WithCancelCause(ctx)
 	outputChan := make(chan *goavutil.AVFrame)
@@ -174,6 +361,10 @@ func (swrCtx *SwrContext) ConvertFrameChan(ctx context.Context, inputChan <-chan
 	}()
 
 	return ctx, outputChan
+}
+
+func (swrCtx *SwrContext) SwrConfigFrame(output *goavutil.AVFrame, input *goavutil.AVFrame) int {
+	return swresample.SwrConfigFrame(swrCtx.CSwrContext, output.CAVFrame, input.CAVFrame)
 }
 
 func (swrCtx *SwrContext) GetInChLayout() (*goavutil.AVChannelLayout, int) {
