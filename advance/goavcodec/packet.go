@@ -5,6 +5,7 @@ import (
 
 	"github.com/Lensual/go-libav/avcodec"
 	"github.com/Lensual/go-libav/avutil"
+	"github.com/Lensual/go-libav/ctypes"
 )
 
 type AVPacket struct {
@@ -180,7 +181,7 @@ func (pkt *AVPacket) RescaleTs(tbSrc avutil.CAVRational, tbDst avutil.CAVRationa
 	avcodec.AvPacketRescaleTs(pkt.CAVPacket, tbSrc, tbDst)
 }
 
-func NewAvPacketFromData(data unsafe.Pointer, size int) (*AVPacket, int) {
+func NewAvPacketFromUnsafeData(data unsafe.Pointer, size int) (*AVPacket, int) {
 	var cPkt avcodec.CAVPacket
 	code := avcodec.AvPacketFromData(&cPkt, data, size)
 	if code != 0 {
@@ -189,6 +190,17 @@ func NewAvPacketFromData(data unsafe.Pointer, size int) (*AVPacket, int) {
 	return &AVPacket{
 		CAVPacket: &cPkt,
 	}, code
+}
+
+func NewAvPacketFromData(data []byte) (*AVPacket, int) {
+	cData := avutil.AvMalloc(ctypes.SizeT(len(data)))
+	copy(unsafe.Slice((*byte)(cData), len(data)), data)
+	pkt, code := NewAvPacketFromUnsafeData(cData, len(data))
+	if code != 0 {
+		avutil.AvFree(cData)
+		return nil, code
+	}
+	return pkt, code
 }
 
 func AllocAvPacket() *AVPacket {
