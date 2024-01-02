@@ -161,6 +161,7 @@ func (avctx *AVCodecContext) DecodeChan(ctx context.Context, pktChan <-chan *AVP
 				}
 				if code < 0 {
 					cancel(goavutil.AvErr(code))
+					return
 				}
 			}
 		}
@@ -182,6 +183,7 @@ func (avctx *AVCodecContext) DecodeChan(ctx context.Context, pktChan <-chan *AVP
 		}
 		if code < 0 {
 			cancel(goavutil.AvErr(code))
+			return
 		}
 	}()
 
@@ -255,6 +257,7 @@ func (avctx *AVCodecContext) EncodeChan(ctx context.Context, frameChan <-chan *g
 				}
 				if code < 0 {
 					cancel(goavutil.AvErr(code))
+					return
 				}
 			}
 		}
@@ -276,6 +279,7 @@ func (avctx *AVCodecContext) EncodeChan(ctx context.Context, frameChan <-chan *g
 		}
 		if code < 0 {
 			cancel(goavutil.AvErr(code))
+			return
 		}
 	}()
 

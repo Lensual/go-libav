@@ -143,10 +143,12 @@ func (swrCtx *SwrContext) ConvertChan(ctx context.Context, inChan <-chan []byte)
 		inSampleFmt, code := swrCtx.GetOutSampleFmt()
 		if code < 0 {
 			cancel(goavutil.AvErr(code))
+			return
 		}
 		inChLayout, code := swrCtx.GetOutChLayout()
 		if code < 0 {
 			cancel(goavutil.AvErr(code))
+			return
 		}
 
 	loop:
@@ -274,7 +276,7 @@ func (swrCtx *SwrContext) ConvertFrame(input *goavutil.AVFrame) (*goavutil.AVFra
 	}
 	output.SetFormat(int(outSampleFmt))
 
-	code = swrCtx.ConvertFrameToFrame(output, nil)
+	code = swrCtx.ConvertFrameToFrame(output, input)
 	if code != 0 {
 		output.Free()
 		return nil, code

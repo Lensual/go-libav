@@ -162,6 +162,7 @@ func (parser *AVCodecParserContext) ParseChan(ctx context.Context, avctx *AVCode
 
 					if code < 0 {
 						cancel(goavutil.AvErr(code))
+						return
 					}
 				}
 			}
@@ -171,6 +172,15 @@ func (parser *AVCodecParserContext) ParseChan(ctx context.Context, avctx *AVCode
 	return ctx, pktCh
 }
 
+// Free() is alias Close()
 func (parser *AVCodecParserContext) Free() {
+	parser.Close()
+}
+
+func (parser *AVCodecParserContext) Close() {
+	if parser == nil || parser.CAVCodecParserContext == nil {
+		return
+	}
 	avcodec.AvParserClose(parser.CAVCodecParserContext)
+	parser.CAVCodecParserContext = nil
 }
