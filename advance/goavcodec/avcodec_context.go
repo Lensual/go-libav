@@ -125,7 +125,7 @@ func (avctx *AVCodecContext) Decode(pkt *AVPacket) ([]*goavutil.AVFrame, int) {
 // Decode AVPacket from channel.
 //
 // @param ctx The context.Context to cancel this goroutine.
-// @param pktChan The AVPacket channe
+// @param pktChan The AVPacket channel.
 //
 // @return context.Context The context.Context to get the cause of this gorouine.
 // @return <-chan *goavutil.AVFrame The channel to read decoded AVFrame.
