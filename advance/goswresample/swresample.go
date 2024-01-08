@@ -2,9 +2,10 @@ package goswresample
 
 import (
 	"context"
-	"errors"
 	"math"
 	"unsafe"
+
+	"github.com/pkg/errors"
 
 	"github.com/Lensual/go-libav/advance/goavutil"
 	"github.com/Lensual/go-libav/avutil"

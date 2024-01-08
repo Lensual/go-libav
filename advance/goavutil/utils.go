@@ -1,7 +1,7 @@
 package goavutil
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 
 	"github.com/Lensual/go-libav/avutil"
 )
