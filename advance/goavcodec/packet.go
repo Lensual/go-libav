@@ -193,9 +193,22 @@ func NewAvPacketFromUnsafeData(data unsafe.Pointer, size int) (*AVPacket, int) {
 }
 
 func NewAvPacketFromData(data []byte) (*AVPacket, int) {
-	cData := avutil.AvMalloc(ctypes.SizeT(len(data)))
-	copy(unsafe.Slice((*byte)(cData), len(data)), data)
-	pkt, code := NewAvPacketFromUnsafeData(cData, len(data))
+	dataSize := len(data)
+	cData := avutil.AvMallocz(ctypes.SizeT(dataSize + avcodec.AV_INPUT_BUFFER_PADDING_SIZE))
+	copy(unsafe.Slice((*byte)(cData), dataSize), data)
+	pkt, code := NewAvPacketFromUnsafeData(cData, dataSize)
+	if code != 0 {
+		avutil.AvFree(cData)
+		return nil, code
+	}
+	return pkt, code
+}
+
+func NewAvPacketFromDataWithoutPadding(data []byte) (*AVPacket, int) {
+	dataSize := len(data)
+	cData := avutil.AvMalloc(ctypes.SizeT(dataSize))
+	copy(unsafe.Slice((*byte)(cData), dataSize), data)
+	pkt, code := NewAvPacketFromUnsafeData(cData, dataSize)
 	if code != 0 {
 		avutil.AvFree(cData)
 		return nil, code
