@@ -1849,7 +1849,7 @@ func (fmtCtx *CAVFormatContext) GetAvClass() *avutil.CAVClass {
  *
  * Demuxing only, set by avformat_open_input().
  */
-func (fmtCtx *CAVFormatContext) GetIFormat() *CAVInputFormat {
+func (fmtCtx *CAVFormatContext) GetIformat() *CAVInputFormat {
 	return (*CAVInputFormat)(fmtCtx.iformat)
 }
 
@@ -1858,8 +1858,17 @@ func (fmtCtx *CAVFormatContext) GetIFormat() *CAVInputFormat {
  *
  * Muxing only, must be set by the caller before avformat_write_header().
  */
-func (fmtCtx *CAVFormatContext) GetOFormat() *CAVOutputFormat {
+func (fmtCtx *CAVFormatContext) GetOformat() *CAVOutputFormat {
 	return (*CAVOutputFormat)(fmtCtx.oformat)
+}
+
+/**
+ * The output container format.
+ *
+ * Muxing only, must be set by the caller before avformat_write_header().
+ */
+func (fmtCtx *CAVFormatContext) SetOformat(oformat *CAVOutputFormat) {
+	fmtCtx.oformat = (*C.AVOutputFormat)(oformat)
 }
 
 /**
@@ -1896,7 +1905,7 @@ func (fmtCtx *CAVFormatContext) SetPrivData(privData unsafe.Pointer) {
  * iformat/oformat.flags. In such a case, the (de)muxer will handle
  * I/O in some other way and this field will be NULL.
  */
-func (fmtCtx *CAVFormatContext) GetPB() *CAVIOContext {
+func (fmtCtx *CAVFormatContext) GetPb() *CAVIOContext {
 	return (*CAVIOContext)(fmtCtx.pb)
 }
 
@@ -1912,7 +1921,7 @@ func (fmtCtx *CAVFormatContext) GetPB() *CAVIOContext {
  * iformat/oformat.flags. In such a case, the (de)muxer will handle
  * I/O in some other way and this field will be NULL.
  */
-func (fmtCtx *CAVFormatContext) GetPBPtr() **CAVIOContext {
+func (fmtCtx *CAVFormatContext) GetPbPtr() **CAVIOContext {
 	return (**CAVIOContext)(unsafe.Pointer(&fmtCtx.pb))
 }
 
@@ -1928,7 +1937,7 @@ func (fmtCtx *CAVFormatContext) GetPBPtr() **CAVIOContext {
  * iformat/oformat.flags. In such a case, the (de)muxer will handle
  * I/O in some other way and this field will be NULL.
  */
-func (fmtCtx *CAVFormatContext) SetPB(avioCtx *CAVIOContext) {
+func (fmtCtx *CAVFormatContext) SetPb(avioCtx *CAVIOContext) {
 	fmtCtx.pb = (*C.AVIOContext)(avioCtx)
 }
 
@@ -2809,7 +2818,7 @@ func (fmtCtx *CAVFormatContext) SetCorrectTsOverflow(correctTsOverflow uint) {
  * - encoding: unused
  * - decoding: Set by user
  */
-func (fmtCtx *CAVFormatContext) GetSeek2any() int {
+func (fmtCtx *CAVFormatContext) GetSeek2Any() int {
 	return int(fmtCtx.seek2any)
 }
 
@@ -2818,7 +2827,7 @@ func (fmtCtx *CAVFormatContext) GetSeek2any() int {
  * - encoding: unused
  * - decoding: Set by user
  */
-func (fmtCtx *CAVFormatContext) SetSeek2any(seek2Any int) {
+func (fmtCtx *CAVFormatContext) SetSeek2Any(seek2Any int) {
 	fmtCtx.seek2any = C.int(seek2Any)
 }
 
