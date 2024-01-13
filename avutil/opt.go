@@ -11,7 +11,11 @@ int marco_av_opt_set_int_list(void * obj, const char *name, const uint8_t *val, 
 }
 */
 import "C"
-import "unsafe"
+import (
+	"unsafe"
+
+	"github.com/Lensual/go-libav/ctypes"
+)
 
 // /*
 //  * AVOptions
@@ -860,13 +864,13 @@ func AvOptGet(obj unsafe.Pointer, name string, searchFlags int, outVal *unsafe.P
 	}
 	return int(C.av_opt_get(obj, cName, C.int(searchFlags), (**C.uint8_t)(unsafe.Pointer(outVal))))
 }
-func AvOptGetInt(obj unsafe.Pointer, name string, searchFlags int, outVal *int64) int {
+func AvOptGetInt(obj unsafe.Pointer, name string, searchFlags int, outVal *ctypes.Int64) int {
 	var cName *C.char = nil
 	if len(name) > 0 {
 		cName = C.CString(name)
 		defer C.free(unsafe.Pointer(cName))
 	}
-	return int(C.av_opt_get_int(obj, cName, C.int(searchFlags), (*C.int64_t)(unsafe.Pointer(outVal))))
+	return int(C.av_opt_get_int(obj, cName, C.int(searchFlags), (*C.int64_t)(outVal)))
 }
 func AvOptGetDouble(obj unsafe.Pointer, name string, searchFlags int, outVal *float64) int {
 	var cName *C.char = nil
@@ -884,13 +888,13 @@ func AvOptGetQ(obj unsafe.Pointer, name string, searchFlags int, outVal *CAVRati
 	}
 	return int(C.av_opt_get_q(obj, cName, C.int(searchFlags), (*C.AVRational)(unsafe.Pointer(outVal))))
 }
-func AvOptGetImageSize(obj unsafe.Pointer, name string, searchFlags int, wOut *int, hOut *int) int {
+func AvOptGetImageSize(obj unsafe.Pointer, name string, searchFlags int, wOut *ctypes.Int, hOut *ctypes.Int) int {
 	var cName *C.char = nil
 	if len(name) > 0 {
 		cName = C.CString(name)
 		defer C.free(unsafe.Pointer(cName))
 	}
-	return int(C.av_opt_get_image_size(obj, cName, C.int(searchFlags), (*C.int)(unsafe.Pointer(wOut)), (*C.int)(unsafe.Pointer(hOut))))
+	return int(C.av_opt_get_image_size(obj, cName, C.int(searchFlags), (*C.int)(wOut), (*C.int)(hOut)))
 }
 func AvOptGetPixelFmt(obj unsafe.Pointer, name string, searchFlags int, outFmt *CAVPixelFormat) int {
 	var cName *C.char = nil
