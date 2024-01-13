@@ -130,9 +130,24 @@ func (e *CAVIODirEntry) GetName() string {
 	return C.GoString(e.name)
 }
 
+/**< Filename */
+func (e *CAVIODirEntry) SetName(name string) {
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+	}
+
+	e.name = cName
+}
+
 /**< Type of the entry */
 func (e *CAVIODirEntry) GetType() int {
 	return int(e._type)
+}
+
+/**< Type of the entry */
+func (e *CAVIODirEntry) SetType(_type int) {
+	e._type = C.int(_type)
 }
 
 /*
@@ -143,9 +158,22 @@ func (e *CAVIODirEntry) GetUtf8() int {
 	return int(e.utf8)
 }
 
+/*
+*< Set to 1 when name is encoded with UTF-8, 0 otherwise.
+Name can be encoded with UTF-8 even though 0 is set.
+*/
+func (e *CAVIODirEntry) SetUtf8(utf8 int) {
+	e.utf8 = C.int(utf8)
+}
+
 /**< File size in bytes, -1 if unknown. */
 func (e *CAVIODirEntry) GetSize() int64 {
 	return int64(e.size)
+}
+
+/**< File size in bytes, -1 if unknown. */
+func (e *CAVIODirEntry) SetSize(size int64) {
+	e.size = C.int64_t(size)
 }
 
 /*
@@ -157,11 +185,27 @@ func (e *CAVIODirEntry) GetModificationTimestamp() int64 {
 }
 
 /*
+*< Time of last modification in microseconds since unix
+epoch, -1 if unknown.
+*/
+func (e *CAVIODirEntry) SetModificationTimestamp(modificationTimestamp int64) {
+	e.modification_timestamp = C.int64_t(modificationTimestamp)
+}
+
+/*
 *< Time of last access in microseconds since unix epoch,
 -1 if unknown.
 */
 func (e *CAVIODirEntry) GetAccessTimestamp() int64 {
 	return int64(e.access_timestamp)
+}
+
+/*
+*< Time of last access in microseconds since unix epoch,
+-1 if unknown.
+*/
+func (e *CAVIODirEntry) SetAccessTimestamp(accessTimestamp int64) {
+	e.access_timestamp = C.int64_t(accessTimestamp)
 }
 
 /*
@@ -172,9 +216,22 @@ func (e *CAVIODirEntry) GetStatusChangeTimestamp() int64 {
 	return int64(e.status_change_timestamp)
 }
 
+/*
+*< Time of last status change in microseconds since unix
+epoch, -1 if unknown.
+*/
+func (e *CAVIODirEntry) SetStatusChangeTimestamp(statusChangeTimestamp int64) {
+	e.status_change_timestamp = C.int64_t(statusChangeTimestamp)
+}
+
 /**< User ID of owner, -1 if unknown. */
 func (e *CAVIODirEntry) GetUserId() int64 {
 	return int64(e.user_id)
+}
+
+/**< User ID of owner, -1 if unknown. */
+func (e *CAVIODirEntry) SetUserId(userId int64) {
+	e.user_id = C.int64_t(userId)
 }
 
 /**< Group ID of owner, -1 if unknown. */
@@ -182,9 +239,19 @@ func (e *CAVIODirEntry) GetGroupId() int64 {
 	return int64(e.group_id)
 }
 
+/**< Group ID of owner, -1 if unknown. */
+func (e *CAVIODirEntry) SetGroupId(groupId int64) {
+	e.group_id = C.int64_t(groupId)
+}
+
 /**< Unix file mode, -1 if unknown. */
 func (e *CAVIODirEntry) GetFilemode() int64 {
 	return int64(e.filemode)
+}
+
+/**< Unix file mode, -1 if unknown. */
+func (e *CAVIODirEntry) SetFilemode(filemode int64) {
+	e.filemode = C.int64_t(filemode)
 }
 
 //#endregion CAVIODirEntry
@@ -330,9 +397,15 @@ func (avioCtx *CAVIOContext) GetAvClass() *avutil.CAVClass {
  *               +-------------+----------------------------------------------+
  *
  */
+
 /**< Start of the buffer. */
 func (avioCtx *CAVIOContext) GetBuffer() unsafe.Pointer {
 	return unsafe.Pointer(avioCtx.buffer)
+}
+
+/**< Start of the buffer. */
+func (avioCtx *CAVIOContext) SetBuffer(buffer unsafe.Pointer) {
+	avioCtx.buffer = (*C.uchar)(buffer)
 }
 
 /**< Maximum buffer size */
@@ -340,9 +413,19 @@ func (avioCtx *CAVIOContext) GetBufferSize() int {
 	return int(avioCtx.buffer_size)
 }
 
+/**< Maximum buffer size */
+func (avioCtx *CAVIOContext) SetBufferSize(bufferSize int) {
+	avioCtx.buffer_size = C.int(bufferSize)
+}
+
 /**< Current position in the buffer */
 func (avioCtx *CAVIOContext) GetBufPtr() unsafe.Pointer {
 	return unsafe.Pointer(avioCtx.buf_ptr)
+}
+
+/**< Current position in the buffer */
+func (avioCtx *CAVIOContext) SetBufPtr(bufPtr unsafe.Pointer) {
+	avioCtx.buf_ptr = (*C.uchar)(bufPtr)
 }
 
 /*
@@ -357,6 +440,17 @@ func (avioCtx *CAVIOContext) GetBufEnd() unsafe.Pointer {
 }
 
 /*
+*< End of the data, may be less than
+
+	buffer+buffer_size if the read function returned
+	less data than requested, e.g. for streams where
+	no more data has been received yet.
+*/
+func (avioCtx *CAVIOContext) SetBufEnd(bufEnd unsafe.Pointer) {
+	avioCtx.buf_end = (*C.uchar)(bufEnd)
+}
+
+/*
 *< A private pointer, passed to the read/write/seek/...
 
 	functions.
@@ -365,9 +459,23 @@ func (avioCtx *CAVIOContext) GetOpaque() unsafe.Pointer {
 	return unsafe.Pointer(avioCtx.opaque)
 }
 
+/*
+*< A private pointer, passed to the read/write/seek/...
+
+	functions.
+*/
+func (avioCtx *CAVIOContext) SetOpaque(opaque unsafe.Pointer) {
+	avioCtx.opaque = opaque
+}
+
 // int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
 func (avioCtx *CAVIOContext) GetReadPacket() ctypes.CFunc {
 	return ctypes.CFunc(avioCtx.read_packet)
+}
+
+// int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
+func (avioCtx *CAVIOContext) SetReadPacket(readPacket ctypes.CFunc) {
+	avioCtx.read_packet = (*[0]byte)(readPacket)
 }
 
 //  #if FF_API_AVIO_WRITE_NONCONST
@@ -375,6 +483,11 @@ func (avioCtx *CAVIOContext) GetReadPacket() ctypes.CFunc {
 // int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
 func (avioCtx *CAVIOContext) GetWritePacket() ctypes.CFunc {
 	return ctypes.CFunc(avioCtx.write_packet)
+}
+
+// int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
+func (avioCtx *CAVIOContext) SetWritePacket(writePacket ctypes.CFunc) {
+	avioCtx.write_packet = (*[0]byte)(writePacket)
 }
 
 //  #else
@@ -386,9 +499,19 @@ func (avioCtx *CAVIOContext) GetSeek() ctypes.CFunc {
 	return ctypes.CFunc(avioCtx.seek)
 }
 
+// int64_t (*seek)(void *opaque, int64_t offset, int whence);
+func (avioCtx *CAVIOContext) SetSeek(seek ctypes.CFunc) {
+	avioCtx.seek = (*[0]byte)(seek)
+}
+
 /**< position in the file of the current buffer */
 func (avioCtx *CAVIOContext) GetPos() int64 {
 	return int64(avioCtx.pos)
+}
+
+/**< position in the file of the current buffer */
+func (avioCtx *CAVIOContext) SetPos(pos int64) {
+	avioCtx.pos = C.int64_t(pos)
 }
 
 /**< true if was unable to read due to error or eof */
@@ -396,9 +519,19 @@ func (avioCtx *CAVIOContext) GetEofReached() int {
 	return int(avioCtx.eof_reached)
 }
 
+/**< true if was unable to read due to error or eof */
+func (avioCtx *CAVIOContext) SetEofReached(eofReached int) {
+	avioCtx.eof_reached = C.int(eofReached)
+}
+
 /**< contains the error code or 0 if no error happened */
 func (avioCtx *CAVIOContext) GetError() int {
 	return int(avioCtx.error)
+}
+
+/**< contains the error code or 0 if no error happened */
+func (avioCtx *CAVIOContext) SetError(_error int) {
+	avioCtx.error = C.int(_error)
 }
 
 /**< true if open for writing */
@@ -406,8 +539,17 @@ func (avioCtx *CAVIOContext) GetWriteFlag() int {
 	return int(avioCtx.write_flag)
 }
 
+/**< true if open for writing */
+func (avioCtx *CAVIOContext) SetWriteFlag(writeFlag int) {
+	avioCtx.write_flag = C.int(writeFlag)
+}
+
 func (avioCtx *CAVIOContext) GetMaxPacketSize() int {
 	return int(avioCtx.max_packet_size)
+}
+
+func (avioCtx *CAVIOContext) SetMaxPacketSize(maxPacketSize int) {
+	avioCtx.max_packet_size = C.int(maxPacketSize)
 }
 
 /*
@@ -418,17 +560,38 @@ func (avioCtx *CAVIOContext) GetMinPacketSize() int {
 	return int(avioCtx.min_packet_size)
 }
 
-func (avioCtx *CAVIOContext) GetCheckSum() uint32 {
-	return uint32(avioCtx.checksum)
+/*
+*< Try to buffer at least this amount of data
+before flushing it.
+*/
+func (avioCtx *CAVIOContext) SetMinPacketSize(minPacketSize int) {
+	avioCtx.min_packet_size = C.int(minPacketSize)
+}
+
+func (avioCtx *CAVIOContext) GetCheckSum() uint64 {
+	return uint64(avioCtx.checksum)
+}
+
+func (avioCtx *CAVIOContext) SetCheckSum(checkSum uint64) {
+	avioCtx.checksum = C.ulong(checkSum)
 }
 
 func (avioCtx *CAVIOContext) GetCheckSumPtr() unsafe.Pointer {
 	return unsafe.Pointer(avioCtx.checksum_ptr)
 }
 
+func (avioCtx *CAVIOContext) SetCheckSumPtr(checkSumPtr unsafe.Pointer) {
+	avioCtx.checksum_ptr = (*C.uchar)(checkSumPtr)
+}
+
 // unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
 func (avioCtx *CAVIOContext) GetUpdateCheckSum() ctypes.CFunc {
 	return ctypes.CFunc(avioCtx.update_checksum)
+}
+
+// unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
+func (avioCtx *CAVIOContext) SetUpdateCheckSum(updateCheckSum ctypes.CFunc) {
+	avioCtx.update_checksum = (*[0]byte)(updateCheckSum)
 }
 
 /**
@@ -437,6 +600,14 @@ func (avioCtx *CAVIOContext) GetUpdateCheckSum() ctypes.CFunc {
 // int (*read_pause)(void *opaque, int pause);
 func (avioCtx *CAVIOContext) GetReadPause() ctypes.CFunc {
 	return ctypes.CFunc(avioCtx.read_pause)
+}
+
+/**
+ * Pause or resume playback for network streaming protocols - e.g. MMS.
+ */
+// int (*read_pause)(void *opaque, int pause);
+func (avioCtx *CAVIOContext) SetReadPause(readPause ctypes.CFunc) {
+	avioCtx.read_pause = (*[0]byte)(readPause)
 }
 
 /**
@@ -450,10 +621,27 @@ func (avioCtx *CAVIOContext) GetReadSeek() ctypes.CFunc {
 }
 
 /**
+ * Seek to a given timestamp in stream with the specified stream_index.
+ * Needed for some network streaming protocols which don't support seeking
+ * to byte position.
+ */
+// int64_t (*read_seek)(void *opaque, int stream_index, int64_t timestamp, int flags);
+func (avioCtx *CAVIOContext) SetReadSeek(readSeek ctypes.CFunc) {
+	avioCtx.read_seek = (*[0]byte)(readSeek)
+}
+
+/**
  * A combination of AVIO_SEEKABLE_ flags or 0 when the stream is not seekable.
  */
 func (avioCtx *CAVIOContext) GetSeekable() int {
 	return int(avioCtx.seekable)
+}
+
+/**
+ * A combination of AVIO_SEEKABLE_ flags or 0 when the stream is not seekable.
+ */
+func (avioCtx *CAVIOContext) SetSeekable(seekable int) {
+	avioCtx.seekable = C.int(seekable)
 }
 
 /**
@@ -466,6 +654,15 @@ func (avioCtx *CAVIOContext) GetDirect() int {
 }
 
 /**
+ * avio_read and avio_write should if possible be satisfied directly
+ * instead of going through a buffer, and avio_seek will always
+ * call the underlying seek function directly.
+ */
+func (avioCtx *CAVIOContext) SetDirect(direct int) {
+	avioCtx.direct = C.int(direct)
+}
+
+/**
  * ',' separated list of allowed protocols.
  */
 func (avioCtx *CAVIOContext) GetProtocolWhitelist() string {
@@ -473,10 +670,34 @@ func (avioCtx *CAVIOContext) GetProtocolWhitelist() string {
 }
 
 /**
+ * ',' separated list of allowed protocols.
+ */
+func (avioCtx *CAVIOContext) SetProtocolWhitelist(protocolWhitelist string) {
+	var cProtocolWhitelist *C.char = nil
+	if len(protocolWhitelist) > 0 {
+		cProtocolWhitelist = C.CString(protocolWhitelist)
+	}
+
+	avioCtx.protocol_whitelist = cProtocolWhitelist
+}
+
+/**
  * ',' separated list of disallowed protocols.
  */
 func (avioCtx *CAVIOContext) GetProtocolBlacklist() string {
 	return C.GoString(avioCtx.protocol_blacklist)
+}
+
+/**
+ * ',' separated list of disallowed protocols.
+ */
+func (avioCtx *CAVIOContext) SetProtocolBlacklist(protocolBlacklist string) {
+	var cProtocolBlacklist *C.char = nil
+	if len(protocolBlacklist) > 0 {
+		cProtocolBlacklist = C.CString(protocolBlacklist)
+	}
+
+	avioCtx.protocol_blacklist = cProtocolBlacklist
 }
 
 /**
@@ -488,6 +709,12 @@ func (avioCtx *CAVIOContext) GetProtocolBlacklist() string {
 //							enum AVIODataMarkerType type, int64_t time);
 func (avioCtx *CAVIOContext) GetWriteDataType() ctypes.CFunc {
 	return ctypes.CFunc(avioCtx.write_data_type)
+}
+
+//	 int (*write_data_type)(void *opaque, uint8_t *buf, int buf_size,
+//							enum AVIODataMarkerType type, int64_t time);
+func (avioCtx *CAVIOContext) SetWriteDataType(writeDataType ctypes.CFunc) {
+	avioCtx.write_data_type = (*[0]byte)(writeDataType)
 }
 
 //  #else
@@ -505,11 +732,28 @@ func (avioCtx *CAVIOContext) GetIgnoreBoundaryPoint() int {
 }
 
 /**
+ * If set, don't call write_data_type separately for AVIO_DATA_MARKER_BOUNDARY_POINT,
+ * but ignore them and treat them as AVIO_DATA_MARKER_UNKNOWN (to avoid needlessly
+ * small chunks of data returned from the callback).
+ */
+func (avioCtx *CAVIOContext) SetIgnoreBoundaryPoint(ignoreBoundaryPoint int) {
+	avioCtx.ignore_boundary_point = C.int(ignoreBoundaryPoint)
+}
+
+/**
  * Maximum reached position before a backward seek in the write buffer,
  * used keeping track of already written data for a later flush.
  */
 func (avioCtx *CAVIOContext) GetBufPtrMax() unsafe.Pointer {
 	return unsafe.Pointer(avioCtx.buf_ptr_max)
+}
+
+/**
+ * Maximum reached position before a backward seek in the write buffer,
+ * used keeping track of already written data for a later flush.
+ */
+func (avioCtx *CAVIOContext) SetBufPtrMax(bufPtrMax unsafe.Pointer) {
+	avioCtx.buf_ptr_max = (*C.uchar)(bufPtrMax)
 }
 
 /**
@@ -832,13 +1076,17 @@ func AvioVprintf(s *CAVIOContext, fmt string, ap *C.struct___va_list_tag) int {
 //   * @return number of bytes written, < 0 on error.
 //   */
 //  int avio_printf(AVIOContext *s, const char *fmt, ...) av_printf_format(2, 3);
+// TODO 懒得实现
 
-//  /**
-//   * Write a NULL terminated array of strings to the context.
-//   * Usually you don't need to use this function directly but its macro wrapper,
-//   * avio_print.
-//   */
-//  void avio_print_string_array(AVIOContext *s, const char *strings[]);
+/**
+ * Write a NULL terminated array of strings to the context.
+ * Usually you don't need to use this function directly but its macro wrapper,
+ * avio_print.
+ */
+func AvioPrintStringArray(s *CAVIOContext, strings []*C.char) {
+	cStrings := unsafe.SliceData(strings)
+	C.avio_print_string_array((*C.AVIOContext)(s), cStrings)
+}
 
 //  /**
 //   * Write strings (const char *) to the context.
@@ -849,6 +1097,7 @@ func AvioVprintf(s *CAVIOContext, fmt string, ap *C.struct___va_list_tag) int {
 //   */
 //  #define avio_print(s, ...) \
 // 	 avio_print_string_array(s, (const char*[]){__VA_ARGS__, NULL})
+// TODO 懒得实现
 
 /**
  * Force flushing of buffered data.
