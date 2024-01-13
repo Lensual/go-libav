@@ -440,18 +440,18 @@ func SwsSetColorspaceDetails(c *CSwsContext, invTable [4]int, srcRange int, tabl
  * @return A negative error code on error, non negative otherwise.
  *         If `LIBSWSCALE_VERSION_MAJOR < 7`, returns -1 if not supported.
  */
-func SwsGetColorspaceDetails(c *CSwsContext, invTable **int,
-	srcRange *int, table **int, dstRange *int,
-	brightness *int, contrast *int, saturation *int) int {
+func SwsGetColorspaceDetails(c *CSwsContext, invTable **ctypes.Int,
+	srcRange *ctypes.Int, table **ctypes.Int, dstRange *ctypes.Int,
+	brightness *ctypes.Int, contrast *ctypes.Int, saturation *ctypes.Int) int {
 	return int(C.sws_getColorspaceDetails(
 		(*C.struct_SwsContext)(c),
 		(**C.int)(unsafe.Pointer(invTable)),
-		(*C.int)(unsafe.Pointer(srcRange)),
+		(*C.int)(srcRange),
 		(**C.int)(unsafe.Pointer(table)),
-		(*C.int)(unsafe.Pointer(dstRange)),
-		(*C.int)(unsafe.Pointer(brightness)),
-		(*C.int)(unsafe.Pointer(contrast)),
-		(*C.int)(unsafe.Pointer(saturation)),
+		(*C.int)(dstRange),
+		(*C.int)(brightness),
+		(*C.int)(contrast),
+		(*C.int)(saturation),
 	))
 }
 
@@ -549,7 +549,7 @@ func SwsGetCachedContext(context *CSwsContext,
  * @param num_pixels number of pixels to convert
  * @param palette    array with [256] entries, which must match color arrangement (RGB or BGR) of src
  */
-func SwsConvertPalette8ToPacked32(src unsafe.Pointer, dst unsafe.Pointer, numPixels int, palette *uint8) {
+func SwsConvertPalette8ToPacked32(src unsafe.Pointer, dst unsafe.Pointer, numPixels int, palette *ctypes.UInt8) {
 	C.sws_convertPalette8ToPacked32((*C.uint8_t)(src), (*C.uint8_t)(dst), C.int(numPixels), (*C.uint8_t)(palette))
 }
 
@@ -563,7 +563,7 @@ func SwsConvertPalette8ToPacked32(src unsafe.Pointer, dst unsafe.Pointer, numPix
  * @param num_pixels number of pixels to convert
  * @param palette    array with [256] entries, which must match color arrangement (RGB or BGR) of src
  */
-func SwsConvertPalette8ToPacked24(src unsafe.Pointer, dst unsafe.Pointer, numPixels int, palette *uint8) {
+func SwsConvertPalette8ToPacked24(src unsafe.Pointer, dst unsafe.Pointer, numPixels int, palette *ctypes.UInt8) {
 	C.sws_convertPalette8ToPacked24((*C.uint8_t)(src), (*C.uint8_t)(dst), C.int(numPixels), (*C.uint8_t)(palette))
 }
 

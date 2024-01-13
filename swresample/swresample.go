@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/Lensual/go-libav/avutil"
+	"github.com/Lensual/go-libav/ctypes"
 )
 
 //  #ifndef SWRESAMPLE_SWRESAMPLE_H
@@ -435,8 +436,8 @@ func SwrSetCompensation(s *CSwrContext, sampleDelta int, compensationDistance in
  *                            indexes, -1 for a muted channel)
  * @return >= 0 on success, or AVERROR error code in case of failure.
  */
-func SwrSetChannelMapping(s *CSwrContext, channelMap *int) int {
-	return int(C.swr_set_channel_mapping((*C.SwrContext)(s), (*C.int)(unsafe.Pointer(channelMap))))
+func SwrSetChannelMapping(s *CSwrContext, channelMap *ctypes.Int) int {
+	return int(C.swr_set_channel_mapping((*C.SwrContext)(s), (*C.int)(channelMap)))
 }
 
 //  #if FF_API_OLD_CHANNEL_LAYOUT
