@@ -459,9 +459,19 @@ func (pd *CAVProbeData) GetBuf() unsafe.Pointer {
 	return unsafe.Pointer(pd.buf)
 }
 
+/**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
+func (pd *CAVProbeData) SetBuf(buf unsafe.Pointer) {
+	pd.buf = (*C.uchar)(buf)
+}
+
 /**< Size of buf except extra allocated bytes */
 func (pd *CAVProbeData) GetBufSize() int {
 	return int(pd.buf_size)
+}
+
+/**< Size of buf except extra allocated bytes */
+func (pd *CAVProbeData) SetBufSize(bufSize int) {
+	pd.buf_size = C.int(bufSize)
 }
 
 /**< mime_type, when known. */
@@ -558,9 +568,15 @@ func (oFormat *CAVOutputFormat) GetExtensions() string {
 }
 
 /* output support */
+
 /**< default audio codec */
 func (oFormat *CAVOutputFormat) GetAudioCodec() avcodec.CAVCodecID {
 	return avcodec.CAVCodecID(oFormat.audio_codec)
+}
+
+/**< default audio codec */
+func (oFormat *CAVOutputFormat) SetAudioCodec(audioCodec avcodec.CAVCodecID) {
+	oFormat.audio_codec = C.enum_AVCodecID(audioCodec)
 }
 
 /**< default video codec */
@@ -568,9 +584,19 @@ func (oFormat *CAVOutputFormat) GetVideoCodec() avcodec.CAVCodecID {
 	return avcodec.CAVCodecID(oFormat.video_codec)
 }
 
+/**< default video codec */
+func (oFormat *CAVOutputFormat) SetVideoCodec(videoCodec avcodec.CAVCodecID) {
+	oFormat.video_codec = C.enum_AVCodecID(videoCodec)
+}
+
 /**< default subtitle codec */
 func (oFormat *CAVOutputFormat) GetSubtitleCodec() avcodec.CAVCodecID {
 	return avcodec.CAVCodecID(oFormat.subtitle_codec)
+}
+
+/**< default subtitle codec */
+func (oFormat *CAVOutputFormat) SetSubtitleCodec(subtitleCodec avcodec.CAVCodecID) {
+	oFormat.subtitle_codec = C.enum_AVCodecID(subtitleCodec)
 }
 
 /**
@@ -581,6 +607,16 @@ func (oFormat *CAVOutputFormat) GetSubtitleCodec() avcodec.CAVCodecID {
  */
 func (oFormat *CAVOutputFormat) GetFlags() int {
 	return int(oFormat.flags)
+}
+
+/**
+ * can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER,
+ * AVFMT_GLOBALHEADER, AVFMT_NOTIMESTAMPS, AVFMT_VARIABLE_FPS,
+ * AVFMT_NODIMENSIONS, AVFMT_NOSTREAMS,
+ * AVFMT_TS_NONSTRICT, AVFMT_TS_NEGATIVE
+ */
+func (oFormat *CAVOutputFormat) SetFlags(flags int) {
+	oFormat.flags = C.int(flags)
 }
 
 /**
@@ -636,6 +672,15 @@ func (iFormat *CAVInputFormat) GetFlags() int {
 }
 
 /**
+ * Can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_SHOW_IDS,
+ * AVFMT_NOTIMESTAMPS, AVFMT_GENERIC_INDEX, AVFMT_TS_DISCONT, AVFMT_NOBINSEARCH,
+ * AVFMT_NOGENSEARCH, AVFMT_NO_BYTE_SEEK, AVFMT_SEEK_TO_PTS.
+ */
+func (iFormat *CAVInputFormat) SetFlags(flags int) {
+	iFormat.flags = C.int(flags)
+}
+
+/**
  * If extensions are defined, then no probe is done. You should
  * usually not use extension format guessing because it is not
  * reliable enough
@@ -669,11 +714,19 @@ func (iFormat *CAVInputFormat) GetMimeType() string {
  * New public fields should be added right above.
  *****************************************************************
  */
+
 /**
  * Raw demuxers store their codec ID here.
  */
 func (iFormat *CAVInputFormat) GetRawCodecId() int {
 	return int(iFormat.raw_codec_id)
+}
+
+/**
+ * Raw demuxers store their codec ID here.
+ */
+func (iFormat *CAVInputFormat) SetRawCodecId(rawCodecId int) {
+	iFormat.raw_codec_id = C.int(rawCodecId)
 }
 
 /**
@@ -684,10 +737,24 @@ func (iFormat *CAVInputFormat) GetPrivDataSize() int {
 }
 
 /**
+ * Size of private data so that it can be allocated in the wrapper.
+ */
+func (iFormat *CAVInputFormat) SetPrivDataSize(privDataSize int) {
+	iFormat.priv_data_size = C.int(privDataSize)
+}
+
+/**
  * Internal flags. See FF_FMT_FLAG_* in internal.h.
  */
 func (iFormat *CAVInputFormat) GetFlagsInternal() int {
 	return int(iFormat.flags_internal)
+}
+
+/**
+ * Internal flags. See FF_FMT_FLAG_* in internal.h.
+ */
+func (iFormat *CAVInputFormat) SetFlagsInternal(flagsInternal int) {
+	iFormat.flags_internal = C.int(flagsInternal)
 }
 
 /**
@@ -701,6 +768,16 @@ func (iFormat *CAVInputFormat) GetReadProbe() ctypes.CFunc {
 }
 
 /**
+ * Tell if a given file has a chance of being parsed as this format.
+ * The buffer provided is guaranteed to be AVPROBE_PADDING_SIZE bytes
+ * big so you do not have to check for that unless you need more.
+ */
+// int (*read_probe)(const AVProbeData *);
+func (iFormat *CAVInputFormat) SetReadProbe(readProbe ctypes.CFunc) {
+	iFormat.read_probe = (*[0]byte)(readProbe)
+}
+
+/**
  * Read the format header and initialize the AVFormatContext
  * structure. Return 0 if OK. 'avformat_new_stream' should be
  * called to create new streams.
@@ -708,6 +785,16 @@ func (iFormat *CAVInputFormat) GetReadProbe() ctypes.CFunc {
 // int (*read_header)(struct AVFormatContext *);
 func (iFormat *CAVInputFormat) GetReadHeader() ctypes.CFunc {
 	return ctypes.CFunc(iFormat.read_header)
+}
+
+/**
+ * Read the format header and initialize the AVFormatContext
+ * structure. Return 0 if OK. 'avformat_new_stream' should be
+ * called to create new streams.
+ */
+// int (*read_header)(struct AVFormatContext *);
+func (iFormat *CAVInputFormat) SetReadHeader(readHeader ctypes.CFunc) {
+	iFormat.read_header = (*[0]byte)(readHeader)
 }
 
 /**
@@ -720,7 +807,20 @@ func (iFormat *CAVInputFormat) GetReadHeader() ctypes.CFunc {
  */
 // int (*read_packet)(struct AVFormatContext *, AVPacket *pkt);
 func (iFormat *CAVInputFormat) GetReadPacket() ctypes.CFunc {
-	return ctypes.CFunc(iFormat.read_header)
+	return ctypes.CFunc(iFormat.read_packet)
+}
+
+/**
+ * Read one packet and put it in 'pkt'. pts and flags are also
+ * set. 'avformat_new_stream' can be called only if the flag
+ * AVFMTCTX_NOHEADER is used and only in the calling thread (not in a
+ * background thread).
+ * @return 0 on success, < 0 on error.
+ *         Upon returning an error, pkt must be unreferenced by the caller.
+ */
+// int (*read_packet)(struct AVFormatContext *, AVPacket *pkt);
+func (iFormat *CAVInputFormat) SetReadPacket(readPacket ctypes.CFunc) {
+	iFormat.read_packet = (*[0]byte)(readPacket)
 }
 
 /**
@@ -730,6 +830,15 @@ func (iFormat *CAVInputFormat) GetReadPacket() ctypes.CFunc {
 // int (*read_close)(struct AVFormatContext *);
 func (iFormat *CAVInputFormat) GetReadClose() ctypes.CFunc {
 	return ctypes.CFunc(iFormat.read_close)
+}
+
+/**
+ * Close the stream. The AVFormatContext and AVStreams are not
+ * freed by this function
+ */
+// int (*read_close)(struct AVFormatContext *);
+func (iFormat *CAVInputFormat) SetReadClose(readClose ctypes.CFunc) {
+	iFormat.read_close = (*[0]byte)(readClose)
 }
 
 /**
@@ -747,6 +856,20 @@ func (iFormat *CAVInputFormat) GetReadSeek() ctypes.CFunc {
 }
 
 /**
+ * Seek to a given timestamp relative to the frames in
+ * stream component stream_index.
+ * @param stream_index Must not be -1.
+ * @param flags Selects which direction should be preferred if no exact
+ *              match is available.
+ * @return >= 0 on success (but not necessarily the new offset)
+ */
+// int (*read_seek)(struct AVFormatContext *,
+//                  int stream_index, int64_t timestamp, int flags);
+func (iFormat *CAVInputFormat) SetReadSeek(readSeek ctypes.CFunc) {
+	iFormat.read_seek = (*[0]byte)(readSeek)
+}
+
+/**
  * Get the next timestamp in stream[stream_index].time_base units.
  * @return the timestamp or AV_NOPTS_VALUE if an error occurred
  */
@@ -754,6 +877,16 @@ func (iFormat *CAVInputFormat) GetReadSeek() ctypes.CFunc {
 //                           int64_t *pos, int64_t pos_limit);
 func (iFormat *CAVInputFormat) GetReadTimestamp() ctypes.CFunc {
 	return ctypes.CFunc(iFormat.read_timestamp)
+}
+
+/**
+ * Get the next timestamp in stream[stream_index].time_base units.
+ * @return the timestamp or AV_NOPTS_VALUE if an error occurred
+ */
+// int64_t (*read_timestamp)(struct AVFormatContext *s, int stream_index,
+//                           int64_t *pos, int64_t pos_limit);
+func (iFormat *CAVInputFormat) SetReadTimestamp(readTimestamp ctypes.CFunc) {
+	iFormat.read_timestamp = (*[0]byte)(readTimestamp)
 }
 
 /**
@@ -766,12 +899,30 @@ func (iFormat *CAVInputFormat) GetReadPlay() ctypes.CFunc {
 }
 
 /**
+ * Start/resume playing - only meaningful if using a network-based format
+ * (RTSP).
+ */
+// int (*read_play)(struct AVFormatContext *);
+func (iFormat *CAVInputFormat) SetReadPlay(readPlay ctypes.CFunc) {
+	iFormat.read_play = (*[0]byte)(readPlay)
+}
+
+/**
  * Pause playing - only meaningful if using a network-based format
  * (RTSP).
  */
 // int (*read_pause)(struct AVFormatContext *);
 func (iFormat *CAVInputFormat) GetReadPause() ctypes.CFunc {
 	return ctypes.CFunc(iFormat.read_pause)
+}
+
+/**
+ * Pause playing - only meaningful if using a network-based format
+ * (RTSP).
+ */
+// int (*read_pause)(struct AVFormatContext *);
+func (iFormat *CAVInputFormat) SetReadPause(readPause ctypes.CFunc) {
+	iFormat.read_pause = (*[0]byte)(readPause)
 }
 
 /**
@@ -786,12 +937,32 @@ func (iFormat *CAVInputFormat) GetReadSeek2() ctypes.CFunc {
 }
 
 /**
+ * Seek to timestamp ts.
+ * Seeking will be done so that the point from which all active streams
+ * can be presented successfully will be closest to ts and within min/max_ts.
+ * Active streams are all streams that have AVStream.discard < AVDISCARD_ALL.
+ */
+// int (*read_seek2)(struct AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
+func (iFormat *CAVInputFormat) SetReadSeek2(readSeek2 ctypes.CFunc) {
+	iFormat.read_seek2 = (*[0]byte)(readSeek2)
+}
+
+/**
  * Returns device list with it properties.
  * @see avdevice_list_devices() for more details.
  */
 // int (*get_device_list)(struct AVFormatContext *s, struct AVDeviceInfoList *device_list);
-func (iFormat *CAVInputFormat) GetDeviceList() ctypes.CFunc {
+func (iFormat *CAVInputFormat) GetGetDeviceList() ctypes.CFunc {
 	return ctypes.CFunc(iFormat.get_device_list)
+}
+
+/**
+ * Returns device list with it properties.
+ * @see avdevice_list_devices() for more details.
+ */
+// int (*get_device_list)(struct AVFormatContext *s, struct AVDeviceInfoList *device_list);
+func (iFormat *CAVInputFormat) SetGetDeviceList(getDeviceList ctypes.CFunc) {
+	iFormat.get_device_list = (*[0]byte)(getDeviceList)
 }
 
 //#endregion CAVInputFormat
@@ -821,14 +992,28 @@ func (e *CAVIndexEntry) GetPos() int64 {
 	return int64(e.pos)
 }
 
+func (e *CAVIndexEntry) SetPos(pos int64) {
+	e.pos = C.int64_t(pos)
+}
+
 /**<
  * Timestamp in AVStream.time_base units, preferably the time from which on correctly decoded frames are available
  * when seeking to this entry. That means preferable PTS on keyframe based formats.
  * But demuxers can choose to store a different timestamp, if it is more convenient for the implementation or nothing better
  * is known
  */
-func (e *CAVIndexEntry) GetTimeStamp() int64 {
+func (e *CAVIndexEntry) GetTimestamp() int64 {
 	return int64(e.timestamp)
+}
+
+/**<
+ * Timestamp in AVStream.time_base units, preferably the time from which on correctly decoded frames are available
+ * when seeking to this entry. That means preferable PTS on keyframe based formats.
+ * But demuxers can choose to store a different timestamp, if it is more convenient for the implementation or nothing better
+ * is known
+ */
+func (e *CAVIndexEntry) SetTimestamp(timestamp int64) {
+	e.timestamp = C.int64_t(timestamp)
 }
 
 const AVINDEX_KEYFRAME = C.AVINDEX_KEYFRAME
@@ -852,6 +1037,11 @@ const AVINDEX_DISCARD_FRAME = C.AVINDEX_DISCARD_FRAME
 /**< Minimum distance between this and the previous keyframe, used to avoid unneeded searching. */
 func (e *CAVIndexEntry) GetMinDistance() int {
 	return int(e.min_distance)
+}
+
+/**< Minimum distance between this and the previous keyframe, used to avoid unneeded searching. */
+func (e *CAVIndexEntry) SetMinDistance(minDistance int) {
+	e.min_distance = C.int(minDistance)
 }
 
 //#endregion CAVIndexEntry
@@ -1012,6 +1202,11 @@ func (st *CAVStream) GetIndex() int {
 	return int(st.index)
 }
 
+/**< stream index in AVFormatContext */
+func (st *CAVStream) SetIndex(index int) {
+	st.index = C.int(index)
+}
+
 /**
  * Format-specific stream ID.
  * decoding: set by libavformat
@@ -1043,8 +1238,25 @@ func (st *CAVStream) GetCodecPar() *avcodec.CAVCodecParameters {
 	return (*avcodec.CAVCodecParameters)(unsafe.Pointer(st.codecpar))
 }
 
+/**
+ * Codec parameters associated with this stream. Allocated and freed by
+ * libavformat in avformat_new_stream() and avformat_free_context()
+ * respectively.
+ *
+ * - demuxing: filled by libavformat on stream creation or in
+ *             avformat_find_stream_info()
+ * - muxing: filled by the caller before avformat_write_header()
+ */
+func (st *CAVStream) SetCodecPar(codecPar *avcodec.CAVCodecParameters) {
+	st.codecpar = (*C.AVCodecParameters)(unsafe.Pointer(codecPar))
+}
+
 func (st *CAVStream) GetPrivData() unsafe.Pointer {
 	return st.priv_data
+}
+
+func (st *CAVStream) SetPrivData(privData unsafe.Pointer) {
+	st.priv_data = privData
 }
 
 /**
@@ -1103,8 +1315,20 @@ func (st *CAVStream) SetTimeBase(timeBase avutil.CAVRational) {
  * @note The ASF header does NOT contain a correct start_time the ASF
  * demuxer must NOT set this.
  */
-func (st *CAVStream) GetStartTime() C.int64_t {
-	return st.start_time
+func (st *CAVStream) GetStartTime() int64 {
+	return int64(st.start_time)
+}
+
+/**
+ * Decoding: pts of the first frame of the stream in presentation order, in stream time base.
+ * Only set this if you are absolutely 100% sure that the value you set
+ * it to really is the pts of the first frame.
+ * This may be undefined (AV_NOPTS_VALUE).
+ * @note The ASF header does NOT contain a correct start_time the ASF
+ * demuxer must NOT set this.
+ */
+func (st *CAVStream) SetStartTime(startTime int64) {
+	st.start_time = C.int64_t(startTime)
 }
 
 /**
@@ -1115,13 +1339,30 @@ func (st *CAVStream) GetStartTime() C.int64_t {
  * Encoding: May be set by the caller before avformat_write_header() to
  * provide a hint to the muxer about the estimated duration.
  */
-func (st *CAVStream) GetDuration() C.int64_t {
-	return st.duration
+func (st *CAVStream) GetDuration() int64 {
+	return int64(st.duration)
+}
+
+/**
+ * Decoding: duration of the stream, in stream time base.
+ * If a source file does not specify a duration, but does specify
+ * a bitrate, this value will be estimated from bitrate and file size.
+ *
+ * Encoding: May be set by the caller before avformat_write_header() to
+ * provide a hint to the muxer about the estimated duration.
+ */
+func (st *CAVStream) SetDuration(duration int64) {
+	st.duration = C.int64_t(duration)
 }
 
 // /< number of frames in this stream if known or 0
-func (st *CAVStream) GetNbFrames() C.int64_t {
-	return st.nb_frames
+func (st *CAVStream) GetNbFrames() int64 {
+	return int64(st.nb_frames)
+}
+
+// /< number of frames in this stream if known or 0
+func (st *CAVStream) SetNbFrames(nbFrames int64) {
+	st.nb_frames = C.int64_t(nbFrames)
 }
 
 /**
@@ -1134,9 +1375,24 @@ func (st *CAVStream) GetDisposition() int {
 	return int(st.disposition)
 }
 
+/**
+ * Stream disposition - a combination of AV_DISPOSITION_* flags.
+ * - demuxing: set by libavformat when creating the stream or in
+ *             avformat_find_stream_info().
+ * - muxing: may be set by the caller before avformat_write_header().
+ */
+func (st *CAVStream) SetDisposition(disposition int) {
+	st.disposition = C.int(disposition)
+}
+
 // /< Selects which packets can be discarded at will and do not need to be demuxed.
 func (st *CAVStream) GetDiscard() avcodec.CAVDiscard {
 	return avcodec.CAVDiscard(st.discard)
+}
+
+// /< Selects which packets can be discarded at will and do not need to be demuxed.
+func (st *CAVStream) SetDiscard(discard avcodec.CAVDiscard) {
+	st.discard = C.enum_AVDiscard(discard)
 }
 
 /**
@@ -1144,12 +1400,25 @@ func (st *CAVStream) GetDiscard() avcodec.CAVDiscard {
  * - encoding: Set by user.
  * - decoding: Set by libavformat.
  */
-func (st *CAVStream) GetSampleAspectRatio() C.AVRational {
-	return st.sample_aspect_ratio
+func (st *CAVStream) GetSampleAspectRatio() avutil.CAVRational {
+	return *(*avutil.CAVRational)(unsafe.Pointer(&st.sample_aspect_ratio))
+}
+
+/**
+ * sample aspect ratio (0 if unknown)
+ * - encoding: Set by user.
+ * - decoding: Set by libavformat.
+ */
+func (st *CAVStream) SetSampleAspectRatio(sampleAspectRatio avutil.CAVRational) {
+	st.sample_aspect_ratio = *(*C.AVRational)(unsafe.Pointer(&sampleAspectRatio))
 }
 
 func (st *CAVStream) GetMetadata() *avutil.CAVDictionary {
 	return (*avutil.CAVDictionary)(st.metadata)
+}
+
+func (st *CAVStream) SetMetadata(metadata *avutil.CAVDictionary) {
+	st.metadata = (*C.AVDictionary)(metadata)
 }
 
 /**
@@ -1164,6 +1433,17 @@ func (st *CAVStream) GetAvgFrameRate() avutil.CAVRational {
 }
 
 /**
+ * Average framerate
+ *
+ * - demuxing: May be set by libavformat when creating the stream or in
+ *             avformat_find_stream_info().
+ * - muxing: May be set by the caller before avformat_write_header().
+ */
+func (st *CAVStream) SetAvgFrameRate(avgFrameRate avutil.CAVRational) {
+	st.avg_frame_rate = *(*C.AVRational)(unsafe.Pointer(&avgFrameRate))
+}
+
+/**
  * For streams with AV_DISPOSITION_ATTACHED_PIC disposition, this packet
  * will contain the attached picture.
  *
@@ -1172,6 +1452,17 @@ func (st *CAVStream) GetAvgFrameRate() avutil.CAVRational {
  */
 func (st *CAVStream) GetAttachedPic() avcodec.CAVPacket {
 	return *(*avcodec.CAVPacket)(unsafe.Pointer(&st.attached_pic))
+}
+
+/**
+ * For streams with AV_DISPOSITION_ATTACHED_PIC disposition, this packet
+ * will contain the attached picture.
+ *
+ * decoding: set by libavformat, must not be modified by the caller.
+ * encoding: unused
+ */
+func (st *CAVStream) GetAttachedPicPtr() *avcodec.CAVPacket {
+	return (*avcodec.CAVPacket)(unsafe.Pointer(&st.attached_pic))
 }
 
 //  #if FF_API_AVSTREAM_SIDE_DATA
@@ -1222,6 +1513,21 @@ func (st *CAVStream) GetEventFlags() int {
 }
 
 /**
+ * Flags indicating events happening on the stream, a combination of
+ * AVSTREAM_EVENT_FLAG_*.
+ *
+ * - demuxing: may be set by the demuxer in avformat_open_input(),
+ *   avformat_find_stream_info() and av_read_frame(). Flags must be cleared
+ *   by the user once the event has been handled.
+ * - muxing: may be set by the user after avformat_write_header(). to
+ *   indicate a user-triggered event.  The muxer will clear the flags for
+ *   events it has handled in av_[interleaved]_write_frame().
+ */
+func (st *CAVStream) SetEventFlags(eventFlags int) {
+	st.event_flags = C.int(eventFlags)
+}
+
+/**
  * - demuxing: the demuxer read new metadata from the file and updated
  *     AVStream.metadata accordingly
  * - muxing: the user updated AVStream.metadata and wishes the muxer to write
@@ -1249,6 +1555,18 @@ func (st *CAVStream) GetRFrameRate() avutil.CAVRational {
 }
 
 /**
+ * Real base framerate of the stream.
+ * This is the lowest framerate with which all timestamps can be
+ * represented accurately (it is the least common multiple of all
+ * framerates in the stream). Note, this value is just a guess!
+ * For example, if the time base is 1/90000 and all frames have either
+ * approximately 3600 or 1800 timer ticks, then r_frame_rate will be 50/1.
+ */
+func (st *CAVStream) SetRFrameRate(rFrameRate avutil.CAVRational) {
+	st.r_frame_rate = *(*C.AVRational)(unsafe.Pointer(&rFrameRate))
+}
+
+/**
  * Number of bits in timestamps. Used for wrapping control.
  *
  * - demuxing: set by libavformat
@@ -1257,6 +1575,17 @@ func (st *CAVStream) GetRFrameRate() avutil.CAVRational {
  */
 func (st *CAVStream) GetPtsWrapBits() int {
 	return int(st.pts_wrap_bits)
+}
+
+/**
+ * Number of bits in timestamps. Used for wrapping control.
+ *
+ * - demuxing: set by libavformat
+ * - muxing: set by libavformat
+ *
+ */
+func (st *CAVStream) SetPtsWrapBits(ptsWrapBit int) {
+	st.pts_wrap_bits = C.int(ptsWrapBit)
 }
 
 //#endregion CAVStream
@@ -1290,35 +1619,74 @@ type CAVProgram C.AVProgram
 func (p *CAVProgram) GetId() int {
 	return int(p.id)
 }
+func (p *CAVProgram) SetId(id int) {
+	p.id = C.int(id)
+}
+
 func (p *CAVProgram) GetFlags() int {
 	return int(p.flags)
+}
+func (p *CAVProgram) SetFlags(flags int) {
+	p.flags = C.int(flags)
 }
 
 // /< selects which program to discard and which to feed to the caller
 func (p *CAVProgram) GetDiscard() avcodec.CAVDiscard {
 	return avcodec.CAVDiscard(p.discard)
 }
-func (p *CAVProgram) GetStreamIndex() *ctypes.UInt {
-	return (*ctypes.UInt)(unsafe.Pointer(p.stream_index))
+
+// /< selects which program to discard and which to feed to the caller
+func (p *CAVProgram) SetDiscard(discard avcodec.CAVDiscard) {
+	p.discard = C.enum_AVDiscard(discard)
 }
+
+func (p *CAVProgram) GetStreamIndex() *ctypes.UInt {
+	return (*ctypes.UInt)(p.stream_index)
+}
+func (p *CAVProgram) SetStreamIndex(streamIndex *ctypes.UInt) {
+	p.stream_index = (*C.uint)(streamIndex)
+}
+
 func (p *CAVProgram) GetNbStreamIndexes() uint {
 	return uint(p.nb_stream_indexes)
 }
+func (p *CAVProgram) SetNbStreamIndexes(nbStreamIndexs uint) {
+	p.nb_stream_indexes = C.uint(nbStreamIndexs)
+}
+
 func (p *CAVProgram) GetMetadata() *avutil.CAVDictionary {
 	return (*avutil.CAVDictionary)(p.metadata)
+}
+func (p *CAVProgram) SetMetadata(metadata *avutil.CAVDictionary) {
+	p.metadata = (*C.AVDictionary)(metadata)
 }
 
 func (p *CAVProgram) GetProgramNum() int {
 	return int(p.program_num)
 }
+func (p *CAVProgram) SetProgramNum(programNum int) {
+	p.program_num = C.int(programNum)
+}
+
 func (p *CAVProgram) GetPmtPid() int {
 	return int(p.pmt_pid)
 }
+func (p *CAVProgram) SetPmtPid(pmtPid int) {
+	p.pmt_pid = C.int(pmtPid)
+}
+
 func (p *CAVProgram) GetPcrPid() int {
 	return int(p.pcr_pid)
 }
-func (p *CAVProgram) GetProgramVersion() int {
+func (p *CAVProgram) SetPcrPid(pcrPid int) {
+	p.pcr_pid = C.int(pcrPid)
+}
+
+func (p *CAVProgram) GetPmtVersion() int {
 	return int(p.pmt_version)
+}
+func (p *CAVProgram) SetPmtVersion(pmtVersion int) {
+	p.pmt_version = C.int(pmtVersion)
 }
 
 /*****************************************************************
@@ -1328,11 +1696,19 @@ func (p *CAVProgram) GetProgramVersion() int {
  * New public fields should be added right above.
  *****************************************************************
  */
+
 func (p *CAVProgram) GetStartTime() int64 {
 	return int64(p.start_time)
 }
+func (p *CAVProgram) SetStartTime(startTime int64) {
+	p.start_time = C.int64_t(startTime)
+}
+
 func (p *CAVProgram) GetEndTime() int64 {
 	return int64(p.end_time)
+}
+func (p *CAVProgram) SetEndTime(endTime int64) {
+	p.end_time = C.int64_t(endTime)
 }
 
 // /< reference dts for wrap detection
@@ -1340,9 +1716,19 @@ func (p *CAVProgram) GetPtsWrapRefrence() int64 {
 	return int64(p.pts_wrap_reference)
 }
 
+// /< reference dts for wrap detection
+func (p *CAVProgram) SetPtsWrapRefrence(ptsWrapReference int64) {
+	p.pts_wrap_reference = C.int64_t(ptsWrapReference)
+}
+
 // /< behavior on wrap detection
-func (p *CAVProgram) GEtPtsWrapBehavior() int {
+func (p *CAVProgram) GetPtsWrapBehavior() int {
 	return int(p.pts_wrap_behavior)
+}
+
+// /< behavior on wrap detection
+func (p *CAVProgram) SetPtsWrapBehavior(ptsWrapBehavior int) {
+	p.pts_wrap_behavior = C.int(ptsWrapBehavior)
 }
 
 //#endregion CAVProgram
@@ -1364,9 +1750,19 @@ func (c *CAVChapter) GetId() int64 {
 	return int64(c.id)
 }
 
+// /< unique ID to identify the chapter
+func (c *CAVChapter) SetId(id int64) {
+	c.id = C.int64_t(id)
+}
+
 // /< time base in which the start/end timestamps are specified
 func (c *CAVChapter) GetTimeBase() avutil.CAVRational {
 	return *(*avutil.CAVRational)(unsafe.Pointer(&c.time_base))
+}
+
+// /< time base in which the start/end timestamps are specified
+func (c *CAVChapter) SetTimeBase(timeBase avutil.CAVRational) {
+	c.time_base = *(*C.AVRational)(unsafe.Pointer(&timeBase))
 }
 
 // /< chapter start/end time in time_base units
@@ -1375,12 +1771,25 @@ func (c *CAVChapter) GetStart() int64 {
 }
 
 // /< chapter start/end time in time_base units
+func (c *CAVChapter) SetStart(start int64) {
+	c.start = C.int64_t(start)
+}
+
+// /< chapter start/end time in time_base units
 func (c *CAVChapter) GetEnd() int64 {
 	return int64(c.end)
 }
 
+// /< chapter start/end time in time_base units
+func (c *CAVChapter) SetEnd(end int64) {
+	c.end = C.int64_t(end)
+}
+
 func (c *CAVChapter) GetMetadata() *avutil.CAVDictionary {
 	return (*avutil.CAVDictionary)(c.metadata)
+}
+func (c *CAVChapter) SetMetadata(metadata *avutil.CAVDictionary) {
+	c.metadata = (*C.AVDictionary)(metadata)
 }
 
 //#endregion CAVChapter
@@ -1388,12 +1797,13 @@ func (c *CAVChapter) GetMetadata() *avutil.CAVDictionary {
 /**
  * Callback used by devices to communicate with application.
  */
-//  typedef int (*av_format_control_message)(struct AVFormatContext *s, int type,
-// 	void *data, size_t data_size);
-type CAvFormatControlMessage ctypes.CFunc
 
-// typedef int (*AVOpenCallback)(struct AVFormatContext *s, AVIOContext **pb, const char *url, int flags,
-// const AVIOInterruptCB *int_cb, AVDictionary **options);
+//	 typedef int (*av_format_control_message)(struct AVFormatContext *s, int type,
+//		void *data, size_t data_size);
+type CAvFormatControlMessage C.av_format_control_message
+
+//	 typedef int (*AVOpenCallback)(struct AVFormatContext *s, AVIOContext **pb, const char *url, int flags,
+//		const AVIOInterruptCB *int_cb, AVDictionary **options);
 type CAVOpenCallback ctypes.CFunc
 
 /**
@@ -1464,6 +1874,17 @@ func (fmtCtx *CAVFormatContext) GetPrivData() unsafe.Pointer {
 }
 
 /**
+ * Format private data. This is an AVOptions-enabled struct
+ * if and only if iformat/oformat.priv_class is not NULL.
+ *
+ * - muxing: set by avformat_write_header()
+ * - demuxing: set by avformat_open_input()
+ */
+func (fmtCtx *CAVFormatContext) SetPrivData(privData unsafe.Pointer) {
+	fmtCtx.priv_data = privData
+}
+
+/**
  * I/O context.
  *
  * - demuxing: either set by the user before avformat_open_input() (then
@@ -1512,6 +1933,7 @@ func (fmtCtx *CAVFormatContext) SetPB(avioCtx *CAVIOContext) {
 }
 
 /* stream info */
+
 /**
  * Flags signalling stream properties. A combination of AVFMTCTX_*.
  * Set by libavformat.
@@ -1521,12 +1943,29 @@ func (fmtCtx *CAVFormatContext) GetCtxFlags() int {
 }
 
 /**
+ * Flags signalling stream properties. A combination of AVFMTCTX_*.
+ * Set by libavformat.
+ */
+func (fmtCtx *CAVFormatContext) SetCtxFlags(ctxFlags int) {
+	fmtCtx.ctx_flags = C.int(ctxFlags)
+}
+
+/**
  * Number of elements in AVFormatContext.streams.
  *
  * Set by avformat_new_stream(), must not be modified by any other code.
  */
 func (fmtCtx *CAVFormatContext) GetNbStreams() uint {
 	return uint(fmtCtx.nb_streams)
+}
+
+/**
+ * Number of elements in AVFormatContext.streams.
+ *
+ * Set by avformat_new_stream(), must not be modified by any other code.
+ */
+func (fmtCtx *CAVFormatContext) SetNbStreams(nbStreams uint) {
+	fmtCtx.nb_streams = C.uint(nbStreams)
 }
 
 /**
@@ -1542,6 +1981,21 @@ func (fmtCtx *CAVFormatContext) GetNbStreams() uint {
  */
 func (fmtCtx *CAVFormatContext) GetStreams() **CAVStream {
 	return (**CAVStream)(unsafe.Pointer(fmtCtx.streams))
+}
+
+/**
+ * A list of all streams in the file. New streams are created with
+ * avformat_new_stream().
+ *
+ * - demuxing: streams are created by libavformat in avformat_open_input().
+ *             If AVFMTCTX_NOHEADER is set in ctx_flags, then new streams may also
+ *             appear in av_read_frame().
+ * - muxing: streams are created by the user before avformat_write_header().
+ *
+ * Freed by libavformat in avformat_free_context().
+ */
+func (fmtCtx *CAVFormatContext) SetStreams(streams **CAVStream) {
+	fmtCtx.streams = (**C.AVStream)(unsafe.Pointer(streams))
 }
 
 /**
@@ -1562,6 +2016,27 @@ func (fmtCtx *CAVFormatContext) GetUrl() string {
 }
 
 /**
+ * input or output URL. Unlike the old filename field, this field has no
+ * length restriction.
+ *
+ * - demuxing: set by avformat_open_input(), initialized to an empty
+ *             string if url parameter was NULL in avformat_open_input().
+ * - muxing: may be set by the caller before calling avformat_write_header()
+ *           (or avformat_init_output() if that is called first) to a string
+ *           which is freeable by av_free(). Set to an empty string if it
+ *           was NULL in avformat_init_output().
+ *
+ * Freed by libavformat in avformat_free_context().
+ */
+func (fmtCtx *CAVFormatContext) SetUrl(url string) {
+	var cUrl *C.char = nil
+	if len(url) > 0 {
+		cUrl = C.CString(url)
+	}
+	fmtCtx.url = cUrl
+}
+
+/**
  * Position of the first frame of the component, in
  * AV_TIME_BASE fractional seconds. NEVER set this value directly:
  * It is deduced from the AVStream values.
@@ -1570,6 +2045,17 @@ func (fmtCtx *CAVFormatContext) GetUrl() string {
  */
 func (fmtCtx *CAVFormatContext) GetStartTime() int64 {
 	return int64(fmtCtx.start_time)
+}
+
+/**
+ * Position of the first frame of the component, in
+ * AV_TIME_BASE fractional seconds. NEVER set this value directly:
+ * It is deduced from the AVStream values.
+ *
+ * Demuxing only, set by libavformat.
+ */
+func (fmtCtx *CAVFormatContext) SetStartTime(startTime int64) {
+	fmtCtx.start_time = C.int64_t(startTime)
 }
 
 /**
@@ -1585,6 +2071,18 @@ func (fmtCtx *CAVFormatContext) GetDuration() int64 {
 }
 
 /**
+ * Duration of the stream, in AV_TIME_BASE fractional
+ * seconds. Only set this value if you know none of the individual stream
+ * durations and also do not set any of them. This is deduced from the
+ * AVStream values if not set.
+ *
+ * Demuxing only, set by libavformat.
+ */
+func (fmtCtx *CAVFormatContext) SetDuration(duration int64) {
+	fmtCtx.duration = C.int64_t(duration)
+}
+
+/**
  * Total stream bitrate in bit/s, 0 if not
  * available. Never set it directly if the file_size and the
  * duration are known as FFmpeg can compute it automatically.
@@ -1593,11 +2091,27 @@ func (fmtCtx *CAVFormatContext) GetBitRate() int64 {
 	return int64(fmtCtx.bit_rate)
 }
 
+/**
+ * Total stream bitrate in bit/s, 0 if not
+ * available. Never set it directly if the file_size and the
+ * duration are known as FFmpeg can compute it automatically.
+ */
+func (fmtCtx *CAVFormatContext) SetBitRate(bitRate int64) {
+	fmtCtx.bit_rate = C.int64_t(bitRate)
+}
+
 func (fmtCtx *CAVFormatContext) GetPacketSize() uint {
 	return uint(fmtCtx.packet_size)
 }
+func (fmtCtx *CAVFormatContext) SetPacketSize(packetSize uint) {
+	fmtCtx.packet_size = C.uint(packetSize)
+}
+
 func (fmtCtx *CAVFormatContext) GetMaxDelay() int {
 	return int(fmtCtx.max_delay)
+}
+func (fmtCtx *CAVFormatContext) SetMaxDelay(maxDelay int) {
+	fmtCtx.max_delay = C.int(maxDelay)
 }
 
 /**
@@ -1606,6 +2120,14 @@ func (fmtCtx *CAVFormatContext) GetMaxDelay() int {
  */
 func (fmtCtx *CAVFormatContext) GetFlags() int {
 	return int(fmtCtx.flags)
+}
+
+/**
+ * Flags modifying the (de)muxer behaviour. A combination of AVFMT_FLAG_*.
+ * Set by the user before avformat_open_input() / avformat_write_header().
+ */
+func (fmtCtx *CAVFormatContext) SetFlags(flags int) {
+	fmtCtx.flags = C.int(flags)
 }
 
 const (
@@ -1650,6 +2172,21 @@ func (fmtCtx *CAVFormatContext) GetProbesize() int64 {
 }
 
 /**
+ * Maximum number of bytes read from input in order to determine stream
+ * properties. Used when reading the global header and in
+ * avformat_find_stream_info().
+ *
+ * Demuxing only, set by the caller before avformat_open_input().
+ *
+ * @note this is \e not  used for determining the \ref AVInputFormat
+ *       "input format"
+ * @sa format_probesize
+ */
+func (fmtCtx *CAVFormatContext) SetProbesize(probesize int64) {
+	fmtCtx.probesize = C.int64_t(probesize)
+}
+
+/**
  * Maximum duration (in AV_TIME_BASE units) of the data read
  * from input in avformat_find_stream_info().
  * Demuxing only, set by the caller before avformat_find_stream_info().
@@ -1659,18 +2196,42 @@ func (fmtCtx *CAVFormatContext) GetMaxAnalyzeDuration() int64 {
 	return int64(fmtCtx.max_analyze_duration)
 }
 
+/**
+ * Maximum duration (in AV_TIME_BASE units) of the data read
+ * from input in avformat_find_stream_info().
+ * Demuxing only, set by the caller before avformat_find_stream_info().
+ * Can be set to 0 to let avformat choose using a heuristic.
+ */
+func (fmtCtx *CAVFormatContext) SetMaxAnalyzeDuration(maxAnalyzeDuration int64) {
+	fmtCtx.max_analyze_duration = C.int64_t(maxAnalyzeDuration)
+}
+
 func (fmtCtx *CAVFormatContext) GetKey() unsafe.Pointer {
 	return unsafe.Pointer(fmtCtx.key)
 }
+func (fmtCtx *CAVFormatContext) SetKey(key unsafe.Pointer) {
+	fmtCtx.key = (*C.uint8_t)(key)
+}
+
 func (fmtCtx *CAVFormatContext) GetKeylen() int {
 	return int(fmtCtx.keylen)
+}
+func (fmtCtx *CAVFormatContext) SetKeylen(keylen int) {
+	fmtCtx.keylen = C.int(keylen)
 }
 
 func (fmtCtx *CAVFormatContext) GetNbPrograms() uint {
 	return uint(fmtCtx.nb_programs)
 }
+func (fmtCtx *CAVFormatContext) SetNbPrograms(nbPrograms uint) {
+	fmtCtx.nb_programs = C.uint(nbPrograms)
+}
+
 func (fmtCtx *CAVFormatContext) GetPrograms() **CAVProgram {
 	return (**CAVProgram)(unsafe.Pointer(fmtCtx.programs))
+}
+func (fmtCtx *CAVFormatContext) SetPrograms(programs **CAVProgram) {
+	fmtCtx.programs = (**C.AVProgram)(unsafe.Pointer(programs))
 }
 
 /**
@@ -1682,6 +2243,14 @@ func (fmtCtx *CAVFormatContext) GetVideoCodecId() avcodec.CAVCodecID {
 }
 
 /**
+ * Forced video codec_id.
+ * Demuxing: Set by user.
+ */
+func (fmtCtx *CAVFormatContext) SetVideoCodecId(videoCodecId avcodec.CAVCodecID) {
+	fmtCtx.video_codec_id = C.enum_AVCodecID(videoCodecId)
+}
+
+/**
  * Forced audio codec_id.
  * Demuxing: Set by user.
  */
@@ -1690,11 +2259,27 @@ func (fmtCtx *CAVFormatContext) GetAudioCodecId() avcodec.CAVCodecID {
 }
 
 /**
+ * Forced audio codec_id.
+ * Demuxing: Set by user.
+ */
+func (fmtCtx *CAVFormatContext) SetAudioCodecId(audioCodecId avcodec.CAVCodecID) {
+	fmtCtx.audio_codec_id = C.enum_AVCodecID(audioCodecId)
+}
+
+/**
  * Forced subtitle codec_id.
  * Demuxing: Set by user.
  */
 func (fmtCtx *CAVFormatContext) GetSubtitleCodecId() avcodec.CAVCodecID {
 	return (avcodec.CAVCodecID)(fmtCtx.subtitle_codec_id)
+}
+
+/**
+ * Forced subtitle codec_id.
+ * Demuxing: Set by user.
+ */
+func (fmtCtx *CAVFormatContext) SetSubtitleCodecId(subtitleCodecId avcodec.CAVCodecID) {
+	fmtCtx.subtitle_codec_id = C.enum_AVCodecID(subtitleCodecId)
 }
 
 /**
@@ -1712,11 +2297,33 @@ func (fmtCtx *CAVFormatContext) GetMaxIndexSize() uint {
 }
 
 /**
+ * Maximum amount of memory in bytes to use for the index of each stream.
+ * If the index exceeds this size, entries will be discarded as
+ * needed to maintain a smaller size. This can lead to slower or less
+ * accurate seeking (depends on demuxer).
+ * Demuxers for which a full in-memory index is mandatory will ignore
+ * this.
+ * - muxing: unused
+ * - demuxing: set by user
+ */
+func (fmtCtx *CAVFormatContext) SetMaxIndexSize(maxIndexSize uint) {
+	fmtCtx.max_index_size = C.uint(maxIndexSize)
+}
+
+/**
  * Maximum amount of memory in bytes to use for buffering frames
  * obtained from realtime capture devices.
  */
 func (fmtCtx *CAVFormatContext) GetMaxPictureBuffer() uint {
 	return uint(fmtCtx.max_picture_buffer)
+}
+
+/**
+ * Maximum amount of memory in bytes to use for buffering frames
+ * obtained from realtime capture devices.
+ */
+func (fmtCtx *CAVFormatContext) SetMaxPictureBuffer(maxPictureBuffer uint) {
+	fmtCtx.max_picture_buffer = C.uint(maxPictureBuffer)
 }
 
 /**
@@ -1734,8 +2341,26 @@ func (fmtCtx *CAVFormatContext) GetNbChapters() uint {
 	return uint(fmtCtx.nb_chapters)
 }
 
+/**
+ * Number of chapters in AVChapter array.
+ * When muxing, chapters are normally written in the file header,
+ * so nb_chapters should normally be initialized before write_header
+ * is called. Some muxers (e.g. mov and mkv) can also write chapters
+ * in the trailer.  To write chapters in the trailer, nb_chapters
+ * must be zero when write_header is called and non-zero when
+ * write_trailer is called.
+ * - muxing: set by user
+ * - demuxing: set by libavformat
+ */
+func (fmtCtx *CAVFormatContext) SetNbChapters(nbChapter uint) {
+	fmtCtx.nb_chapters = C.uint(nbChapter)
+}
+
 func (fmtCtx *CAVFormatContext) GetChapters() **CAVChapter {
 	return (**CAVChapter)(unsafe.Pointer(fmtCtx.chapters))
+}
+func (fmtCtx *CAVFormatContext) SetChapters(chapters **CAVChapter) {
+	fmtCtx.chapters = (**C.AVChapter)(unsafe.Pointer(chapters))
 }
 
 /**
@@ -1748,6 +2373,18 @@ func (fmtCtx *CAVFormatContext) GetChapters() **CAVChapter {
  */
 func (fmtCtx *CAVFormatContext) GetMetadata() *avutil.CAVDictionary {
 	return (*avutil.CAVDictionary)(fmtCtx.metadata)
+}
+
+/**
+ * Metadata that applies to the whole file.
+ *
+ * - demuxing: set by libavformat in avformat_open_input()
+ * - muxing: may be set by the caller before avformat_write_header()
+ *
+ * Freed by libavformat in avformat_free_context().
+ */
+func (fmtCtx *CAVFormatContext) SetMetadata(metadata *avutil.CAVDictionary) {
+	fmtCtx.metadata = (*C.AVDictionary)(metadata)
 }
 
 /**
@@ -1766,6 +2403,21 @@ func (fmtCtx *CAVFormatContext) GetStartTimeRealtime() int64 {
 }
 
 /**
+ * Start time of the stream in real world time, in microseconds
+ * since the Unix epoch (00:00 1st January 1970). That is, pts=0 in the
+ * stream was captured at this real world time.
+ * - muxing: Set by the caller before avformat_write_header(). If set to
+ *           either 0 or AV_NOPTS_VALUE, then the current wall-time will
+ *           be used.
+ * - demuxing: Set by libavformat. AV_NOPTS_VALUE if unknown. Note that
+ *             the value may become known after some number of frames
+ *             have been received.
+ */
+func (fmtCtx *CAVFormatContext) SetStartTimeRealtime(startTimeRealtime int64) {
+	fmtCtx.start_time_realtime = C.int64_t(startTimeRealtime)
+}
+
+/**
  * The number of frames used for determining the framerate in
  * avformat_find_stream_info().
  * Demuxing only, set by the caller before avformat_find_stream_info().
@@ -1775,12 +2427,30 @@ func (fmtCtx *CAVFormatContext) GetFpsProbeSize() int {
 }
 
 /**
+ * The number of frames used for determining the framerate in
+ * avformat_find_stream_info().
+ * Demuxing only, set by the caller before avformat_find_stream_info().
+ */
+func (fmtCtx *CAVFormatContext) SetFpsProbeSize(fpsProbeSize int) {
+	fmtCtx.fps_probe_size = C.int(fpsProbeSize)
+}
+
+/**
  * Error recognition; higher values will detect more errors but may
  * misdetect some more or less valid parts as errors.
  * Demuxing only, set by the caller before avformat_open_input().
  */
 func (fmtCtx *CAVFormatContext) GetErrorRecognition() int {
 	return int(fmtCtx.error_recognition)
+}
+
+/**
+ * Error recognition; higher values will detect more errors but may
+ * misdetect some more or less valid parts as errors.
+ * Demuxing only, set by the caller before avformat_open_input().
+ */
+func (fmtCtx *CAVFormatContext) SetErrorRecognition(errorRecognition int) {
+	fmtCtx.error_recognition = C.int(errorRecognition)
 }
 
 /**
@@ -1797,10 +2467,30 @@ func (fmtCtx *CAVFormatContext) GetInterruptCallback() CAVIOInterruptCB {
 }
 
 /**
+ * Custom interrupt callbacks for the I/O layer.
+ *
+ * demuxing: set by the user before avformat_open_input().
+ * muxing: set by the user before avformat_write_header()
+ * (mainly useful for AVFMT_NOFILE formats). The callback
+ * should also be passed to avio_open2() if it's used to
+ * open the file.
+ */
+func (fmtCtx *CAVFormatContext) SetInterruptCallback(interruptCall CAVIOInterruptCB) {
+	fmtCtx.interrupt_callback = C.AVIOInterruptCB(interruptCall)
+}
+
+/**
  * Flags to enable debugging.
  */
 func (fmtCtx *CAVFormatContext) GetDebug() int {
 	return int(fmtCtx.debug)
+}
+
+/**
+ * Flags to enable debugging.
+ */
+func (fmtCtx *CAVFormatContext) SetDebug(debug int) {
+	fmtCtx.debug = C.int(debug)
 }
 
 const FF_FDEBUG_TS = C.FF_FDEBUG_TS
@@ -1826,11 +2516,39 @@ func (fmtCtx *CAVFormatContext) GetMaxInterleaveDelta() int64 {
 }
 
 /**
+ * Maximum buffering duration for interleaving.
+ *
+ * To ensure all the streams are interleaved correctly,
+ * av_interleaved_write_frame() will wait until it has at least one packet
+ * for each stream before actually writing any packets to the output file.
+ * When some streams are "sparse" (i.e. there are large gaps between
+ * successive packets), this can result in excessive buffering.
+ *
+ * This field specifies the maximum difference between the timestamps of the
+ * first and the last packet in the muxing queue, above which libavformat
+ * will output a packet regardless of whether it has queued a packet for all
+ * the streams.
+ *
+ * Muxing only, set by the caller before avformat_write_header().
+ */
+func (fmtCtx *CAVFormatContext) SetMaxInterleaveDelta(maxInterleaveDelta int64) {
+	fmtCtx.max_interleave_delta = C.int64_t(maxInterleaveDelta)
+}
+
+/**
  * Allow non-standard and experimental extension
  * @see AVCodecContext.strict_std_compliance
  */
 func (fmtCtx *CAVFormatContext) GetStrictStdCompliance() int {
 	return int(fmtCtx.strict_std_compliance)
+}
+
+/**
+ * Allow non-standard and experimental extension
+ * @see AVCodecContext.strict_std_compliance
+ */
+func (fmtCtx *CAVFormatContext) SetStrictStdCompliance(strictStdCompliance int) {
+	fmtCtx.strict_std_compliance = C.int(strictStdCompliance)
 }
 
 /**
@@ -1846,6 +2564,21 @@ func (fmtCtx *CAVFormatContext) GetStrictStdCompliance() int {
  */
 func (fmtCtx *CAVFormatContext) GetEventFlags() int {
 	return int(fmtCtx.event_flags)
+}
+
+/**
+ * Flags indicating events happening on the file, a combination of
+ * AVFMT_EVENT_FLAG_*.
+ *
+ * - demuxing: may be set by the demuxer in avformat_open_input(),
+ *   avformat_find_stream_info() and av_read_frame(). Flags must be cleared
+ *   by the user once the event has been handled.
+ * - muxing: may be set by the user after avformat_write_header() to
+ *   indicate a user-triggered event.  The muxer will clear the flags for
+ *   events it has handled in av_[interleaved]_write_frame().
+ */
+func (fmtCtx *CAVFormatContext) SetEventFlags(eventFlags int) {
+	fmtCtx.event_flags = C.int(eventFlags)
 }
 
 /**
@@ -1865,6 +2598,14 @@ func (fmtCtx *CAVFormatContext) GetMaxTsProbe() int {
 }
 
 /**
+ * Maximum number of packets to read while waiting for the first timestamp.
+ * Decoding only.
+ */
+func (fmtCtx *CAVFormatContext) SetMaxTsProbe(maxTsProbe int) {
+	fmtCtx.max_ts_probe = C.int(maxTsProbe)
+}
+
+/**
  * Avoid negative timestamps during muxing.
  * Any value of the AVFMT_AVOID_NEG_TS_* constants.
  * Note, this works better when using av_interleaved_write_frame().
@@ -1873,6 +2614,17 @@ func (fmtCtx *CAVFormatContext) GetMaxTsProbe() int {
  */
 func (fmtCtx *CAVFormatContext) GetAvoidNegativeTs() int {
 	return int(fmtCtx.avoid_negative_ts)
+}
+
+/**
+ * Avoid negative timestamps during muxing.
+ * Any value of the AVFMT_AVOID_NEG_TS_* constants.
+ * Note, this works better when using av_interleaved_write_frame().
+ * - muxing: Set by user
+ * - demuxing: unused
+ */
+func (fmtCtx *CAVFormatContext) SetAvoidNegativeTs(avoidNegativeTs int) {
+	fmtCtx.avoid_negative_ts = C.int(avoidNegativeTs)
 }
 
 const (
@@ -1891,6 +2643,14 @@ func (fmtCtx *CAVFormatContext) GetTsId() int {
 }
 
 /**
+ * Transport stream id.
+ * This will be moved into demuxer private options. Thus no API/ABI compatibility
+ */
+func (fmtCtx *CAVFormatContext) SetTsId(tsId int) {
+	fmtCtx.ts_id = C.int(tsId)
+}
+
+/**
  * Audio preload in microseconds.
  * Note, not all formats support this and unpredictable things may happen if it is used when not supported.
  * - encoding: Set by user
@@ -1898,6 +2658,16 @@ func (fmtCtx *CAVFormatContext) GetTsId() int {
  */
 func (fmtCtx *CAVFormatContext) GetAudioPreload() int {
 	return int(fmtCtx.audio_preload)
+}
+
+/**
+ * Audio preload in microseconds.
+ * Note, not all formats support this and unpredictable things may happen if it is used when not supported.
+ * - encoding: Set by user
+ * - decoding: unused
+ */
+func (fmtCtx *CAVFormatContext) SetAudioPreload(audioPreload int) {
+	fmtCtx.audio_preload = C.int(audioPreload)
 }
 
 /**
@@ -1911,6 +2681,16 @@ func (fmtCtx *CAVFormatContext) GetMaxChunkDuration() int {
 }
 
 /**
+ * Max chunk time in microseconds.
+ * Note, not all formats support this and unpredictable things may happen if it is used when not supported.
+ * - encoding: Set by user
+ * - decoding: unused
+ */
+func (fmtCtx *CAVFormatContext) SetMaxChunkDuration(maxChunkDuration int) {
+	fmtCtx.max_chunk_duration = C.int(maxChunkDuration)
+}
+
+/**
  * Max chunk size in bytes
  * Note, not all formats support this and unpredictable things may happen if it is used when not supported.
  * - encoding: Set by user
@@ -1918,6 +2698,16 @@ func (fmtCtx *CAVFormatContext) GetMaxChunkDuration() int {
  */
 func (fmtCtx *CAVFormatContext) GetMaxChunkSize() int {
 	return int(fmtCtx.max_chunk_size)
+}
+
+/**
+ * Max chunk size in bytes
+ * Note, not all formats support this and unpredictable things may happen if it is used when not supported.
+ * - encoding: Set by user
+ * - decoding: unused
+ */
+func (fmtCtx *CAVFormatContext) SetMaxChunkSize(maxChunkSize int) {
+	fmtCtx.max_chunk_size = C.int(maxChunkSize)
 }
 
 /**
@@ -1931,12 +2721,31 @@ func (fmtCtx *CAVFormatContext) GetUseWallclockAsTimestamps() int {
 }
 
 /**
+ * forces the use of wallclock timestamps as pts/dts of packets
+ * This has undefined results in the presence of B frames.
+ * - encoding: unused
+ * - decoding: Set by user
+ */
+func (fmtCtx *CAVFormatContext) SetUseWallclockAsTimestamps(useWallclockAsTimestamps int) {
+	fmtCtx.use_wallclock_as_timestamps = C.int(useWallclockAsTimestamps)
+}
+
+/**
  * avio flags, used to force AVIO_FLAG_DIRECT.
  * - encoding: unused
  * - decoding: Set by user
  */
 func (fmtCtx *CAVFormatContext) GetAvioFlags() int {
 	return int(fmtCtx.avio_flags)
+}
+
+/**
+ * avio flags, used to force AVIO_FLAG_DIRECT.
+ * - encoding: unused
+ * - decoding: Set by user
+ */
+func (fmtCtx *CAVFormatContext) SetAvioFlags(avioFlags int) {
+	fmtCtx.avio_flags = C.int(avioFlags)
 }
 
 /**
@@ -1950,12 +2759,31 @@ func (fmtCtx *CAVFormatContext) GetDurationEstimationMethod() CAVDurationEstimat
 }
 
 /**
+ * The duration field can be estimated through various ways, and this field can be used
+ * to know how the duration was estimated.
+ * - encoding: unused
+ * - decoding: Read by user
+ */
+func (fmtCtx *CAVFormatContext) SetDurationEstimationMethod(durationEstimationMethod CAVDurationEstimationMethod) {
+	fmtCtx.duration_estimation_method = C.enum_AVDurationEstimationMethod(durationEstimationMethod)
+}
+
+/**
  * Skip initial bytes when opening stream
  * - encoding: unused
  * - decoding: Set by user
  */
 func (fmtCtx *CAVFormatContext) GetSkipInitialBytes() int64 {
 	return int64(fmtCtx.skip_initial_bytes)
+}
+
+/**
+ * Skip initial bytes when opening stream
+ * - encoding: unused
+ * - decoding: Set by user
+ */
+func (fmtCtx *CAVFormatContext) SetSkipInitialBytes(skipInitialBytes int64) {
+	fmtCtx.skip_initial_bytes = C.int64_t(skipInitialBytes)
 }
 
 /**
@@ -1968,12 +2796,30 @@ func (fmtCtx *CAVFormatContext) GetCorrectTsOverflow() uint {
 }
 
 /**
+ * Correct single timestamp overflows
+ * - encoding: unused
+ * - decoding: Set by user
+ */
+func (fmtCtx *CAVFormatContext) SetCorrectTsOverflow(correctTsOverflow uint) {
+	fmtCtx.correct_ts_overflow = C.uint(correctTsOverflow)
+}
+
+/**
  * Force seeking to any (also non key) frames.
  * - encoding: unused
  * - decoding: Set by user
  */
 func (fmtCtx *CAVFormatContext) GetSeek2any() int {
 	return int(fmtCtx.seek2any)
+}
+
+/**
+ * Force seeking to any (also non key) frames.
+ * - encoding: unused
+ * - decoding: Set by user
+ */
+func (fmtCtx *CAVFormatContext) SetSeek2any(seek2Any int) {
+	fmtCtx.seek2any = C.int(seek2Any)
 }
 
 /**
@@ -1986,6 +2832,15 @@ func (fmtCtx *CAVFormatContext) GetFlushPackets() int {
 }
 
 /**
+ * Flush the I/O context after each packet.
+ * - encoding: Set by user
+ * - decoding: unused
+ */
+func (fmtCtx *CAVFormatContext) SetFlushPackets(flushPackets int) {
+	fmtCtx.flush_packets = C.int(flushPackets)
+}
+
+/**
  * format probing score.
  * The maximal score is AVPROBE_SCORE_MAX, its set when the demuxer probes
  * the format.
@@ -1994,6 +2849,17 @@ func (fmtCtx *CAVFormatContext) GetFlushPackets() int {
  */
 func (fmtCtx *CAVFormatContext) GetProbeScore() int {
 	return int(fmtCtx.probe_score)
+}
+
+/**
+ * format probing score.
+ * The maximal score is AVPROBE_SCORE_MAX, its set when the demuxer probes
+ * the format.
+ * - encoding: unused
+ * - decoding: set by avformat, read by user
+ */
+func (fmtCtx *CAVFormatContext) SetProbeScore(probeScore int) {
+	fmtCtx.probe_score = C.int(probeScore)
 }
 
 /**
@@ -2010,6 +2876,19 @@ func (fmtCtx *CAVFormatContext) GetFormatProbesize() int {
 }
 
 /**
+ * Maximum number of bytes read from input in order to identify the
+ * \ref AVInputFormat "input format". Only used when the format is not set
+ * explicitly by the caller.
+ *
+ * Demuxing only, set by the caller before avformat_open_input().
+ *
+ * @sa probesize
+ */
+func (fmtCtx *CAVFormatContext) SetFormatProbesize(formatProbeSize int) {
+	fmtCtx.format_probesize = C.int(formatProbeSize)
+}
+
+/**
  * ',' separated list of allowed decoders.
  * If NULL then all are allowed
  * - encoding: unused
@@ -2017,6 +2896,21 @@ func (fmtCtx *CAVFormatContext) GetFormatProbesize() int {
  */
 func (fmtCtx *CAVFormatContext) GetCodecWhitelist() string {
 	return C.GoString(fmtCtx.codec_whitelist)
+}
+
+/**
+ * ',' separated list of allowed decoders.
+ * If NULL then all are allowed
+ * - encoding: unused
+ * - decoding: set by user
+ */
+func (fmtCtx *CAVFormatContext) SetCodecWhitelist(codecWhitelist string) {
+	var cCodecWhitelist *C.char = nil
+	if len(codecWhitelist) > 0 {
+		cCodecWhitelist = C.CString(codecWhitelist)
+	}
+
+	fmtCtx.codec_whitelist = cCodecWhitelist
 }
 
 /**
@@ -2030,6 +2924,21 @@ func (fmtCtx *CAVFormatContext) GetFormatWhitelist() string {
 }
 
 /**
+ * ',' separated list of allowed demuxers.
+ * If NULL then all are allowed
+ * - encoding: unused
+ * - decoding: set by user
+ */
+func (fmtCtx *CAVFormatContext) SetFormatWhitelist(formatWhitelist string) {
+	var cFormatWhitelist *C.char = nil
+	if len(formatWhitelist) > 0 {
+		cFormatWhitelist = C.CString(formatWhitelist)
+	}
+
+	fmtCtx.format_whitelist = cFormatWhitelist
+}
+
+/**
  * IO repositioned flag.
  * This is set by avformat when the underlaying IO context read pointer
  * is repositioned, for example when doing byte based seeking.
@@ -2040,13 +2949,33 @@ func (fmtCtx *CAVFormatContext) GetIoRespositioned() int {
 }
 
 /**
+ * IO repositioned flag.
+ * This is set by avformat when the underlaying IO context read pointer
+ * is repositioned, for example when doing byte based seeking.
+ * Demuxers can use the flag to detect such changes.
+ */
+func (fmtCtx *CAVFormatContext) SetIoRespositioned(ioRespositioned int) {
+	fmtCtx.io_repositioned = C.int(ioRespositioned)
+}
+
+/**
  * Forced video codec.
  * This allows forcing a specific decoder, even when there are multiple with
  * the same codec_id.
  * Demuxing: Set by user
  */
 func (fmtCtx *CAVFormatContext) GetVideoCodec() *avcodec.CAVCodec {
-	return (*avcodec.CAVCodec)(unsafe.Pointer((fmtCtx.video_codec)))
+	return (*avcodec.CAVCodec)(unsafe.Pointer(fmtCtx.video_codec))
+}
+
+/**
+ * Forced video codec.
+ * This allows forcing a specific decoder, even when there are multiple with
+ * the same codec_id.
+ * Demuxing: Set by user
+ */
+func (fmtCtx *CAVFormatContext) SetVideoCodec(videoCodec *avcodec.CAVCodec) {
+	fmtCtx.video_codec = (*C.AVCodec)(unsafe.Pointer(videoCodec))
 }
 
 /**
@@ -2056,7 +2985,17 @@ func (fmtCtx *CAVFormatContext) GetVideoCodec() *avcodec.CAVCodec {
  * Demuxing: Set by user
  */
 func (fmtCtx *CAVFormatContext) GetAudioCodec() *avcodec.CAVCodec {
-	return (*avcodec.CAVCodec)(unsafe.Pointer((fmtCtx.audio_codec)))
+	return (*avcodec.CAVCodec)(unsafe.Pointer(fmtCtx.audio_codec))
+}
+
+/**
+ * Forced audio codec.
+ * This allows forcing a specific decoder, even when there are multiple with
+ * the same codec_id.
+ * Demuxing: Set by user
+ */
+func (fmtCtx *CAVFormatContext) SetAudioCodec(audioCodec *avcodec.CAVCodec) {
+	fmtCtx.audio_codec = (*C.AVCodec)(unsafe.Pointer(audioCodec))
 }
 
 /**
@@ -2066,7 +3005,17 @@ func (fmtCtx *CAVFormatContext) GetAudioCodec() *avcodec.CAVCodec {
  * Demuxing: Set by user
  */
 func (fmtCtx *CAVFormatContext) GetSubtitleCodec() *avcodec.CAVCodec {
-	return (*avcodec.CAVCodec)(unsafe.Pointer((fmtCtx.subtitle_codec)))
+	return (*avcodec.CAVCodec)(unsafe.Pointer(fmtCtx.subtitle_codec))
+}
+
+/**
+ * Forced subtitle codec.
+ * This allows forcing a specific decoder, even when there are multiple with
+ * the same codec_id.
+ * Demuxing: Set by user
+ */
+func (fmtCtx *CAVFormatContext) SetSubtitleCodec(subtitleCodec *avcodec.CAVCodec) {
+	fmtCtx.subtitle_codec = (*C.AVCodec)(unsafe.Pointer(subtitleCodec))
 }
 
 /**
@@ -2076,7 +3025,17 @@ func (fmtCtx *CAVFormatContext) GetSubtitleCodec() *avcodec.CAVCodec {
  * Demuxing: Set by user
  */
 func (fmtCtx *CAVFormatContext) GetDataCodec() *avcodec.CAVCodec {
-	return (*avcodec.CAVCodec)(unsafe.Pointer((fmtCtx.data_codec)))
+	return (*avcodec.CAVCodec)(unsafe.Pointer(fmtCtx.data_codec))
+}
+
+/**
+ * Forced data codec.
+ * This allows forcing a specific decoder, even when there are multiple with
+ * the same codec_id.
+ * Demuxing: Set by user
+ */
+func (fmtCtx *CAVFormatContext) SetDataCodec(dataCodec *avcodec.CAVCodec) {
+	fmtCtx.data_codec = (*C.AVCodec)(unsafe.Pointer(dataCodec))
 }
 
 /**
@@ -2089,11 +3048,28 @@ func (fmtCtx *CAVFormatContext) GetMetadataHeaderPadding() int {
 }
 
 /**
+ * Number of bytes to be written as padding in a metadata header.
+ * Demuxing: Unused.
+ * Muxing: Set by user via av_format_set_metadata_header_padding.
+ */
+func (fmtCtx *CAVFormatContext) SetMetadataHeaderPadding(metadataHeaderPadding int) {
+	fmtCtx.metadata_header_padding = C.int(metadataHeaderPadding)
+}
+
+/**
  * User data.
  * This is a place for some private data of the user.
  */
 func (fmtCtx *CAVFormatContext) GetOpaque() unsafe.Pointer {
 	return fmtCtx.opaque
+}
+
+/**
+ * User data.
+ * This is a place for some private data of the user.
+ */
+func (fmtCtx *CAVFormatContext) SetOpaque(opaque unsafe.Pointer) {
+	fmtCtx.opaque = opaque
 }
 
 /**
@@ -2104,11 +3080,26 @@ func (fmtCtx *CAVFormatContext) GetControlMessageCb() CAvFormatControlMessage {
 }
 
 /**
+ * Callback used by devices to communicate with application.
+ */
+func (fmtCtx *CAVFormatContext) SetControlMessageCb(controlMessageCb CAvFormatControlMessage) {
+	fmtCtx.control_message_cb = C.av_format_control_message(controlMessageCb)
+}
+
+/**
  * Output timestamp offset, in microseconds.
  * Muxing: set by user
  */
 func (fmtCtx *CAVFormatContext) GetOutputTsOffset() int64 {
 	return int64(fmtCtx.output_ts_offset)
+}
+
+/**
+ * Output timestamp offset, in microseconds.
+ * Muxing: set by user
+ */
+func (fmtCtx *CAVFormatContext) SetOutputTsOffset(outputTsOffset int64) {
+	fmtCtx.output_ts_offset = C.int64_t(outputTsOffset)
 }
 
 /**
@@ -2122,11 +3113,34 @@ func (fmtCtx *CAVFormatContext) GetDumpSeparator() string {
 }
 
 /**
+ * dump format separator.
+ * can be ", " or "\n      " or anything else
+ * - muxing: Set by user.
+ * - demuxing: Set by user.
+ */
+func (fmtCtx *CAVFormatContext) SetDumpSeparator(dumpSeparator string) {
+	var cDumpSeparator *C.char = nil
+	if len(dumpSeparator) > 0 {
+		cDumpSeparator = C.CString(dumpSeparator)
+	}
+
+	fmtCtx.dump_separator = (*C.uchar)(unsafe.Pointer(cDumpSeparator))
+}
+
+/**
  * Forced Data codec_id.
  * Demuxing: Set by user.
  */
 func (fmtCtx *CAVFormatContext) GetDataCodecId() avcodec.CAVCodecID {
 	return avcodec.CAVCodecID(fmtCtx.data_codec_id)
+}
+
+/**
+ * Forced Data codec_id.
+ * Demuxing: Set by user.
+ */
+func (fmtCtx *CAVFormatContext) SetDataCodecId(dataCodecid avcodec.CAVCodecID) {
+	fmtCtx.data_codec_id = C.enum_AVCodecID(dataCodecid)
 }
 
 /**
@@ -2136,6 +3150,20 @@ func (fmtCtx *CAVFormatContext) GetDataCodecId() avcodec.CAVCodecID {
  */
 func (fmtCtx *CAVFormatContext) GetProtocolWhitelist() string {
 	return C.GoString(fmtCtx.protocol_whitelist)
+}
+
+/**
+ * ',' separated list of allowed protocols.
+ * - encoding: unused
+ * - decoding: set by user
+ */
+func (fmtCtx *CAVFormatContext) SetProtocolWhitelist(protocolWhitelist string) {
+	var cProtocolWhitelist *C.char = nil
+	if len(protocolWhitelist) > 0 {
+		cProtocolWhitelist = C.CString(protocolWhitelist)
+	}
+
+	fmtCtx.protocol_whitelist = cProtocolWhitelist
 }
 
 /**
@@ -2164,6 +3192,32 @@ func (fmtCtx *CAVFormatContext) GetIoOpen() ctypes.CFunc {
 	return ctypes.CFunc(fmtCtx.io_open)
 }
 
+/**
+ * A callback for opening new IO streams.
+ *
+ * Whenever a muxer or a demuxer needs to open an IO stream (typically from
+ * avformat_open_input() for demuxers, but for certain formats can happen at
+ * other times as well), it will call this callback to obtain an IO context.
+ *
+ * @param s the format context
+ * @param pb on success, the newly opened IO context should be returned here
+ * @param url the url to open
+ * @param flags a combination of AVIO_FLAG_*
+ * @param options a dictionary of additional options, with the same
+ *                semantics as in avio_open2()
+ * @return 0 on success, a negative AVERROR code on failure
+ *
+ * @note Certain muxers and demuxers do nesting, i.e. they open one or more
+ * additional internal format contexts. Thus the AVFormatContext pointer
+ * passed to this callback may be different from the one facing the caller.
+ * It will, however, have the same 'opaque' field.
+ */
+// 	 int (*io_open)(struct AVFormatContext *s, AVIOContext **pb, const char *url,
+// 					int flags, AVDictionary **options);
+func (fmtCtx *CAVFormatContext) SetIoOpen(ioOpen ctypes.CFunc) {
+	fmtCtx.io_open = (*[0]byte)(ioOpen)
+}
+
 //  #if FF_API_AVFORMAT_IO_CLOSE
 // 	 /**
 // 	  * A callback for closing the streams opened with AVFormatContext.io_open().
@@ -2184,12 +3238,34 @@ func (fmtCtx *CAVFormatContext) GetProtocolBlacklist() string {
 }
 
 /**
+ * ',' separated list of disallowed protocols.
+ * - encoding: unused
+ * - decoding: set by user
+ */
+func (fmtCtx *CAVFormatContext) SetProtocolBlacklist(protocolBlackList string) {
+	var cProtocolBlackList *C.char = nil
+	if len(protocolBlackList) > 0 {
+		cProtocolBlackList = C.CString(protocolBlackList)
+	}
+	fmtCtx.protocol_blacklist = cProtocolBlackList
+}
+
+/**
  * The maximum number of streams.
  * - encoding: unused
  * - decoding: set by user
  */
 func (fmtCtx *CAVFormatContext) GetMaxStreams() int {
 	return int(fmtCtx.max_streams)
+}
+
+/**
+ * The maximum number of streams.
+ * - encoding: unused
+ * - decoding: set by user
+ */
+func (fmtCtx *CAVFormatContext) SetMaxStreams(maxStreams int) {
+	fmtCtx.max_streams = C.int(maxStreams)
 }
 
 /**
@@ -2202,12 +3278,30 @@ func (fmtCtx *CAVFormatContext) GetSkipEstimateDurationFromPts() int {
 }
 
 /**
+ * Skip duration calcuation in estimate_timings_from_pts.
+ * - encoding: unused
+ * - decoding: set by user
+ */
+func (fmtCtx *CAVFormatContext) SetSkipEstimateDurationFromPts(skipEstimateDurationFromPts int) {
+	fmtCtx.skip_estimate_duration_from_pts = C.int(skipEstimateDurationFromPts)
+}
+
+/**
  * Maximum number of packets that can be probed
  * - encoding: unused
  * - decoding: set by user
  */
 func (fmtCtx *CAVFormatContext) GetMaxProbePackets() int {
 	return int(fmtCtx.max_probe_packets)
+}
+
+/**
+ * Maximum number of packets that can be probed
+ * - encoding: unused
+ * - decoding: set by user
+ */
+func (fmtCtx *CAVFormatContext) SetMaxProbePackets(maxProbePackets int) {
+	fmtCtx.max_probe_packets = C.int(maxProbePackets)
 }
 
 /**
@@ -2224,6 +3318,22 @@ func (fmtCtx *CAVFormatContext) GetMaxProbePackets() int {
 // 	 int (*io_close2)(struct AVFormatContext *s, AVIOContext *pb);
 func (fmtCtx *CAVFormatContext) GetIoClose2() ctypes.CFunc {
 	return ctypes.CFunc(fmtCtx.io_close2)
+}
+
+/**
+ * A callback for closing the streams opened with AVFormatContext.io_open().
+ *
+ * Using this is preferred over io_close, because this can return an error.
+ * Therefore this callback is used instead of io_close by the generic
+ * libavformat code if io_close is NULL or the default.
+ *
+ * @param s the format context
+ * @param pb IO context to be closed and freed
+ * @return 0 on success, a negative AVERROR code on failure
+ */
+// 	 int (*io_close2)(struct AVFormatContext *s, AVIOContext *pb);
+func (fmtCtx *CAVFormatContext) SetIoClose2(ioClose2 ctypes.CFunc) {
+	fmtCtx.io_close2 = (*[0]byte)(ioClose2)
 }
 
 //#endregion CAVFormatContext
@@ -2524,8 +3634,8 @@ func AvProbeInputFormat(pd *CAVProbeData, isOpened int) *CAVInputFormat {
  *                  If the score is <= AVPROBE_SCORE_MAX / 4 it is recommended
  *                  to retry with a larger probe buffer.
  */
-func AvProbeInputFormat2(pd *CAVProbeData, isOpened int, scoreMax *int) *CAVInputFormat {
-	return (*CAVInputFormat)(C.av_probe_input_format2((*C.AVProbeData)(pd), C.int(isOpened), (*C.int)(unsafe.Pointer(scoreMax))))
+func AvProbeInputFormat2(pd *CAVProbeData, isOpened int, scoreMax *ctypes.Int) *CAVInputFormat {
+	return (*CAVInputFormat)(C.av_probe_input_format2((*C.AVProbeData)(pd), C.int(isOpened), (*C.int)(scoreMax)))
 }
 
 /**
@@ -2535,8 +3645,8 @@ func AvProbeInputFormat2(pd *CAVProbeData, isOpened int, scoreMax *int) *CAVInpu
  *                  demuxers with or without AVFMT_NOFILE are probed.
  * @param score_ret The score of the best detection.
  */
-func av_probe_input_format3(pd *CAVProbeData, isOpened int, scoreRet *int) *CAVInputFormat {
-	return (*CAVInputFormat)(C.av_probe_input_format3((*C.AVProbeData)(pd), C.int(isOpened), (*C.int)(unsafe.Pointer(scoreRet))))
+func AvProbeInputFormat3(pd *CAVProbeData, isOpened int, scoreRet *ctypes.Int) *CAVInputFormat {
+	return (*CAVInputFormat)(C.av_probe_input_format3((*C.AVProbeData)(pd), C.int(isOpened), (*C.int)(scoreRet)))
 }
 
 /**
@@ -3120,7 +4230,7 @@ func AvGuessCodec(fmt *CAVOutputFormat, shortName string, filename string, mimeT
  * @note Some formats or devices may not allow to measure dts and wall
  *       atomically.
  */
-func AvGetOutputTimestamp(s *CAVFormatContext, stream int, dts *int64, wall *int64) int {
+func AvGetOutputTimestamp(s *CAVFormatContext, stream int, dts *ctypes.Int64, wall *ctypes.Int64) int {
 	return int(C.av_get_output_timestamp((*C.AVFormatContext)(s), C.int(stream), (*C.int64_t)(dts), (*C.int64_t)(wall)))
 }
 
@@ -3226,7 +4336,7 @@ func AvCodecGetTag(tags **CAVCodecTag, id avcodec.CAVCodecID) uint {
  * @param tag A pointer to the found tag
  * @return 0 if id was not found in tags, > 0 if it was found
  */
-func AvCodecGetTag2(tags **CAVCodecTag, id avcodec.CAVCodecID, tag *uint) int {
+func AvCodecGetTag2(tags **CAVCodecTag, id avcodec.CAVCodecID, tag *ctypes.UInt) int {
 	return int(C.av_codec_get_tag2((**C.struct_AVCodecTag)(unsafe.Pointer(tags)), (C.enum_AVCodecID)(id), (*C.uint)(unsafe.Pointer(tag))))
 }
 
@@ -3293,40 +4403,57 @@ func AvformatIndexGetEntryFromTimestamp(st *CAVStream, wantedTimestamp int64, fl
 	return (*CAVIndexEntry)(C.avformat_index_get_entry_from_timestamp((*C.AVStream)(st), C.int64_t(wantedTimestamp), C.int(flags)))
 }
 
-//  /**
-//   * Add an index entry into a sorted list. Update the entry if the list
-//   * already contains it.
-//   *
-//   * @param timestamp timestamp in the time base of the given stream
-//   */
-//  int av_add_index_entry(AVStream *st, int64_t pos, int64_t timestamp,
-// 						int size, int distance, int flags);
+/**
+ * Add an index entry into a sorted list. Update the entry if the list
+ * already contains it.
+ *
+ * @param timestamp timestamp in the time base of the given stream
+ */
+func AvAddIndexEntry(st *CAVStream, pos int64, timestamp int64,
+	size int, distance int, flags int) int {
+	return int(C.av_add_index_entry((*C.AVStream)(st), C.int64_t(pos), C.int64_t(timestamp),
+		C.int(size), C.int(distance), C.int(flags)))
+}
 
-//  /**
-//   * Split a URL string into components.
-//   *
-//   * The pointers to buffers for storing individual components may be null,
-//   * in order to ignore that component. Buffers for components not found are
-//   * set to empty strings. If the port is not found, it is set to a negative
-//   * value.
-//   *
-//   * @param proto the buffer for the protocol
-//   * @param proto_size the size of the proto buffer
-//   * @param authorization the buffer for the authorization
-//   * @param authorization_size the size of the authorization buffer
-//   * @param hostname the buffer for the host name
-//   * @param hostname_size the size of the hostname buffer
-//   * @param port_ptr a pointer to store the port number in
-//   * @param path the buffer for the path
-//   * @param path_size the size of the path buffer
-//   * @param url the URL to split
-//   */
-//  void av_url_split(char *proto,         int proto_size,
-// 				   char *authorization, int authorization_size,
-// 				   char *hostname,      int hostname_size,
-// 				   int *port_ptr,
-// 				   char *path,          int path_size,
-// 				   const char *url);
+/**
+ * Split a URL string into components.
+ *
+ * The pointers to buffers for storing individual components may be null,
+ * in order to ignore that component. Buffers for components not found are
+ * set to empty strings. If the port is not found, it is set to a negative
+ * value.
+ *
+ * @param proto the buffer for the protocol
+ * @param proto_size the size of the proto buffer
+ * @param authorization the buffer for the authorization
+ * @param authorization_size the size of the authorization buffer
+ * @param hostname the buffer for the host name
+ * @param hostname_size the size of the hostname buffer
+ * @param port_ptr a pointer to store the port number in
+ * @param path the buffer for the path
+ * @param path_size the size of the path buffer
+ * @param url the URL to split
+ */
+func AvUrlSplit(proto unsafe.Pointer, protoSize int,
+	authorization unsafe.Pointer, authorizationSize int,
+	hostname unsafe.Pointer, hostnameSize int,
+	portPtr *ctypes.Int,
+	path unsafe.Pointer, pathSize int,
+	url string) {
+
+	var cUrl *C.char = nil
+	if len(url) > 0 {
+		cUrl = C.CString(url)
+		defer C.free(unsafe.Pointer(cUrl))
+	}
+
+	C.av_url_split((*C.char)(proto), C.int(protoSize),
+		(*C.char)(authorization), C.int(authorizationSize),
+		(*C.char)(hostname), C.int(hostnameSize),
+		(*C.int)(portPtr),
+		(*C.char)(path), C.int(pathSize),
+		cUrl)
+}
 
 /**
  * Print detailed information about the input or output format, such as
@@ -3350,73 +4477,119 @@ func AvDumpFormat(ic *CAVFormatContext, index int, url string, is_output int) {
 
 const AV_FRAME_FILENAME_FLAGS_MULTIPLE = C.AV_FRAME_FILENAME_FLAGS_MULTIPLE ///< Allow multiple %d
 
-// /**
-//  * Return in 'buf' the path with '%d' replaced by a number.
-//  *
-//  * Also handles the '%0nd' format where 'n' is the total number
-//  * of digits and '%%'.
-//  *
-//  * @param buf destination buffer
-//  * @param buf_size destination buffer size
-//  * @param path numbered sequence string
-//  * @param number frame number
-//  * @param flags AV_FRAME_FILENAME_FLAGS_*
-//  * @return 0 if OK, -1 on format error
-//  */
-// int av_get_frame_filename2(char *buf, int buf_size,
-//                           const char *path, int number, int flags);
+/**
+ * Return in 'buf' the path with '%d' replaced by a number.
+ *
+ * Also handles the '%0nd' format where 'n' is the total number
+ * of digits and '%%'.
+ *
+ * @param buf destination buffer
+ * @param buf_size destination buffer size
+ * @param path numbered sequence string
+ * @param number frame number
+ * @param flags AV_FRAME_FILENAME_FLAGS_*
+ * @return 0 if OK, -1 on format error
+ */
+func AvGetFrameFilename2(buf unsafe.Pointer, bufSize int,
+	path string, number int, flags int) int {
+	var cPath *C.char = nil
+	if len(path) > 0 {
+		cPath = C.CString(path)
+		defer C.free(unsafe.Pointer(cPath))
+	}
 
-// int av_get_frame_filename(char *buf, int buf_size,
-//                           const char *path, int number);
+	return int(C.av_get_frame_filename2((*C.char)(buf), C.int(bufSize),
+		cPath, C.int(number), C.int(flags)))
+}
 
-// /**
-//  * Check whether filename actually is a numbered sequence generator.
-//  *
-//  * @param filename possible numbered sequence string
-//  * @return 1 if a valid numbered sequence string, 0 otherwise
-//  */
-// int av_filename_number_test(const char *filename);
+func AvGetFrameFilename(buf unsafe.Pointer, bufSize int,
+	path string, number int) int {
+	var cPath *C.char = nil
+	if len(path) > 0 {
+		cPath = C.CString(path)
+		defer C.free(unsafe.Pointer(cPath))
+	}
 
-// /**
-//  * Generate an SDP for an RTP session.
-//  *
-//  * Note, this overwrites the id values of AVStreams in the muxer contexts
-//  * for getting unique dynamic payload types.
-//  *
-//  * @param ac array of AVFormatContexts describing the RTP streams. If the
-//  *           array is composed by only one context, such context can contain
-//  *           multiple AVStreams (one AVStream per RTP stream). Otherwise,
-//  *           all the contexts in the array (an AVCodecContext per RTP stream)
-//  *           must contain only one AVStream.
-//  * @param n_files number of AVCodecContexts contained in ac
-//  * @param buf buffer where the SDP will be stored (must be allocated by
-//  *            the caller)
-//  * @param size the size of the buffer
-//  * @return 0 if OK, AVERROR_xxx on error
-//  */
-// int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size);
+	return int(C.av_get_frame_filename((*C.char)(buf), C.int(bufSize),
+		cPath, C.int(number)))
+}
 
-// /**
-//  * Return a positive value if the given filename has one of the given
-//  * extensions, 0 otherwise.
-//  *
-//  * @param filename   file name to check against the given extensions
-//  * @param extensions a comma-separated list of filename extensions
-//  */
-// int av_match_ext(const char *filename, const char *extensions);
+/**
+ * Check whether filename actually is a numbered sequence generator.
+ *
+ * @param filename possible numbered sequence string
+ * @return 1 if a valid numbered sequence string, 0 otherwise
+ */
+func AvFilenameNumberTest(filename string) int {
+	var cFilename *C.char = nil
+	if len(filename) > 0 {
+		cFilename = C.CString(filename)
+		defer C.free(unsafe.Pointer(cFilename))
+	}
 
-// /**
-//  * Test if the given container can store a codec.
-//  *
-//  * @param ofmt           container to check for compatibility
-//  * @param codec_id       codec to potentially store in container
-//  * @param std_compliance standards compliance level, one of FF_COMPLIANCE_*
-//  *
-//  * @return 1 if codec with ID codec_id can be stored in ofmt, 0 if it cannot.
-//  *         A negative number if this information is not available.
-//  */
-// int avformat_query_codec(const AVOutputFormat *ofmt, enum AVCodecID codec_id,
-//                          int std_compliance);
+	return int(C.av_filename_number_test(cFilename))
+}
+
+/**
+ * Generate an SDP for an RTP session.
+ *
+ * Note, this overwrites the id values of AVStreams in the muxer contexts
+ * for getting unique dynamic payload types.
+ *
+ * @param ac array of AVFormatContexts describing the RTP streams. If the
+ *           array is composed by only one context, such context can contain
+ *           multiple AVStreams (one AVStream per RTP stream). Otherwise,
+ *           all the contexts in the array (an AVCodecContext per RTP stream)
+ *           must contain only one AVStream.
+ * @param n_files number of AVCodecContexts contained in ac
+ * @param buf buffer where the SDP will be stored (must be allocated by
+ *            the caller)
+ * @param size the size of the buffer
+ * @return 0 if OK, AVERROR_xxx on error
+ */
+func AvSdpCreate(ac []*CAVFormatContext, nFiles int, buf unsafe.Pointer, size int) int {
+	cAc := unsafe.SliceData(ac)
+	return int(C.av_sdp_create((**C.AVFormatContext)(unsafe.Pointer(cAc)), C.int(nFiles), (*C.char)(buf), C.int(size)))
+}
+
+/**
+ * Return a positive value if the given filename has one of the given
+ * extensions, 0 otherwise.
+ *
+ * @param filename   file name to check against the given extensions
+ * @param extensions a comma-separated list of filename extensions
+ */
+func AvMatchExt(filename string, extensions string) int {
+	var cFilename *C.char = nil
+	if len(filename) > 0 {
+		cFilename = C.CString(filename)
+		defer C.free(unsafe.Pointer(cFilename))
+	}
+
+	var cExtensions *C.char = nil
+	if len(extensions) > 0 {
+		cExtensions = C.CString(extensions)
+		defer C.free(unsafe.Pointer(cExtensions))
+	}
+
+	return int(C.av_match_ext(cFilename, cExtensions))
+}
+
+/**
+ * Test if the given container can store a codec.
+ *
+ * @param ofmt           container to check for compatibility
+ * @param codec_id       codec to potentially store in container
+ * @param std_compliance standards compliance level, one of FF_COMPLIANCE_*
+ *
+ * @return 1 if codec with ID codec_id can be stored in ofmt, 0 if it cannot.
+ *         A negative number if this information is not available.
+ */
+func AvformatQueryCodec(ofmt *CAVOutputFormat, codecId avcodec.CAVCodecID,
+	stdCompliance int) int {
+	return int(C.avformat_query_codec((*C.AVOutputFormat)(ofmt), C.enum_AVCodecID(codecId),
+		C.int(stdCompliance)))
+}
 
 /**
  * @defgroup riff_fourcc RIFF FourCCs
@@ -3463,52 +4636,70 @@ func AvformatGetMovAudioTags() *CAVCodecTag {
  * @}
  */
 
-// /**
-//  * Guess the sample aspect ratio of a frame, based on both the stream and the
-//  * frame aspect ratio.
-//  *
-//  * Since the frame aspect ratio is set by the codec but the stream aspect ratio
-//  * is set by the demuxer, these two may not be equal. This function tries to
-//  * return the value that you should use if you would like to display the frame.
-//  *
-//  * Basic logic is to use the stream aspect ratio if it is set to something sane
-//  * otherwise use the frame aspect ratio. This way a container setting, which is
-//  * usually easy to modify can override the coded value in the frames.
-//  *
-//  * @param format the format context which the stream is part of
-//  * @param stream the stream which the frame is part of
-//  * @param frame the frame with the aspect ratio to be determined
-//  * @return the guessed (valid) sample_aspect_ratio, 0/1 if no idea
-//  */
-// AVRational av_guess_sample_aspect_ratio(AVFormatContext *format, AVStream *stream,
-//                                         struct AVFrame *frame);
+/**
+ * Guess the sample aspect ratio of a frame, based on both the stream and the
+ * frame aspect ratio.
+ *
+ * Since the frame aspect ratio is set by the codec but the stream aspect ratio
+ * is set by the demuxer, these two may not be equal. This function tries to
+ * return the value that you should use if you would like to display the frame.
+ *
+ * Basic logic is to use the stream aspect ratio if it is set to something sane
+ * otherwise use the frame aspect ratio. This way a container setting, which is
+ * usually easy to modify can override the coded value in the frames.
+ *
+ * @param format the format context which the stream is part of
+ * @param stream the stream which the frame is part of
+ * @param frame the frame with the aspect ratio to be determined
+ * @return the guessed (valid) sample_aspect_ratio, 0/1 if no idea
+ */
+func AvGuessSampleAspectRatio(format *CAVFormatContext, stream *CAVStream,
+	frame *avutil.CAVFrame) avutil.CAVRational {
+	ret := C.av_guess_sample_aspect_ratio((*C.AVFormatContext)(format), (*C.AVStream)(stream),
+		(*C.AVFrame)(unsafe.Pointer(frame)))
+	return *(*avutil.CAVRational)(unsafe.Pointer(&ret))
+}
 
-// /**
-//  * Guess the frame rate, based on both the container and codec information.
-//  *
-//  * @param ctx the format context which the stream is part of
-//  * @param stream the stream which the frame is part of
-//  * @param frame the frame for which the frame rate should be determined, may be NULL
-//  * @return the guessed (valid) frame rate, 0/1 if no idea
-//  */
-// AVRational av_guess_frame_rate(AVFormatContext *ctx, AVStream *stream,
-//                                struct AVFrame *frame);
+/**
+ * Guess the frame rate, based on both the container and codec information.
+ *
+ * @param ctx the format context which the stream is part of
+ * @param stream the stream which the frame is part of
+ * @param frame the frame for which the frame rate should be determined, may be NULL
+ * @return the guessed (valid) frame rate, 0/1 if no idea
+ */
+func AvGuessFrameRate(ctx *CAVFormatContext, stream *CAVStream,
+	frame *avutil.CAVFrame) avutil.CAVRational {
+	ret := C.av_guess_frame_rate((*C.AVFormatContext)(ctx), (*C.AVStream)(stream),
+		(*C.AVFrame)(unsafe.Pointer(frame)))
+	return *(*avutil.CAVRational)(unsafe.Pointer(&ret))
 
-// /**
-//  * Check if the stream st contained in s is matched by the stream specifier
-//  * spec.
-//  *
-//  * See the "stream specifiers" chapter in the documentation for the syntax
-//  * of spec.
-//  *
-//  * @return  >0 if st is matched by spec;
-//  *          0  if st is not matched by spec;
-//  *          AVERROR code if spec is invalid
-//  *
-//  * @note  A stream specifier can match several streams in the format.
-//  */
-// int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
-//                                     const char *spec);
+}
+
+/**
+ * Check if the stream st contained in s is matched by the stream specifier
+ * spec.
+ *
+ * See the "stream specifiers" chapter in the documentation for the syntax
+ * of spec.
+ *
+ * @return  >0 if st is matched by spec;
+ *          0  if st is not matched by spec;
+ *          AVERROR code if spec is invalid
+ *
+ * @note  A stream specifier can match several streams in the format.
+ */
+func AvformatMatchStreamSpecifier(s *CAVFormatContext, st *CAVStream,
+	spec string) int {
+	var cSpec *C.char = nil
+	if len(spec) > 0 {
+		cSpec = C.CString(spec)
+		defer C.free(unsafe.Pointer(cSpec))
+	}
+
+	return int(C.avformat_match_stream_specifier((*C.AVFormatContext)(s), (*C.AVStream)(st),
+		cSpec))
+}
 
 func AvformatQueueAttachedPictures(s *CAVFormatContext) int {
 	return int(C.avformat_queue_attached_pictures((*C.AVFormatContext)(s)))
@@ -3528,19 +4719,23 @@ const (
 	// #endif
 )
 
-// /**
-//  * Transfer internal timing information from one stream to another.
-//  *
-//  * This function is useful when doing stream copy.
-//  *
-//  * @param ofmt     target output format for ost
-//  * @param ost      output stream which needs timings copy and adjustments
-//  * @param ist      reference input stream to copy timings from
-//  * @param copy_tb  define from where the stream codec timebase needs to be imported
-//  */
-// int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
-//                                                   AVStream *ost, const AVStream *ist,
-//                                                   enum AVTimebaseSource copy_tb);
+/**
+ * Transfer internal timing information from one stream to another.
+ *
+ * This function is useful when doing stream copy.
+ *
+ * @param ofmt     target output format for ost
+ * @param ost      output stream which needs timings copy and adjustments
+ * @param ist      reference input stream to copy timings from
+ * @param copy_tb  define from where the stream codec timebase needs to be imported
+ */
+func AvformatTransferInternalStreamTimingInfo(ofmt *CAVOutputFormat,
+	ost *CAVStream, ist *CAVStream,
+	copyTb CAVTimebaseSource) int {
+	return int(C.avformat_transfer_internal_stream_timing_info((*C.AVOutputFormat)(ofmt),
+		(*C.AVStream)(ost), (*C.AVStream)(ist),
+		copyTb))
+}
 
 /**
  * Get the internal codec timebase from a stream.
