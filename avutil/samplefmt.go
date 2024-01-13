@@ -3,6 +3,7 @@ package avutil
 /*
 #cgo pkg-config: libavutil
 
+#include <stdlib.h>
 #include "libavutil/samplefmt.h"
 */
 import "C"
@@ -87,61 +88,79 @@ const (
 	AV_SAMPLE_FMT_NB CAVSampleFormat = C.AV_SAMPLE_FMT_NB ///< Number of sample formats. DO NOT USE if linking dynamically
 )
 
-//  /**
-//   * Return the name of sample_fmt, or NULL if sample_fmt is not
-//   * recognized.
-//   */
-//  const char *av_get_sample_fmt_name(enum AVSampleFormat sample_fmt);
+/**
+ * Return the name of sample_fmt, or NULL if sample_fmt is not
+ * recognized.
+ */
+func AvGetSampleFmtName(sampleFmt CAVSampleFormat) string {
+	return C.GoString(C.av_get_sample_fmt_name(C.enum_AVSampleFormat(sampleFmt)))
+}
 
-//  /**
-//   * Return a sample format corresponding to name, or AV_SAMPLE_FMT_NONE
-//   * on error.
-//   */
-//  enum AVSampleFormat av_get_sample_fmt(const char *name);
+/**
+ * Return a sample format corresponding to name, or AV_SAMPLE_FMT_NONE
+ * on error.
+ */
+func AvGetSampleFmt(name string) CAVSampleFormat {
+	var cName *C.char = nil
+	if len(name) > 0 {
+		cName = C.CString(name)
+		defer C.free(unsafe.Pointer(cName))
+	}
 
-//  /**
-//   * Return the planar<->packed alternative form of the given sample format, or
-//   * AV_SAMPLE_FMT_NONE on error. If the passed sample_fmt is already in the
-//   * requested planar/packed format, the format returned is the same as the
-//   * input.
-//   */
-//  enum AVSampleFormat av_get_alt_sample_fmt(enum AVSampleFormat sample_fmt, int planar);
+	return CAVSampleFormat(C.av_get_sample_fmt(cName))
+}
 
-//  /**
-//   * Get the packed alternative form of the given sample format.
-//   *
-//   * If the passed sample_fmt is already in packed format, the format returned is
-//   * the same as the input.
-//   *
-//   * @return  the packed alternative form of the given sample format or
-// 			 AV_SAMPLE_FMT_NONE on error.
-//   */
-//  enum AVSampleFormat av_get_packed_sample_fmt(enum AVSampleFormat sample_fmt);
+/**
+ * Return the planar<->packed alternative form of the given sample format, or
+ * AV_SAMPLE_FMT_NONE on error. If the passed sample_fmt is already in the
+ * requested planar/packed format, the format returned is the same as the
+ * input.
+ */
+func AvGetAltSampleFmt(sampleFmt CAVSampleFormat, planar int) CAVSampleFormat {
+	return CAVSampleFormat(C.av_get_alt_sample_fmt(C.enum_AVSampleFormat(sampleFmt), C.int(planar)))
+}
 
-//  /**
-//   * Get the planar alternative form of the given sample format.
-//   *
-//   * If the passed sample_fmt is already in planar format, the format returned is
-//   * the same as the input.
-//   *
-//   * @return  the planar alternative form of the given sample format or
-// 			 AV_SAMPLE_FMT_NONE on error.
-//   */
-//  enum AVSampleFormat av_get_planar_sample_fmt(enum AVSampleFormat sample_fmt);
+/**
+ * Get the packed alternative form of the given sample format.
+ *
+ * If the passed sample_fmt is already in packed format, the format returned is
+ * the same as the input.
+ *
+ * @return  the packed alternative form of the given sample format or
+ *          AV_SAMPLE_FMT_NONE on error.
+ */
+func AvGetPackedSampleFmt(sampleFmt CAVSampleFormat) CAVSampleFormat {
+	return CAVSampleFormat(C.av_get_packed_sample_fmt(C.enum_AVSampleFormat(sampleFmt)))
+}
 
-//  /**
-//   * Generate a string corresponding to the sample format with
-//   * sample_fmt, or a header if sample_fmt is negative.
-//   *
-//   * @param buf the buffer where to write the string
-//   * @param buf_size the size of buf
-//   * @param sample_fmt the number of the sample format to print the
-//   * corresponding info string, or a negative value to print the
-//   * corresponding header.
-//   * @return the pointer to the filled buffer or NULL if sample_fmt is
-//   * unknown or in case of other errors
-//   */
-//  char *av_get_sample_fmt_string(char *buf, int buf_size, enum AVSampleFormat sample_fmt);
+/**
+ * Get the planar alternative form of the given sample format.
+ *
+ * If the passed sample_fmt is already in planar format, the format returned is
+ * the same as the input.
+ *
+ * @return  the planar alternative form of the given sample format or
+ *		 AV_SAMPLE_FMT_NONE on error.
+ */
+func AvGetPlanarSampleFmt(sampleFmt CAVSampleFormat) CAVSampleFormat {
+	return CAVSampleFormat(C.av_get_planar_sample_fmt(C.enum_AVSampleFormat(sampleFmt)))
+}
+
+/**
+ * Generate a string corresponding to the sample format with
+ * sample_fmt, or a header if sample_fmt is negative.
+ *
+ * @param buf the buffer where to write the string
+ * @param buf_size the size of buf
+ * @param sample_fmt the number of the sample format to print the
+ * corresponding info string, or a negative value to print the
+ * corresponding header.
+ * @return the pointer to the filled buffer or NULL if sample_fmt is
+ * unknown or in case of other errors
+ */
+func AvGetSampleFmtString(buf unsafe.Pointer, bufSize int, sampleFmt CAVSampleFormat) string {
+	return C.GoString(C.av_get_sample_fmt_string((*C.char)(buf), C.int(bufSize), C.enum_AVSampleFormat(sampleFmt)))
+}
 
 /**
  * Return number of bytes per sample.
@@ -222,11 +241,11 @@ func AvSamplesGetBufferSize(linesize []ctypes.Int, nbChannels int, nbSamples int
  * @return                 minimum size in bytes required for the buffer on success,
  *                         or a negative error code on failure
  */
-func AvSamplesFillArrays(audioData *unsafe.Pointer, linesize *int,
+func AvSamplesFillArrays(audioData *unsafe.Pointer, linesize *ctypes.Int,
 	buf unsafe.Pointer,
 	nbChannels int, nbSamples int,
 	sampleFmt CAVSampleFormat, align int) int {
-	return int(C.av_samples_fill_arrays((**C.uint8_t)(unsafe.Pointer(audioData)), (*C.int)(unsafe.Pointer(linesize)),
+	return int(C.av_samples_fill_arrays((**C.uint8_t)(unsafe.Pointer(audioData)), (*C.int)(linesize),
 		(*C.uint8_t)(buf),
 		C.int(nbChannels), C.int(nbSamples),
 		C.enum_AVSampleFormat(sampleFmt), C.int(align)))
@@ -252,50 +271,60 @@ func AvSamplesFillArrays(audioData *unsafe.Pointer, linesize *int,
  * @see av_samples_fill_arrays()
  * @see av_samples_alloc_array_and_samples()
  */
-func AvSamplesAlloc(audioData *unsafe.Pointer, linesize *int, nbChannels int,
+func AvSamplesAlloc(audioData *unsafe.Pointer, linesize *ctypes.Int, nbChannels int,
 	nbSamples int, sampleFmt CAVSampleFormat, align int) int {
-	return int(C.av_samples_alloc((**C.uint8_t)(unsafe.Pointer(audioData)), (*C.int)(unsafe.Pointer(linesize)),
+	return int(C.av_samples_alloc((**C.uint8_t)(unsafe.Pointer(audioData)), (*C.int)(linesize),
 		C.int(nbChannels), C.int(nbSamples), C.enum_AVSampleFormat(sampleFmt), C.int(align)))
 }
 
-//  /**
-//   * Allocate a data pointers array, samples buffer for nb_samples
-//   * samples, and fill data pointers and linesize accordingly.
-//   *
-//   * This is the same as av_samples_alloc(), but also allocates the data
-//   * pointers array.
-//   *
-//   * @see av_samples_alloc()
-//   */
-//  int av_samples_alloc_array_and_samples(uint8_t ***audio_data, int *linesize, int nb_channels,
-// 										int nb_samples, enum AVSampleFormat sample_fmt, int align);
+/**
+ * Allocate a data pointers array, samples buffer for nb_samples
+ * samples, and fill data pointers and linesize accordingly.
+ *
+ * This is the same as av_samples_alloc(), but also allocates the data
+ * pointers array.
+ *
+ * @see av_samples_alloc()
+ */
+func AvSamplesAllocArrayAndSamples(audioData **unsafe.Pointer, linesize *ctypes.Int, nbChannels int,
+	nbSamples int, sampleFmt CAVSampleFormat, align int) int {
+	return int(C.av_samples_alloc_array_and_samples((***C.uint8_t)(unsafe.Pointer(audioData)), (*C.int)(linesize),
+		C.int(nbChannels), C.int(nbSamples), C.enum_AVSampleFormat(sampleFmt), C.int(align)))
+}
 
-//  /**
-//   * Copy samples from src to dst.
-//   *
-//   * @param dst destination array of pointers to data planes
-//   * @param src source array of pointers to data planes
-//   * @param dst_offset offset in samples at which the data will be written to dst
-//   * @param src_offset offset in samples at which the data will be read from src
-//   * @param nb_samples number of samples to be copied
-//   * @param nb_channels number of audio channels
-//   * @param sample_fmt audio sample format
-//   */
-//  int av_samples_copy(uint8_t * const *dst, uint8_t * const *src, int dst_offset,
-// 					 int src_offset, int nb_samples, int nb_channels,
-// 					 enum AVSampleFormat sample_fmt);
+/**
+ * Copy samples from src to dst.
+ *
+ * @param dst destination array of pointers to data planes
+ * @param src source array of pointers to data planes
+ * @param dst_offset offset in samples at which the data will be written to dst
+ * @param src_offset offset in samples at which the data will be read from src
+ * @param nb_samples number of samples to be copied
+ * @param nb_channels number of audio channels
+ * @param sample_fmt audio sample format
+ */
+func AvSamplesCopy(dst *unsafe.Pointer, src *unsafe.Pointer, dstOffset int,
+	srcOffset int, nbSamples int, nbChannels int,
+	sampleFmt CAVSampleFormat) int {
+	return int(C.av_samples_copy((**C.uint8_t)(unsafe.Pointer(dst)), (**C.uint8_t)(unsafe.Pointer(src)), C.int(dstOffset),
+		C.int(srcOffset), C.int(nbSamples), C.int(nbChannels),
+		C.enum_AVSampleFormat(sampleFmt)))
+}
 
-//  /**
-//   * Fill an audio buffer with silence.
-//   *
-//   * @param audio_data  array of pointers to data planes
-//   * @param offset      offset in samples at which to start filling
-//   * @param nb_samples  number of samples to fill
-//   * @param nb_channels number of audio channels
-//   * @param sample_fmt  audio sample format
-//   */
-//  int av_samples_set_silence(uint8_t * const *audio_data, int offset, int nb_samples,
-// 							int nb_channels, enum AVSampleFormat sample_fmt);
+/**
+ * Fill an audio buffer with silence.
+ *
+ * @param audio_data  array of pointers to data planes
+ * @param offset      offset in samples at which to start filling
+ * @param nb_samples  number of samples to fill
+ * @param nb_channels number of audio channels
+ * @param sample_fmt  audio sample format
+ */
+func AvSamplesSetSilence(audioData *unsafe.Pointer, offset int, nbSamples int,
+	nbChannels int, sampleFmt CAVSampleFormat) int {
+	return int(C.av_samples_set_silence((**C.uint8_t)(unsafe.Pointer(audioData)), C.int(offset), C.int(nbSamples),
+		C.int(nbChannels), C.enum_AVSampleFormat(sampleFmt)))
+}
 
 /**
  * @}
