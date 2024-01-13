@@ -382,8 +382,8 @@ func (swrCtx *SwrContext) SetInChLayout(layout *goavutil.AVChannelLayout) int {
 }
 
 func (swrCtx *SwrContext) GetInSampleRate() (int64, int) {
-	var sampleRate int64
-	return sampleRate, avutil.AvOptGetInt(unsafe.Pointer(swrCtx.CSwrContext), "in_sample_rate", 0, &sampleRate)
+	var sampleRate ctypes.Int64
+	return int64(sampleRate), avutil.AvOptGetInt(unsafe.Pointer(swrCtx.CSwrContext), "in_sample_rate", 0, &sampleRate)
 }
 func (swrCtx *SwrContext) SetInSampleRate(sampleRate int64) int {
 	return avutil.AvOptSetInt(unsafe.Pointer(swrCtx.CSwrContext), "in_sample_rate", sampleRate, 0)
@@ -409,8 +409,8 @@ func (swrCtx *SwrContext) SetOutChLayout(layout *goavutil.AVChannelLayout) int {
 }
 
 func (swrCtx *SwrContext) GetOutSampleRate() (int64, int) {
-	var sampleRate int64
-	return sampleRate, avutil.AvOptGetInt(unsafe.Pointer(swrCtx.CSwrContext), "out_sample_rate", 0, &sampleRate)
+	var sampleRate ctypes.Int64
+	return int64(sampleRate), avutil.AvOptGetInt(unsafe.Pointer(swrCtx.CSwrContext), "out_sample_rate", 0, &sampleRate)
 }
 func (swrCtx *SwrContext) SetOutSampleRate(sampleRate int64) int {
 	return avutil.AvOptSetInt(unsafe.Pointer(swrCtx.CSwrContext), "out_sample_rate", sampleRate, 0)
