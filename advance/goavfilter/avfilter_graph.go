@@ -11,7 +11,7 @@ type AVFilterGraph struct {
 }
 
 func (g *AVFilterGraph) CreateFilter(filt *AVFilter, name string, args string) (*AVFilterContext, int) {
-	return NewAvFilterContext(filt, name, args, g)
+	return NewContext(filt, name, args, g)
 }
 
 func (g *AVFilterGraph) CreateBufferSrc(name string, args string) (*BufferSrc, int) {

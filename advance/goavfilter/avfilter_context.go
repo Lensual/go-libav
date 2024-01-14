@@ -22,7 +22,7 @@ func (filtCtx *AVFilterContext) GetOutputs() []*avfilter.CAVFilterLink {
 
 //#endregion members
 
-func NewAvFilterContext(filt *AVFilter, name string, args string, graphCtx *AVFilterGraph) (*AVFilterContext, int) {
+func NewContext(filt *AVFilter, name string, args string, graphCtx *AVFilterGraph) (*AVFilterContext, int) {
 	filtCtx := AVFilterContext{}
 	ret := avfilter.AvfilterGraphCreateFilter(&filtCtx.CAVFilterContext, filt.CAVFilter, name, args, nil, graphCtx.CAVFilterGraph)
 	if filtCtx.CAVFilterContext == nil {

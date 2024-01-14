@@ -712,7 +712,7 @@ func GetAvailableDeuxer() []*avformat.CAVInputFormat {
 	return arr
 }
 
-func AllocContext() *AvformatContext {
+func NewContext() *AvformatContext {
 	ctx := avformat.AvformatAllocContext()
 	if ctx == nil {
 		return nil

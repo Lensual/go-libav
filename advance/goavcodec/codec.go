@@ -3,6 +3,7 @@ package goavcodec
 import (
 	"unsafe"
 
+	"github.com/Lensual/go-libav/advance/goavutil"
 	"github.com/Lensual/go-libav/avcodec"
 	"github.com/Lensual/go-libav/avutil"
 	"github.com/Lensual/go-libav/ctypes"
@@ -53,14 +54,36 @@ func (codec *AVCodec) GetSupportedSampleFmts() []avutil.CAVSampleFormat {
 	return arr
 }
 
+func (codec *AVCodec) GetChLayouts() []goavutil.AVChannelLayout {
+	cArr := codec.CAVCodec.GetChLayouts()
+	if cArr == nil {
+		return nil
+	}
+	p := unsafe.Pointer(cArr)
+	valSize := int(unsafe.Sizeof(avutil.CAVChannelLayout{}))
+	arr := []goavutil.AVChannelLayout{}
+
+	for {
+		val := *(*avutil.CAVChannelLayout)(p)
+		if val.GetNbChannels() == 0 {
+			break
+		}
+		arr = append(arr, goavutil.AVChannelLayout{
+			CAVChannelLayout: &val,
+		})
+		p = unsafe.Add(p, valSize)
+	}
+	return arr
+}
+
 //#endregion member
 
 func (codec *AVCodec) CreateContext() *AVCodecContext {
-	return NewAVCodecContext(codec)
+	return NewContext(codec)
 }
 
 func (codec *AVCodec) CreateParserContext() *AVCodecParserContext {
-	return NewAVCodecParserContext(int(codec.CAVCodec.GetId()))
+	return NewParserContext(int(codec.CAVCodec.GetId()))
 }
 
 func GetAvailableCodecs() []*AVCodec {

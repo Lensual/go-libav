@@ -55,7 +55,7 @@ func (avctx *AVCodecContext) GetChLayout() *goavutil.AVChannelLayout {
 
 //#endregion members
 
-func NewAVCodecContext(codec *AVCodec) *AVCodecContext {
+func NewContext(codec *AVCodec) *AVCodecContext {
 	c := avcodec.AvcodecAllocContext3(codec.CAVCodec)
 	if c == nil {
 		return nil

@@ -20,7 +20,7 @@ type AVCodecParserContext struct {
 	CAVCodecParserContext *avcodec.CAVCodecParserContext
 }
 
-func NewAVCodecParserContext(codecId int) *AVCodecParserContext {
+func NewParserContext(codecId int) *AVCodecParserContext {
 	parser := avcodec.AvParserInit(codecId)
 	if parser == nil {
 		return nil
