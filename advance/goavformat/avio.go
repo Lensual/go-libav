@@ -226,9 +226,6 @@ func (avioCtx *AVIOContext) GetBytesWritten() int64 {
 
 func (avioCtx *AVIOContext) Free() {
 	if avioCtx.CAVIOContext != nil {
-		/* note: the internal buffer could have changed, and be != avio_ctx_buffer */
-		bufptr := avioCtx.CAVIOContext.GetBuffer()
-		avutil.AvFreep(unsafe.Pointer(&bufptr))
 		avformat.AvioContextFree(&avioCtx.CAVIOContext)
 	}
 }
@@ -353,6 +350,10 @@ func (avioCtx *AVIOContext) GetStr16be(maxlen int, buf unsafe.Pointer, buflen in
 }
 
 func (avioCtx *AVIOContext) Close() int {
+	if avioCtx.CAVIOContext == nil {
+		return 0
+	}
+
 	ret := avformat.AvioClose(avioCtx.CAVIOContext)
 	if ret == 0 {
 		avioCtx.CAVIOContext = nil

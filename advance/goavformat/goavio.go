@@ -14,7 +14,7 @@ extern int64_t go_seek(void *opaque, int64_t offset, int whence);
 import "C"
 
 import (
-	"sync"
+	"runtime/cgo"
 	"unsafe"
 
 	"github.com/Lensual/go-libav/avformat"
@@ -22,68 +22,48 @@ import (
 	"github.com/Lensual/go-libav/ctypes"
 )
 
-type AVIOReadCallback func(buf []byte, len int) int
-type AVIOWriteCallback func(buf []byte, len int) int
-type AVIOSeekCallback func(offset int64, whence int) int64
+type AVIOReadCallback func(avioCtx *GoAVIOContext, buf []byte) int
+type AVIOWriteCallback func(avioCtx *GoAVIOContext, buf []byte) int
+type AVIOSeekCallback func(avioCtx *GoAVIOContext, offset int64, whence int) int64
 
-// 用于c的callback绑定avio对象
-var avioBindingC []*GoAVIOContext
-var avioBindingC_lock sync.RWMutex
-
-func init() {
-	avioBindingC = make([]*GoAVIOContext, unsafe.Sizeof(uint8(1)))
-}
-
-// HACK
-// 使用导出的go方法实现AVIO
-// 由于go对象指针不可传递给C，迫不得已生成唯一id存入C.AVIOContext.opaque来实现Go对象成员方法的访问
-// 除此之外还可以尝试使用fd协议配合os.pipe实现
+// GoAVIOContext is Go API for AVIOContext.
+// The field opaque of AVIOContext is occupied by cgo.Handle.
 type GoAVIOContext struct {
 	*AVIOContext
-	id        int
+	cgoHandle cgo.Handle
 	readFunc  AVIOReadCallback
 	writeFunc AVIOWriteCallback
 	seekFunc  AVIOSeekCallback
+	unsafeBuf bool
 }
 
-func NewGoAvioContext(bufSize int, readFunc AVIOReadCallback, writeFunc AVIOWriteCallback, seekFunc AVIOSeekCallback) *GoAVIOContext {
+// NewGoAvioContext
+//
+// unsafeBuf: True if callback with unsafe buffer, False if callback with copy memory to Go heap.
+//
+// return: Allocated GoAVIOContext or nil on failure.
+func NewGoAvioContext(bufSize int, readFunc AVIOReadCallback, writeFunc AVIOWriteCallback, seekFunc AVIOSeekCallback, unsafeBuf bool) *GoAVIOContext {
 	avioCtx := &GoAVIOContext{
 		AVIOContext: &AVIOContext{},
-		id:          -1,
 		readFunc:    readFunc,
 		writeFunc:   writeFunc,
 		seekFunc:    seekFunc,
+		unsafeBuf:   unsafeBuf,
 	}
 
-	//分配可用id
-	avioBindingC_lock.Lock()
-	{
-		for i, v := range avioBindingC {
-			if v == nil {
-				avioCtx.id = i
-			}
-		}
-		if avioCtx.id < 0 {
-			avioCtx.Free()
-			return nil
-		}
+	// Pass avioCtx pointer to C.
+	avioCtx.cgoHandle = cgo.NewHandle(avioCtx)
 
-		//AVIO绑定
-		avioBindingC[avioCtx.id] = avioCtx
-	}
-	avioBindingC_lock.Unlock()
-
-	//初始化C缓冲区
+	// alloc C buffer
 	cbuf := avutil.AvMalloc(ctypes.SizeT(bufSize))
 	if cbuf == nil {
 		avioCtx.Free()
 		return nil
 	}
 
-	//判断write flag
-	var wf int
+	var writeFlag int = 0
 	if writeFunc != nil {
-		wf = 1
+		writeFlag = 1
 	}
 
 	var readCallback ctypes.CFunc
@@ -99,12 +79,11 @@ func NewGoAvioContext(bufSize int, readFunc AVIOReadCallback, writeFunc AVIOWrit
 		seekCallback = ctypes.CFunc(C.go_seek)
 	}
 
-	//初始化AVIO
-	cavioCtx := avformat.AvioAllocContext(cbuf, bufSize, wf, unsafe.Pointer(uintptr(avioCtx.id)), //hack 这里把指针直接当int用
-		readCallback, writeCallback, seekCallback) //TODO
+	// alloc and initialize avio
+	cavioCtx := avformat.AvioAllocContext(cbuf, bufSize, writeFlag, unsafe.Pointer(avioCtx.cgoHandle),
+		readCallback, writeCallback, seekCallback)
 	if cavioCtx == nil {
-		avutil.AvFreep(cbuf)
-		avioCtx.Free()
+		avutil.AvFreep(&cbuf)
 		return nil
 	}
 	avioCtx.AVIOContext.CAVIOContext = cavioCtx
@@ -112,59 +91,64 @@ func NewGoAvioContext(bufSize int, readFunc AVIOReadCallback, writeFunc AVIOWrit
 	return avioCtx
 }
 
-func (avioCtx *GoAVIOContext) GetBuffer() []byte {
-	return avioCtx.AVIOContext.GetBuffer()
+func (avioCtx *GoAVIOContext) IsUnsafeBuffer() bool {
+	return avioCtx.unsafeBuf
 }
 
-func (avioCtx *GoAVIOContext) Free() {
-	avioCtx.AVIOContext.Free()
+func (avioCtx *GoAVIOContext) Flush() {
+	avioCtx.AVIOContext.Flush()
+}
 
-	//释放AVIO绑定
-	if avioCtx.id >= 0 {
-		avioBindingC_lock.Lock()
-		{
-			avioBindingC[avioCtx.id] = nil
-		}
-		avioBindingC_lock.Unlock()
-		avioCtx.id = -1
+// Free all resources allocated by GoAVIOContext.
+func (avioCtx *GoAVIOContext) Free() {
+	if avioCtx.AVIOContext == nil {
+		return
 	}
 
+	/* note: the internal buffer could have changed */
+	avutil.AvFree(avioCtx.CAVIOContext.GetBuffer())
+
+	avioCtx.AVIOContext.Free()
 	avioCtx.AVIOContext = nil
+
+	avioCtx.cgoHandle.Delete()
+
 	avioCtx.readFunc = nil
 	avioCtx.writeFunc = nil
 	avioCtx.seekFunc = nil
-
-	avioCtx = nil
 }
 
 //export go_read_packet
 func go_read_packet(opaque unsafe.Pointer, cbuf *C.uint8_t, buf_size C.int) C.int {
-	id := uintptr(opaque) //hack 把指针当int用
-	avioCtx := avioBindingC[id]
-	if avioCtx != nil {
-		buf := unsafe.Slice((*byte)(unsafe.Pointer(cbuf)), int(buf_size))
-		return C.int(avioCtx.readFunc(buf, int(buf_size)))
+	avioCtxCgoHandle := cgo.Handle(opaque)
+	avioCtx := avioCtxCgoHandle.Value().(*GoAVIOContext)
+	var buf []byte = nil
+	if avioCtx.unsafeBuf {
+		buf = unsafe.Slice((*byte)(unsafe.Pointer(cbuf)), int(buf_size))
+	} else {
+		buf = C.GoBytes(unsafe.Pointer(cbuf), buf_size)
 	}
-	return 0
+	return C.int(avioCtx.readFunc(avioCtx, buf))
 }
 
 //export go_write_packet
 func go_write_packet(opaque unsafe.Pointer, cbuf *C.uint8_t, buf_size C.int) C.int {
-	id := uintptr(opaque) //hack 把指针当int用
-	avioCtx := avioBindingC[id]
-	if avioCtx != nil {
-		buf := unsafe.Slice((*byte)(unsafe.Pointer(cbuf)), int(buf_size))
-		return C.int(avioCtx.writeFunc(buf, int(buf_size)))
+	avioCtxCgoHandle := cgo.Handle(opaque)
+	avioCtx := avioCtxCgoHandle.Value().(*GoAVIOContext)
+	var buf []byte = nil
+	if cbuf != nil {
+		if avioCtx.unsafeBuf {
+			buf = unsafe.Slice((*byte)(unsafe.Pointer(cbuf)), int(buf_size))
+		} else {
+			buf = C.GoBytes(unsafe.Pointer(cbuf), buf_size)
+		}
 	}
-	return 0
+	return C.int(avioCtx.writeFunc(avioCtx, buf))
 }
 
 //export go_seek
 func go_seek(opaque unsafe.Pointer, offset C.int64_t, whence C.int) C.int64_t {
-	id := uintptr(opaque) //hack 把指针当int用
-	avioCtx := avioBindingC[id]
-	if avioCtx != nil {
-		return C.int64_t(avioCtx.seekFunc(int64(offset), int(whence)))
-	}
-	return 0
+	avioCtxCgoHandle := cgo.Handle(opaque)
+	avioCtx := avioCtxCgoHandle.Value().(*GoAVIOContext)
+	return C.int64_t(avioCtx.seekFunc(avioCtx, int64(offset), int(whence)))
 }

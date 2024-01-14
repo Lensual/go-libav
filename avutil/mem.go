@@ -414,8 +414,8 @@ func AvFree(ptr unsafe.Pointer) {
  * @note `*ptr = NULL` is safe and leads to no action.
  * @see av_free()
  */
-func AvFreep(ptr unsafe.Pointer) {
-	C.av_freep(ptr)
+func AvFreep(ptr *unsafe.Pointer) {
+	C.av_freep(unsafe.Pointer(ptr))
 }
 
 /**
