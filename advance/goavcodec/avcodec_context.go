@@ -3,6 +3,7 @@ package goavcodec
 import (
 	"context"
 	"syscall"
+	"unsafe"
 
 	"github.com/Lensual/go-libav/advance/goavutil"
 	"github.com/Lensual/go-libav/avcodec"
@@ -188,6 +189,113 @@ func (avctx *AVCodecContext) DecodeChan(ctx context.Context, pktChan <-chan *AVP
 	}()
 
 	return ctx, frameChan
+}
+
+// ChunkingFrameChan chunking read frame by AVAudioFifo.
+//
+// Example:
+//
+//	if avctx.CAVCodecContext.GetCodec().GetCapabilities()&avcodec.AV_CODEC_CAP_VARIABLE_FRAME_SIZE == 0 {
+//		ctx, frameChan = avctx.chunkingFrameChan(ctx, frameChan)
+//	}
+//	avctx.EncodeChan(ctx, frameChan)
+func (avctx *AVCodecContext) ChunkingFrameChan(ctx context.Context, frameInChan <-chan *goavutil.AVFrame) (context.Context, <-chan *goavutil.AVFrame) {
+	ctx, cancel := context.WithCancelCause(ctx)
+	frameOutChan := make(chan *goavutil.AVFrame)
+
+	af := goavutil.NewAVAudioFifo(avctx.CAVCodecContext.GetSampleFmt(), avctx.GetChLayout().GetNbChannels(), 1)
+	if af == nil {
+		cancel(goavutil.AvErr(avutil.AVERROR(int(syscall.ENOMEM))))
+		return ctx, nil
+	}
+
+	go func() {
+		defer af.Free()
+		defer close(frameOutChan)
+	loop:
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case frame, ok := <-frameInChan:
+				// write fifo
+				if !ok {
+					break loop
+				}
+				if code := af.Realloc(af.Size() + frame.GetNbSamples()); code < 0 {
+					frame.Unref()
+					cancel(goavutil.AvErr(code))
+					return
+				}
+				frameData := frame.GetData()
+				code := af.Write(unsafe.SliceData(frameData[:]), frame.GetNbSamples())
+				frame.Unref()
+				if code < 0 {
+					cancel(goavutil.AvErr(code))
+					return
+				}
+
+				// read fifo
+				frameSize := avctx.CAVCodecContext.GetFrameSize()
+				for af.Size() >= frameSize {
+					frame = goavutil.AllocAVFrame()
+					frame.SetNbSamples(frameSize)
+					avctx.GetChLayout().CopyTo(frame.GetChLayout())
+					frame.SetFormat(int(avctx.CAVCodecContext.GetSampleFmt()))
+					frame.SetSampleRate(avctx.CAVCodecContext.GetSampleRate())
+					code = frame.AllocBuffer(0)
+					if code < 0 {
+						frame.Unref()
+						cancel(goavutil.AvErr(code))
+						return
+					}
+					frameData = frame.GetData()
+					code = af.Read(unsafe.SliceData(frameData[:]), frameSize)
+					if code < 0 {
+						frame.Unref()
+						cancel(goavutil.AvErr(code))
+						return
+					}
+					select {
+					case <-ctx.Done():
+						frame.Unref()
+						return
+					case frameOutChan <- frame:
+					}
+				}
+			}
+		}
+
+		// flush fifo
+		if af.Size() >= 0 {
+			frame := goavutil.AllocAVFrame()
+			frame.SetNbSamples(af.Size())
+			avctx.GetChLayout().CopyTo(frame.GetChLayout())
+			frame.SetFormat(int(avctx.CAVCodecContext.GetSampleFmt()))
+			frame.SetSampleRate(avctx.CAVCodecContext.GetSampleRate())
+			code := frame.AllocBuffer(0)
+			if code < 0 {
+				frame.Unref()
+				cancel(goavutil.AvErr(code))
+				return
+			}
+			frameData := frame.GetData()
+			code = af.Read(unsafe.SliceData(frameData[:]), af.Size())
+			if code < 0 {
+				frame.Unref()
+				cancel(goavutil.AvErr(code))
+				return
+			}
+			select {
+			case <-ctx.Done():
+				frame.Unref()
+				return
+			case frameOutChan <- frame:
+			}
+		}
+	}()
+
+	return ctx, frameOutChan
 }
 
 // Encode AVFrame.
