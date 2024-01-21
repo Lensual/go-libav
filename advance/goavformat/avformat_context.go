@@ -560,8 +560,23 @@ func (fmtCtx *AvformatContext) Free() {
 	avformat.AvformatFreeContext(fmtCtx.CAvformatContext)
 }
 
-func (fmtCtx *AvformatContext) NewStream(c *goavcodec.AVCodec) *avformat.CAVStream {
-	return avformat.AvformatNewStream(fmtCtx.CAvformatContext, c.CAVCodec)
+func (fmtCtx *AvformatContext) NewStream(c *goavcodec.AVCodec) *AVStream {
+	var cC *avcodec.CAVCodec = nil
+	if c != nil {
+		cC = c.CAVCodec
+	}
+	cSt := avformat.AvformatNewStream(fmtCtx.CAvformatContext, cC)
+	if cSt == nil {
+		return nil
+	}
+	return &AVStream{
+		CAVStream: cSt,
+	}
+}
+
+// AddStream alias NewStream
+func (fmtCtx *AvformatContext) AddStream() *AVStream {
+	return fmtCtx.NewStream(nil)
 }
 
 func (fmtCtx *AvformatContext) NewProgram(id int) *avformat.CAVProgram {
@@ -629,7 +644,11 @@ func (fmtCtx *AvformatContext) InitOutput(options **avutil.CAVDictionary) int {
 }
 
 func (fmtCtx *AvformatContext) WriteFrame(pkt *goavcodec.AVPacket) int {
-	return avformat.AvWriteFrame(fmtCtx.CAvformatContext, pkt.CAVPacket)
+	var cPkt *avcodec.CAVPacket = nil
+	if pkt != nil {
+		cPkt = pkt.CAVPacket
+	}
+	return avformat.AvWriteFrame(fmtCtx.CAvformatContext, cPkt)
 }
 
 func (fmtCtx *AvformatContext) InterleavedWriteFrame(pkt *goavcodec.AVPacket) int {
@@ -722,13 +741,15 @@ func NewContext() *AvformatContext {
 	}
 }
 
-func AllocOutputContext(oformat *avformat.CAVOutputFormat, formatName string, filename string) (*AvformatContext, int) {
-	fmtCtx := AvformatContext{}
-	ret := avformat.AvformatAllocOutputContext2(&fmtCtx.CAvformatContext, oformat, formatName, filename)
-	if ret >= 0 {
+func NewOutputContext(oformat *avformat.CAVOutputFormat, formatName string, filename string) (*AvformatContext, int) {
+	var ctx *avformat.CAVFormatContext
+	ret := avformat.AvformatAllocOutputContext2(&ctx, oformat, formatName, filename)
+	if ret < 0 {
 		return nil, ret
 	}
-	return &fmtCtx, ret
+	return &AvformatContext{
+		CAvformatContext: ctx,
+	}, ret
 }
 
 func OpenInput(url string, fmt *avformat.CAVInputFormat, options **avutil.CAVDictionary) (*AvformatContext, int) {
