@@ -53,7 +53,7 @@ func (layout *AVChannelLayout) Uninit() {
 	avutil.AvChannelLayoutUninit(layout.CAVChannelLayout)
 }
 
-func (layout *AVChannelLayout) Copy(dst *AVChannelLayout) int {
+func (layout *AVChannelLayout) CopyTo(dst *AVChannelLayout) int {
 	return avutil.AvChannelLayoutCopy(dst.CAVChannelLayout, layout.CAVChannelLayout)
 }
 
