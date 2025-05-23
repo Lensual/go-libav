@@ -1,3 +1,7 @@
+# DEPRECATED
+
+根本没有必要开发这个库。不如直接在Go项目里写C模块。对于不会C和不熟悉手动内存管理的Go开发者，不如直接调用命令。
+
 # go-libav
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/Lensual/go-libav.svg)](https://pkg.go.dev/github.com/Lensual/go-libav)
